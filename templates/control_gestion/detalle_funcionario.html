@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ funcionario.nombre }} | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'funcionarios' %}" class="text-decoration-none">Funcionarios</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ funcionario.id_funcionario }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-primary-custom">{{ funcionario.nombre }}</h2>
+            <p class="text-muted mb-0">{{ funcionario.cargo }} · {{ funcionario.delegacion }}</p>
+        </div>
+        <span class="badge {{ funcionario.semaforo_clase }} fs-6 py-2 px-3">{{ funcionario.semaforo_nivel }} · {{ funcionario.ponderado_total }}%</span>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom mb-3">Ítems medidos</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ítem</th>
+                                    <th>Ponderador</th>
+                                    <th>Meta trimestre</th>
+                                    <th>Avance</th>
+                                    <th>% cumplimiento</th>
+                                    <th>Cumpl. ponderado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in funcionario.items %}
+                                <tr>
+                                    <td>{{ item.item }}</td>
+                                    <td>{{ item.ponderador }}%</td>
+                                    <td>{{ item.meta_trimestre|floatformat:0 }}</td>
+                                    <td>{{ item.avance_actual|floatformat:0 }}</td>
+                                    <td>{{ item.pct_cumplimiento }}%</td>
+                                    <td class="fw-semibold">{{ item.cumplimiento_ponderado }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom mb-3">Actividades y verificadores</h5>
+                    <p class="small text-muted">Al registrar la fecha se genera un código para nombrar la fotografía o evidencia de la actividad.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Contacto</th>
+                                    <th>Ítem</th>
+                                    <th>Servicio</th>
+                                    <th>Código</th>
+                                    <th>Evidencia</th>
+                                    <th>Punto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for act in actividades %}
+                                <tr>
+                                    <td class="font-monospace small">{{ act.fecha_actividad }}</td>
+                                    <td>{{ act.contacto }}</td>
+                                    <td class="small">{{ act.item }}</td>
+                                    <td class="small">{{ act.servicio }}</td>
+                                    <td><code>{{ act.codigo_verificador }}</code></td>
+                                    <td class="small">{{ act.imagen_verificadora }}</td>
+                                    <td>
+                                        {% if act.punto_validado %}
+                                        <span class="badge text-bg-success">Validado</span>
+                                        {% else %}
+                                        <span class="badge text-bg-warning">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted py-3">Sin actividades registradas</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom mb-3">Registrar actividad del día</h5>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="contacto" class="form-label small">Contacto / usuario</label>
+                            <input type="text" class="form-control" id="contacto" name="contacto" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="item" class="form-label small">Ítem a medir</label>
+                            <select class="form-select" id="item" name="item" required>
+                                {% for item in funcionario.items %}
+                                <option value="{{ item.item }}">{{ item.item }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="servicio" class="form-label small">Servicio o atención</label>
+                            <input type="text" class="form-control" id="servicio" name="servicio" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="imagen_verificadora" class="form-label small">Nombre de la evidencia</label>
+                            <input type="text" class="form-control" id="imagen_verificadora" name="imagen_verificadora" placeholder="Foto, acta o llamado">
+                        </div>
+                        <button type="submit" class="btn btn-primary-custom w-100">Guardar y generar código</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom mb-3">Atenciones por usuario</h5>
+                    <p class="small text-muted">El área social puede registrar hasta tres atenciones del mismo usuario.</p>
+                    <ul class="list-group list-group-flush">
+                        {% for contacto, total in atenciones_por_contacto.items %}
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>{{ contacto }}</span>
+                            <span class="badge {% if total >= 3 %}text-bg-primary{% else %}text-bg-secondary{% endif %}">{{ total }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item px-0 text-muted">Sin contactos</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

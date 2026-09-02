@@ -1,0 +1,123 @@
+[
+  {
+    "id_funcionario": "FUN-001",
+    "nombre": "Elizabeth Rojas Campos",
+    "cargo": "Delegada Territorial",
+    "delegacion": "Delegación Rural",
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "items": [
+      {"item": "Supervisión de compromisos vecinales", "ponderador": 30, "meta_trimestre": 90, "avance_actual": 68},
+      {"item": "Reuniones con organizaciones comunitarias", "ponderador": 25, "meta_trimestre": 24, "avance_actual": 18},
+      {"item": "Informes de gestión semanales", "ponderador": 25, "meta_trimestre": 12, "avance_actual": 9},
+      {"item": "Acompañamiento a funcionarios rezagados", "ponderador": 20, "meta_trimestre": 18, "avance_actual": 12}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-002",
+    "nombre": "Camila Oyarzún Santander",
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación Rural",
+    "fecha_ultimo_ingreso": "2026-08-30",
+    "items": [
+      {"item": "Atenciones sociales (hasta 3 por usuario)", "ponderador": 40, "meta_trimestre": 120, "avance_actual": 74},
+      {"item": "Fichas y ayudas de emergencia", "ponderador": 30, "meta_trimestre": 60, "avance_actual": 38},
+      {"item": "Seguimiento a adultos mayores", "ponderador": 30, "meta_trimestre": 45, "avance_actual": 22}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-003",
+    "nombre": "Pedro Palma Godoy",
+    "cargo": "Territorial Organizaciones Comunitarias",
+    "delegacion": "Delegación Rural",
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "items": [
+      {"item": "Visitas a juntas de vecinos", "ponderador": 35, "meta_trimestre": 36, "avance_actual": 31},
+      {"item": "Apoyo a proyectos Fondeve", "ponderador": 35, "meta_trimestre": 18, "avance_actual": 15},
+      {"item": "Actas y registro de organizaciones", "ponderador": 30, "meta_trimestre": 40, "avance_actual": 28}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-004",
+    "nombre": "Marisol Tapia Henríquez",
+    "cargo": "Apoyo Administrativo",
+    "delegacion": "Delegación Rural",
+    "fecha_ultimo_ingreso": "2026-08-29",
+    "items": [
+      {"item": "Digitación de requerimientos", "ponderador": 40, "meta_trimestre": 200, "avance_actual": 148},
+      {"item": "Archivo y verificadores fotográficos", "ponderador": 30, "meta_trimestre": 90, "avance_actual": 61},
+      {"item": "Atención de mesa de partes", "ponderador": 30, "meta_trimestre": 150, "avance_actual": 96}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-005",
+    "nombre": "Rodrigo Santander Díaz",
+    "cargo": "Supervisor DISERCO",
+    "delegacion": "Delegación Rural",
+    "fecha_ultimo_ingreso": "2026-08-25",
+    "items": [
+      {"item": "Cuadrillas de aseo y alumbrado", "ponderador": 40, "meta_trimestre": 80, "avance_actual": 41},
+      {"item": "Inspección de áreas verdes", "ponderador": 30, "meta_trimestre": 40, "avance_actual": 18},
+      {"item": "Cierre de compromisos DISERCO", "ponderador": 30, "meta_trimestre": 50, "avance_actual": 21}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-006",
+    "nombre": "Valeria Moraga Henríquez",
+    "cargo": "Coordinadora DISERCO",
+    "delegacion": "Delegación Avenida del Mar",
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "items": [
+      {"item": "Coordinación de cuadrillas comunales", "ponderador": 35, "meta_trimestre": 60, "avance_actual": 48},
+      {"item": "Mantención de plazas y borde costero", "ponderador": 35, "meta_trimestre": 45, "avance_actual": 34},
+      {"item": "Respuesta a reclamos de ornato", "ponderador": 30, "meta_trimestre": 90, "avance_actual": 71}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-007",
+    "nombre": "Esteban Barraza Villalobos",
+    "cargo": "Proyectos y Compras",
+    "delegacion": "Delegación Central",
+    "fecha_ultimo_ingreso": "2026-08-28",
+    "items": [
+      {"item": "Órdenes de compra territoriales", "ponderador": 40, "meta_trimestre": 30, "avance_actual": 19},
+      {"item": "Seguimiento de proyectos vecinales", "ponderador": 35, "meta_trimestre": 12, "avance_actual": 8},
+      {"item": "Informes de ejecución presupuestaria", "ponderador": 25, "meta_trimestre": 9, "avance_actual": 6}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-008",
+    "nombre": "Marcela Cárdenas López",
+    "cargo": "Planificación y Control",
+    "delegacion": "Delegación La Antena",
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "items": [
+      {"item": "Actualización de la matriz SGR", "ponderador": 40, "meta_trimestre": 90, "avance_actual": 70},
+      {"item": "Reportes de semáforo diario", "ponderador": 30, "meta_trimestre": 60, "avance_actual": 46},
+      {"item": "Levantamiento de cuellos de botella", "ponderador": 30, "meta_trimestre": 24, "avance_actual": 19}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-009",
+    "nombre": "Gonzalo Pizarro Tapia",
+    "cargo": "Gestor de Seguridad",
+    "delegacion": "Delegación Las Compañías",
+    "fecha_ultimo_ingreso": "2026-08-31",
+    "items": [
+      {"item": "Patrullajes preventivos", "ponderador": 40, "meta_trimestre": 90, "avance_actual": 58},
+      {"item": "Rondas con juntas de vecinos", "ponderador": 30, "meta_trimestre": 24, "avance_actual": 16},
+      {"item": "Alertas y coordinación con Carabineros", "ponderador": 30, "meta_trimestre": 40, "avance_actual": 27}
+    ]
+  },
+  {
+    "id_funcionario": "FUN-010",
+    "nombre": "Juan Carlos Pérez Muñoz",
+    "cargo": "Supervisor DISERCO",
+    "delegacion": "Delegación La Pampa",
+    "fecha_ultimo_ingreso": "2026-08-20",
+    "items": [
+      {"item": "Retiro de microbasurales", "ponderador": 40, "meta_trimestre": 70, "avance_actual": 32},
+      {"item": "Poda y riego de áreas verdes", "ponderador": 35, "meta_trimestre": 40, "avance_actual": 17},
+      {"item": "Cierre de tickets de ornato", "ponderador": 25, "meta_trimestre": 55, "avance_actual": 21}
+    ]
+  }
+]

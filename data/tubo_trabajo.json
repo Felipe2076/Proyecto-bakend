@@ -1,0 +1,112 @@
+[
+  {
+    "id_compromiso": "TUB-001",
+    "descripcion": "Retiro de escombros en Av. Cuatro Esquinas con Av. del Mar",
+    "vecino": "María González Pérez",
+    "funcionario": "Valeria Moraga Henríquez",
+    "id_funcionario": "FUN-006",
+    "delegacion": "Delegación Avenida del Mar",
+    "fecha_compromiso": "2026-09-03",
+    "fecha_ingreso": "2026-08-26",
+    "estado": "EN PROCESO"
+  },
+  {
+    "id_compromiso": "TUB-002",
+    "descripcion": "Ayuda social de emergencia en Quebrada de Talca",
+    "vecino": "Roberto Vera Campillay",
+    "funcionario": "Camila Oyarzún Santander",
+    "id_funcionario": "FUN-002",
+    "delegacion": "Delegación Rural",
+    "fecha_compromiso": "2026-08-20",
+    "fecha_ingreso": "2026-08-16",
+    "estado": "PENDIENTE"
+  },
+  {
+    "id_compromiso": "TUB-003",
+    "descripcion": "Reparación de 4 postes de alumbrado solar en Algarrobito",
+    "vecino": "Hernán Alcayaga Tapia",
+    "funcionario": "Rodrigo Santander Díaz",
+    "id_funcionario": "FUN-005",
+    "delegacion": "Delegación Rural",
+    "fecha_compromiso": "2026-08-25",
+    "fecha_ingreso": "2026-08-19",
+    "estado": "PENDIENTE"
+  },
+  {
+    "id_compromiso": "TUB-004",
+    "descripcion": "Reunión con junta de vecinos de Algarrobito",
+    "vecino": "JJVV Algarrobito",
+    "funcionario": "Elizabeth Rojas Campos",
+    "id_funcionario": "FUN-001",
+    "delegacion": "Delegación Rural",
+    "fecha_compromiso": "2026-09-01",
+    "fecha_ingreso": "2026-08-27",
+    "estado": "REALIZADO"
+  },
+  {
+    "id_compromiso": "TUB-005",
+    "descripcion": "Poda de árbol de gran envergadura en calle Las Higueras",
+    "vecino": "Patricia Araya Munizaga",
+    "funcionario": "Juan Carlos Pérez Muñoz",
+    "id_funcionario": "FUN-010",
+    "delegacion": "Delegación La Pampa",
+    "fecha_compromiso": "2026-09-04",
+    "fecha_ingreso": "2026-08-26",
+    "estado": "INGRESADO"
+  },
+  {
+    "id_compromiso": "TUB-006",
+    "descripcion": "Ronda preventiva y cámara en paradero CESFAM",
+    "vecino": "Lucía Morales Miranda",
+    "funcionario": "Gonzalo Pizarro Tapia",
+    "id_funcionario": "FUN-009",
+    "delegacion": "Delegación Las Compañías",
+    "fecha_compromiso": "2026-09-06",
+    "fecha_ingreso": "2026-08-20",
+    "estado": "EN PROCESO"
+  },
+  {
+    "id_compromiso": "TUB-007",
+    "descripcion": "Bacheo patrimonial en Calle Cordovez con O'Higgins",
+    "vecino": "Jorge Cortés Carvajal",
+    "funcionario": "Esteban Barraza Villalobos",
+    "id_funcionario": "FUN-007",
+    "delegacion": "Delegación Central",
+    "fecha_compromiso": "2026-09-08",
+    "fecha_ingreso": "2026-08-23",
+    "estado": "EN PROCESO"
+  },
+  {
+    "id_compromiso": "TUB-008",
+    "descripcion": "Coordinación Día de la Niñez en La Antena",
+    "vecino": "Andrés Campusano Silva",
+    "funcionario": "Marcela Cárdenas López",
+    "id_funcionario": "FUN-008",
+    "delegacion": "Delegación La Antena",
+    "fecha_compromiso": "2026-08-24",
+    "fecha_ingreso": "2026-08-21",
+    "estado": "REALIZADO"
+  },
+  {
+    "id_compromiso": "TUB-009",
+    "descripcion": "Visita a JJVV Quebrada de Talca y registro de acta",
+    "vecino": "JJVV Quebrada de Talca",
+    "funcionario": "Pedro Palma Godoy",
+    "id_funcionario": "FUN-003",
+    "delegacion": "Delegación Rural",
+    "fecha_compromiso": "2026-09-01",
+    "fecha_ingreso": "2026-08-28",
+    "estado": "REALIZADO"
+  },
+  {
+    "id_compromiso": "TUB-010",
+    "descripcion": "Digitación masiva de mesa de partes de la semana",
+    "vecino": "Mesa de partes Delegación Rural",
+    "funcionario": "Marisol Tapia Henríquez",
+    "id_funcionario": "FUN-004",
+    "delegacion": "Delegación Rural",
+    "fecha_compromiso": "2026-09-02",
+    "fecha_ingreso": "2026-08-29",
+    "estado": "INGRESADO"
+  }
+]

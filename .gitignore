@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
+_doc_evidencias.html
+_generar_evidencias_docx.py
+*.zip

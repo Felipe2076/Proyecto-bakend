@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard de cuellos de botella | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-primary-custom">Cuellos de botella y carga territorial</h2>
+            <p class="text-muted small mb-0">Casos con 6 o más días de atraso y distribución por delegación.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'kanban' %}" class="btn btn-outline-primary">Tablero Kanban</a>
+            <a href="{% url 'lista_requerimientos' %}?semaforo=Rojo" class="btn btn-danger">Filtrar críticos</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden bg-primary-custom text-white">
+        <div class="row align-items-center g-0">
+            <div class="col-lg-6 p-4 p-md-5">
+                <span class="badge text-bg-warning text-dark mb-3">Control de gestión</span>
+                <h3 class="fw-bold mb-2">Panel ejecutivo de desempeño territorial</h3>
+                <p class="text-white-75 small mb-0">SLA estándar: 1 a 3 días. Alerta en 4-5. Crítico desde el día 6.</p>
+            </div>
+            <div class="col-lg-6 text-center p-3">
+                <img src="{% static 'img/dashboard_analitica.svg' %}" alt="Analítica territorial" class="img-fluid rounded-3" style="max-height: 200px;">
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card">
+                <span class="text-muted small text-uppercase">Total solicitudes</span>
+                <h2 class="fw-bold my-1">{{ total_requerimientos }}</h2>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card accent-bar">
+                <span class="text-muted small text-uppercase">Casos críticos (≥6d)</span>
+                <h2 class="fw-bold text-danger my-1">{{ total_criticos }}</h2>
+                <span class="badge text-bg-danger">{{ porcentaje_criticos }}% de atraso</span>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card">
+                <span class="text-muted small text-uppercase">Tiempo promedio</span>
+                <h2 class="fw-bold my-1">{{ tiempo_promedio }} <small class="fs-6 text-muted">días</small></h2>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card">
+                <span class="text-muted small text-uppercase">Mayor demanda</span>
+                <h5 class="fw-bold text-primary-custom my-1">{{ delegacion_mayor_demanda }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-header bg-danger text-white py-3 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Alertas urgentes de cuellos de botella</h5>
+            <span class="badge text-bg-light text-danger">{{ cuellos_botella|length }} casos</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-3">Ticket</th>
+                        <th>Vecino</th>
+                        <th>Delegación</th>
+                        <th>Tipo / área</th>
+                        <th>Descripción</th>
+                        <th class="text-center">Días</th>
+                        <th class="text-end px-3">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cuellos_botella %}
+                    <tr>
+                        <td class="px-3 font-monospace fw-bold">
+                            <a href="{% url 'detalle_requerimiento' item.id_ticket %}" class="text-danger text-decoration-none">#{{ item.id_ticket }}</a>
+                        </td>
+                        <td>{{ item.vecino_nombre }}</td>
+                        <td><span class="badge text-bg-light border">{{ item.delegacion }}</span></td>
+                        <td><div class="small fw-semibold">{{ item.tipo_entrada }}</div><small class="text-muted">{{ item.area_tematica }}</small></td>
+                        <td class="small table-desc-col">{{ item.descripcion }}</td>
+                        <td class="text-center"><span class="badge text-bg-danger">{{ item.dias_transcurridos }} días</span></td>
+                        <td class="text-end px-3"><a href="{% url 'detalle_requerimiento' item.id_ticket %}" class="btn btn-outline-danger btn-sm">Auditar</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-success">
+                            <h6 class="fw-bold mb-0">No hay requerimientos en cuello de botella crítico.</h6>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-primary-custom mb-3">Carga porcentual por delegación</h5>
+            <div class="row g-4">
+                {% for st in stats_delegaciones %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-4 bg-body-tertiary border h-100">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">{{ st.nombre }}</h6>
+                            <span class="badge {% if st.criticos > 0 %}text-bg-danger{% else %}text-bg-success{% endif %}">{{ st.criticos }} críticos</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Total</span>
+                            <strong>{{ st.total }} ({{ st.porcentaje_carga }}%)</strong>
+                        </div>
+                        <div class="progress mb-2" role="progressbar" aria-valuenow="{{ st.porcentaje_carga }}" aria-valuemin="0" aria-valuemax="100" style="height: 8px;">
+                            <div class="progress-bar bg-primary-custom" style="width: {{ st.porcentaje_carga }}%;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Tiempo promedio</span>
+                            <strong>{{ st.tiempo_promedio }} días</strong>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

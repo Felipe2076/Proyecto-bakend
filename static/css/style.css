@@ -1,0 +1,116 @@
+:root {
+    --color-primary: #002b49;
+    --color-primary-dark: #001a2c;
+    --color-primary-light: #0a4a73;
+    --color-accent: #d9534f;
+    --color-gold: #e5a93c;
+    --color-bg-light: #f8f9fa;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--color-bg-light);
+    color: #2b303a;
+}
+
+.bg-primary-custom,
+.btn-primary-custom,
+.table-dark-custom {
+    background-color: var(--color-primary) !important;
+}
+
+.btn-primary-custom {
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.btn-primary-custom:hover,
+.btn-primary-custom:focus {
+    background-color: var(--color-primary-dark) !important;
+    border-color: var(--color-primary-dark);
+    color: #fff;
+}
+
+.text-primary-custom {
+    color: var(--color-primary) !important;
+}
+
+.brand-title {
+    font-size: 1.05rem;
+    letter-spacing: 0.3px;
+}
+
+.brand-subtitle {
+    font-size: 0.7rem;
+}
+
+.navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.45rem 0.8rem;
+    border-radius: 0.375rem;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.bg-hero {
+    background: linear-gradient(135deg, #002b49 0%, #0a4a73 55%, #001a2c 100%);
+}
+
+.text-white-75 {
+    color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.kpi-card,
+.area-card,
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover,
+.area-card:hover,
+.hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+@media (min-width: 1200px) {
+    .col-xl-2-4 {
+        flex: 0 0 auto;
+        width: 20%;
+    }
+}
+
+.table-desc-col {
+    max-width: 280px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.shadow-xs {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.bg-kanban-col {
+    background-color: #eef2f7;
+    min-height: 420px;
+}
+
+.kanban-cards-container {
+    max-height: 650px;
+    overflow-y: auto;
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.accent-bar {
+    border-left: 4px solid var(--color-accent);
+}

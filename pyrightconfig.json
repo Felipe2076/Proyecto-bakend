@@ -1,0 +1,9 @@
+{
+  "venvPath": ".",
+  "venv": "venv",
+  "plugins": [
+    {
+      "name": "django-stubs"
+    }
+  ]
+}

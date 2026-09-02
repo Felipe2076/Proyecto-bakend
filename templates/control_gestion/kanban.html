@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tablero Kanban | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none">Control</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Kanban</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-primary-custom">Tablero operativo de tickets</h2>
+            <p class="text-muted small mb-0">Pendiente, en proceso, cuello de botella y resuelto.</p>
+        </div>
+        <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_general }} requerimientos</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-kanban-col">
+                <div class="card-header bg-white py-3 border-top border-4 border-warning rounded-top-4 d-flex justify-content-between">
+                    <span class="fw-bold">Pendientes</span>
+                    <span class="badge text-bg-warning">{{ total_pendientes }}</span>
+                </div>
+                <div class="card-body p-2 kanban-cards-container">
+                    {% for req in pendientes %}
+                    <a href="{% url 'detalle_requerimiento' req.id_ticket %}" class="text-decoration-none">
+                        <div class="card border-0 shadow-xs rounded-3 mb-2 p-3 hover-lift">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold font-monospace small text-primary-custom">#{{ req.id_ticket }}</span>
+                                <span class="badge {{ req.semaforo_clase }}">Día {{ req.dias_transcurridos }}</span>
+                            </div>
+                            <h6 class="fw-bold small text-dark mb-1">{{ req.tipo_entrada }}</h6>
+                            <p class="text-muted small mb-0 text-truncate-2">{{ req.descripcion }}</p>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <p class="text-center text-muted small py-4">Sin casos pendientes</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-kanban-col">
+                <div class="card-header bg-white py-3 border-top border-4 border-info rounded-top-4 d-flex justify-content-between">
+                    <span class="fw-bold">En proceso</span>
+                    <span class="badge text-bg-info">{{ total_en_proceso }}</span>
+                </div>
+                <div class="card-body p-2 kanban-cards-container">
+                    {% for req in en_proceso %}
+                    <a href="{% url 'detalle_requerimiento' req.id_ticket %}" class="text-decoration-none">
+                        <div class="card border-0 shadow-xs rounded-3 mb-2 p-3 hover-lift">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold font-monospace small text-primary-custom">#{{ req.id_ticket }}</span>
+                                <span class="badge {{ req.semaforo_clase }}">Día {{ req.dias_transcurridos }}</span>
+                            </div>
+                            <h6 class="fw-bold small text-dark mb-1">{{ req.tipo_entrada }}</h6>
+                            <p class="text-muted small mb-0 text-truncate-2">{{ req.descripcion }}</p>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <p class="text-center text-muted small py-4">Sin tareas en ejecución</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-kanban-col">
+                <div class="card-header bg-white py-3 border-top border-4 border-danger rounded-top-4 d-flex justify-content-between">
+                    <span class="fw-bold">Cuello de botella</span>
+                    <span class="badge text-bg-danger">{{ total_cuello_botella }}</span>
+                </div>
+                <div class="card-body p-2 kanban-cards-container">
+                    {% for req in cuello_botella %}
+                    <a href="{% url 'detalle_requerimiento' req.id_ticket %}" class="text-decoration-none">
+                        <div class="card border-0 shadow-xs rounded-3 mb-2 p-3 hover-lift border-start border-3 border-danger">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold font-monospace small text-danger">#{{ req.id_ticket }}</span>
+                                <span class="badge text-bg-danger">Día {{ req.dias_transcurridos }}</span>
+                            </div>
+                            <h6 class="fw-bold small text-dark mb-1">{{ req.tipo_entrada }}</h6>
+                            <p class="text-muted small mb-0 text-truncate-2">{{ req.descripcion }}</p>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <p class="text-center text-success small py-4">Sin cuellos de botella</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-kanban-col">
+                <div class="card-header bg-white py-3 border-top border-4 border-success rounded-top-4 d-flex justify-content-between">
+                    <span class="fw-bold">Resueltos</span>
+                    <span class="badge text-bg-success">{{ total_resueltos }}</span>
+                </div>
+                <div class="card-body p-2 kanban-cards-container">
+                    {% for req in resueltos %}
+                    <a href="{% url 'detalle_requerimiento' req.id_ticket %}" class="text-decoration-none">
+                        <div class="card border-0 shadow-xs rounded-3 mb-2 p-3 hover-lift border-start border-3 border-success">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold font-monospace small text-success">#{{ req.id_ticket }}</span>
+                                <span class="badge text-bg-success">Cerrado</span>
+                            </div>
+                            <h6 class="fw-bold small text-dark mb-1">{{ req.tipo_entrada }}</h6>
+                            <p class="text-muted small mb-0 text-truncate-2">{{ req.descripcion }}</p>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <p class="text-center text-muted small py-4">Sin requerimientos resueltos</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

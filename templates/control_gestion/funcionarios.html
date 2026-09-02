@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pestaña personal | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Funcionarios</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-primary-custom">Pestaña personal por cargo</h2>
+            <p class="text-muted small mb-0">Ítem, ponderador, meta del trimestre, avance, % de cumplimiento y cumplimiento ponderado. Periodo: {{ periodo.periodo }}.</p>
+        </div>
+        <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_funcionarios }} funcionarios</span>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label for="delegacion" class="form-label small fw-semibold">Delegación</label>
+                    <select class="form-select" id="delegacion" name="delegacion">
+                        <option value="">Todas las delegaciones</option>
+                        {% for del in delegaciones %}
+                        <option value="{{ del }}" {% if filtro_delegacion == del %}selected{% endif %}>{{ del }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary-custom w-100">Filtrar</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'funcionarios' %}" class="btn btn-outline-secondary w-100">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        {% for fun in funcionarios %}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1">{{ fun.nombre }}</h5>
+                            <p class="small text-muted mb-0">{{ fun.cargo }} · {{ fun.delegacion }}</p>
+                        </div>
+                        <span class="badge {{ fun.semaforo_clase }}">{{ fun.ponderado_total }}%</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ítem</th>
+                                    <th>Pond.</th>
+                                    <th>Meta</th>
+                                    <th>Avance</th>
+                                    <th>%</th>
+                                    <th>Pond. log.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in fun.items %}
+                                <tr>
+                                    <td class="small">{{ item.item }}</td>
+                                    <td>{{ item.ponderador }}%</td>
+                                    <td>{{ item.meta_trimestre|floatformat:0 }}</td>
+                                    <td>{{ item.avance_actual|floatformat:0 }}</td>
+                                    <td>{{ item.pct_cumplimiento }}%</td>
+                                    <td>{{ item.cumplimiento_ponderado }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Último ingreso: {{ fun.fecha_ultimo_ingreso }}</small>
+                        <a href="{% url 'detalle_funcionario' fun.id_funcionario %}" class="btn btn-sm btn-outline-primary">Ver ficha y verificadores</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No hay funcionarios para el filtro seleccionado.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

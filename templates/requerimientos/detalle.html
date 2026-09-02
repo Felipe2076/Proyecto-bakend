@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ficha #{{ ticket.id_ticket }} | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'lista_requerimientos' %}" class="text-decoration-none">Requerimientos</a></li>
+            <li class="breadcrumb-item active" aria-current="page">#{{ ticket.id_ticket }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-primary-custom">Ficha de trazabilidad #{{ ticket.id_ticket }}</h2>
+            <p class="text-muted small mb-0">Detalle del compromiso registrado en JSON.</p>
+        </div>
+        <span class="badge {{ ticket.semaforo_clase }} fs-6 py-2 px-3 rounded-pill">{{ ticket.semaforo_texto }}</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-primary-custom mb-0">Descripción</h5>
+                        <span class="badge text-bg-light border">{{ ticket.tipo_entrada }}</span>
+                    </div>
+                    <p class="bg-body-tertiary p-3 rounded-3 border">{{ ticket.descripcion }}</p>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 bg-body-tertiary border">
+                                <small class="text-muted d-block">Delegación</small>
+                                <strong>{{ ticket.delegacion }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 bg-body-tertiary border">
+                                <small class="text-muted d-block">Área estratégica</small>
+                                <strong>{{ ticket.area_tematica }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 bg-body-tertiary border">
+                                <small class="text-muted d-block">Funcionario</small>
+                                <strong>{{ ticket.funcionario_asignado }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 bg-body-tertiary border">
+                                <small class="text-muted d-block">Estado</small>
+                                <span class="badge bg-primary-custom">{{ ticket.estado_proceso }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom mb-3">Trazabilidad de plazos</h5>
+                    <div class="p-3 rounded-3 {% if ticket.semaforo_nivel == 'Rojo' %}bg-danger-subtle border border-danger{% elif ticket.semaforo_nivel == 'Amarillo' %}bg-warning-subtle border border-warning{% else %}bg-success-subtle border border-success{% endif %}">
+                        <strong>{{ ticket.semaforo_texto }}</strong>
+                        <div class="small">{{ ticket.alerta_texto }} · {{ ticket.dias_transcurridos }} días desde {{ ticket.fecha_ingreso }}.</div>
+                    </div>
+                    {% if ticket.evaluacion_satisfaccion %}
+                    <div class="p-3 rounded-3 bg-body-tertiary border mt-3">
+                        <small class="text-muted d-block">Satisfacción ciudadana</small>
+                        <strong>{{ ticket.evaluacion_satisfaccion }} / 5</strong>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom mb-3">Datos del vecino</h5>
+                    <p class="mb-2"><small class="text-muted d-block">Nombre</small><strong>{{ ticket.vecino_nombre }}</strong></p>
+                    <p class="mb-2"><small class="text-muted d-block">WhatsApp</small>{{ ticket.telefono_whatsapp }}</p>
+                    <p class="mb-2"><small class="text-muted d-block">Correo</small>{{ ticket.email }}</p>
+                    <p class="mb-3"><small class="text-muted d-block">Canal</small><span class="badge text-bg-light border">{{ ticket.canal_ingreso }}</span></p>
+                    <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-primary w-100">Volver al listado</a>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4 border-start border-4 border-warning">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom mb-3">Actualizar gestión</h5>
+                    <form method="post" action="{% url 'detalle_requerimiento' ticket.id_ticket %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="estado_proceso" class="form-label small">Estado del proceso</label>
+                            <select id="estado_proceso" name="estado_proceso" class="form-select" required>
+                                {% for estado in estados_validos %}
+                                <option value="{{ estado }}" {% if estado == ticket.estado_proceso %}selected{% endif %}>{{ estado }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="funcionario_asignado" class="form-label small">Funcionario</label>
+                            <select id="funcionario_asignado" name="funcionario_asignado" class="form-select">
+                                {% for func in funcionarios %}
+                                <option value="{{ func }}" {% if func == ticket.funcionario_asignado %}selected{% endif %}>{{ func }}</option>
+                                {% endfor %}
+                                <option value="{{ ticket.funcionario_asignado }}" {% if ticket.funcionario_asignado not in funcionarios %}selected{% endif %}>{{ ticket.funcionario_asignado }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dias_transcurridos" class="form-label small">Días transcurridos</label>
+                            <input type="number" id="dias_transcurridos" name="dias_transcurridos" class="form-control" value="{{ ticket.dias_transcurridos }}" min="0" max="999" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">Guardar en JSON</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

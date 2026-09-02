@@ -1,0 +1,13 @@
+[flake8]
+# Proyecto SIGED La Serena - Municipalidad de La Serena
+# Django usa líneas largas por convención (URLs, mensajes, queries).
+# E501 se ignora globalmente; el resto se aplica estrictamente.
+max-line-length = 120
+extend-ignore = E501
+exclude =
+    venv,
+    __pycache__,
+    .git,
+    migrations,
+    static,
+    data

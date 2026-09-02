@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Semáforo SGR | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Semáforo SGR</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-primary-custom">Semáforo de avance al día</h2>
+            <p class="text-muted small mb-0">Compara el cumplimiento ponderado de cada funcionario con el porcentaje diario esperado del trimestre (90 días = 100%).</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3">
+                <small class="text-muted">Fecha de hoy</small>
+                <strong>{{ periodo.fecha_hoy }}</strong>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3">
+                <small class="text-muted">Inicio / término</small>
+                <strong>{{ periodo.fecha_inicio }} → {{ periodo.fecha_termino }}</strong>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3">
+                <small class="text-muted">Días de avance</small>
+                <strong>{{ periodo.dias_avance }} / {{ periodo.dias_totales }}</strong>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3">
+                <small class="text-muted">% diario esperado</small>
+                <strong class="text-primary-custom">{{ periodo.pct_esperado }}%</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <span class="badge text-bg-success mb-2">Verde</span>
+                <h3 class="fw-bold mb-0">{{ total_verde }}</h3>
+                <small class="text-muted">En línea con la meta</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <span class="badge text-bg-warning mb-2">Amarillo</span>
+                <h3 class="fw-bold mb-0">{{ total_amarillo }}</h3>
+                <small class="text-muted">Bajo la línea esperada</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <span class="badge text-bg-danger mb-2">Rojo</span>
+                <h3 class="fw-bold mb-0">{{ total_rojo }}</h3>
+                <small class="text-muted">Rezagados a acompañar</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="delegacion" class="form-label small fw-semibold">Delegación</label>
+                    <select class="form-select" id="delegacion" name="delegacion">
+                        <option value="">Todas</option>
+                        {% for del in delegaciones %}
+                        <option value="{{ del }}" {% if filtro_delegacion == del %}selected{% endif %}>{{ del }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary-custom w-100">Filtrar</button>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-secondary w-100">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark-custom text-white">
+                    <tr>
+                        <th class="px-3">Funcionario</th>
+                        <th>Cargo</th>
+                        <th>Delegación</th>
+                        <th>% logrado</th>
+                        <th>% esperado</th>
+                        <th>Semáforo</th>
+                        <th>Tubo (meta 80%)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fun in funcionarios %}
+                    <tr>
+                        <td class="px-3 fw-semibold">{{ fun.nombre }}</td>
+                        <td>{{ fun.cargo }}</td>
+                        <td><span class="badge text-bg-light border">{{ fun.delegacion }}</span></td>
+                        <td>
+                            <strong>{{ fun.ponderado_total }}%</strong>
+                            <div class="progress mt-1" style="height: 6px;">
+                                <div class="progress-bar {{ fun.semaforo_clase }}" style="width: {{ fun.ponderado_total }}%;"></div>
+                            </div>
+                        </td>
+                        <td>{{ periodo.pct_esperado }}%</td>
+                        <td><span class="badge {{ fun.semaforo_clase }}">{{ fun.semaforo_nivel }}</span></td>
+                        <td>
+                            {% if fun.tubo_total %}
+                            <span class="badge {% if fun.cumple_tubo %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ fun.tubo_pct }}%</span>
+                            {% else %}
+                            <span class="text-muted small">Sin compromisos</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'detalle_funcionario' fun.id_funcionario %}" class="btn btn-sm btn-outline-primary">Ficha</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No hay funcionarios para el filtro seleccionado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

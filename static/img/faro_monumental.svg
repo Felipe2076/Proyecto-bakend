@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0b1e3b"/>
+      <stop offset="40%" stop-color="#153e75"/>
+      <stop offset="75%" stop-color="#2b6cb0"/>
+      <stop offset="100%" stop-color="#f6ad55"/>
+    </linearGradient>
+    <linearGradient id="oceanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a365d"/>
+      <stop offset="50%" stop-color="#2a4365"/>
+      <stop offset="100%" stop-color="#1e3a5f"/>
+    </linearGradient>
+    <linearGradient id="beamGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#fffff0" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#fefcbf" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#faf089" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sandGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ecc94b"/>
+      <stop offset="100%" stop-color="#d69e2e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cielo atardecer serenense -->
+  <rect width="800" height="380" fill="url(#skyGrad)"/>
+
+  <!-- Sol poniente -->
+  <circle cx="650" cy="270" r="45" fill="#fbd38d" opacity="0.6"/>
+  <circle cx="650" cy="270" r="30" fill="#feebc8" opacity="0.8"/>
+
+  <!-- Cordillera de la Costa de fondo -->
+  <polygon points="0,320 90,260 210,310 350,240 500,300 680,250 800,290 800,380 0,380" fill="#0d233a" opacity="0.6"/>
+  <polygon points="0,340 140,290 280,330 420,280 580,320 720,280 800,310 800,380 0,380" fill="#142c47" opacity="0.8"/>
+
+  <!-- Océano Pacífico -->
+  <rect y="340" width="800" height="90" fill="url(#oceanGrad)"/>
+  <!-- Líneas de olas -->
+  <path d="M 0,350 Q 100,345 200,350 T 400,350 T 600,350 T 800,350" stroke="#4299e1" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M 0,370 Q 80,365 160,370 T 320,370 T 480,370 T 640,370 T 800,370" stroke="#63b3ed" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 0,390 Q 120,385 240,390 T 480,390 T 720,390 T 800,390" stroke="#90cdf4" stroke-width="3" fill="none" opacity="0.7"/>
+
+  <!-- Playa / Arena Avenida del Mar -->
+  <path d="M 0,420 Q 300,400 800,410 L 800,500 L 0,500 Z" fill="url(#sandGrad)"/>
+
+  <!-- Faro Monumental de La Serena -->
+  <!-- Haz de luz nocturno -->
+  <polygon points="340,115 0,30 0,140" fill="url(#beamGrad)" transform="rotate(-5 340 115)"/>
+  <polygon points="340,115 800,20 800,130" fill="url(#beamGrad)" transform="rotate(3 340 115)"/>
+
+  <!-- Muralla y almenas base del Faro (Fortificación) -->
+  <g fill="#e2e8f0" stroke="#2d3748" stroke-width="1.5">
+    <!-- Plataforma del fuerte -->
+    <rect x="220" y="310" width="240" height="80" rx="3" fill="#cbd5e0"/>
+    <!-- Almenas superiores -->
+    <rect x="220" y="295" width="20" height="18"/>
+    <rect x="250" y="295" width="20" height="18"/>
+    <rect x="280" y="295" width="20" height="18"/>
+    <rect x="310" y="295" width="20" height="18"/>
+    <rect x="350" y="295" width="20" height="18"/>
+    <rect x="380" y="295" width="20" height="18"/>
+    <rect x="410" y="295" width="20" height="18"/>
+    <rect x="440" y="295" width="20" height="18"/>
+    <!-- Troneras de cañones -->
+    <circle cx="250" cy="340" r="5" fill="#1a202c"/>
+    <circle cx="310" cy="340" r="5" fill="#1a202c"/>
+    <circle cx="370" cy="340" r="5" fill="#1a202c"/>
+    <circle cx="430" cy="340" r="5" fill="#1a202c"/>
+  </g>
+
+  <!-- Torre Central del Faro -->
+  <!-- Base de la torre -->
+  <polygon points="305,295 375,295 365,150 315,150" fill="#f7fafc" stroke="#2d3748" stroke-width="2"/>
+  
+  <!-- Franjas rojas arquitectónicas del Faro -->
+  <polygon points="312,250 368,250 366,220 314,220" fill="#e53e3e"/>
+  <polygon points="316,185 364,185 362,160 318,160" fill="#e53e3e"/>
+
+  <!-- Ventanales del Faro -->
+  <rect x="335" y="260" width="10" height="18" rx="5" fill="#2d3748"/>
+  <rect x="336" y="195" width="8" height="14" rx="4" fill="#2d3748"/>
+
+  <!-- Balcón y mirador superior -->
+  <rect x="300" y="145" width="80" height="8" fill="#cbd5e0" stroke="#2d3748" stroke-width="1.5"/>
+  <line x1="300" y1="140" x2="380" y2="140" stroke="#2d3748" stroke-width="2"/>
+  <line x1="310" y1="145" x2="310" y2="140" stroke="#2d3748" stroke-width="1.5"/>
+  <line x1="330" y1="145" x2="330" y2="140" stroke="#2d3748" stroke-width="1.5"/>
+  <line x1="350" y1="145" x2="350" y2="140" stroke="#2d3748" stroke-width="1.5"/>
+  <line x1="370" y1="145" x2="370" y2="140" stroke="#2d3748" stroke-width="1.5"/>
+
+  <!-- Linterna (Foco) -->
+  <rect x="320" y="115" width="40" height="30" fill="#fefcbf" stroke="#2d3748" stroke-width="2"/>
+  <circle cx="340" cy="130" r="10" fill="#ecc94b"/>
+
+  <!-- Cúpula y veleta -->
+  <path d="M 315,115 Q 340,90 365,115 Z" fill="#e53e3e" stroke="#2d3748" stroke-width="2"/>
+  <line x1="340" y1="90" x2="340" y2="75" stroke="#2d3748" stroke-width="2"/>
+  <polygon points="340,75 355,80 340,85" fill="#d69e2e"/>
+
+  <!-- Palmeras costeras -->
+  <g transform="translate(140, 320)">
+    <path d="M 0,90 Q 20,40 10,0" stroke="#744210" stroke-width="6" fill="none"/>
+    <path d="M 10,0 Q -20,-20 -40,-10" stroke="#276749" stroke-width="4" fill="none"/>
+    <path d="M 10,0 Q -10,-35 0,-45" stroke="#2f855a" stroke-width="4" fill="none"/>
+    <path d="M 10,0 Q 25,-35 40,-20" stroke="#38a169" stroke-width="4" fill="none"/>
+    <path d="M 10,0 Q 40,-10 50,15" stroke="#276749" stroke-width="4" fill="none"/>
+  </g>
+  <g transform="translate(540, 330) scale(0.85)">
+    <path d="M 0,90 Q -15,40 -5,0" stroke="#744210" stroke-width="6" fill="none"/>
+    <path d="M -5,0 Q -35,-20 -45,-5" stroke="#276749" stroke-width="4" fill="none"/>
+    <path d="M -5,0 Q -15,-35 -5,-45" stroke="#2f855a" stroke-width="4" fill="none"/>
+    <path d="M -5,0 Q 20,-35 35,-20" stroke="#38a169" stroke-width="4" fill="none"/>
+  </g>
+
+  <!-- Texto distintivo -->
+  <text x="40" y="60" fill="#ffffff" font-family="'Outfit', sans-serif" font-size="26" font-weight="bold" letter-spacing="1">SIGED LA SERENA</text>
+  <text x="40" y="85" fill="#fbd38d" font-family="'Inter', sans-serif" font-size="14" font-weight="500">Gestión Territorial y Atención Ciudadana 2026</text>
+</svg>

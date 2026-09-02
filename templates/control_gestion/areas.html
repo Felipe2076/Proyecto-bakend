@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Áreas estratégicas | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Áreas</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-primary-custom">Monitoreo de 4 áreas estratégicas</h2>
+            <p class="text-muted small mb-0">Cumplimiento, tiempos y satisfacción vecinal.</p>
+        </div>
+        <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_areas }} direcciones</span>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <span class="fw-semibold text-secondary small">Ordenar por</span>
+            <div class="btn-group btn-group-sm flex-wrap" role="group">
+                <a href="{% url 'areas_soporte' %}" class="btn {% if not criterio_orden %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Predeterminado</a>
+                <a href="{% url 'areas_soporte' %}?orden=cumplimiento" class="btn {% if criterio_orden == 'cumplimiento' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Cumplimiento</a>
+                <a href="{% url 'areas_soporte' %}?orden=satisfaccion" class="btn {% if criterio_orden == 'satisfaccion' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Satisfacción</a>
+                <a href="{% url 'areas_soporte' %}?orden=tiempo" class="btn {% if criterio_orden == 'tiempo' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Menor tiempo</a>
+                <a href="{% url 'areas_soporte' %}?orden=casos" class="btn {% if criterio_orden == 'casos' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Mayor carga</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        {% for area in areas %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 area-card {{ area.tarjeta_borde }} border-start border-4">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                        <span class="badge text-bg-light border font-monospace small">{{ area.id_area }}</span>
+                        <h5 class="fw-bold mb-1">{{ area.nombre_area }}</h5>
+                        <p class="text-secondary small mb-0">Encargado(a): {{ area.encargado }}</p>
+                    </div>
+                    <span class="badge {{ area.badge_clase }}">{{ area.nivel_rendimiento }}</span>
+                </div>
+                <p class="text-muted small bg-body-tertiary p-3 rounded-3 border">{{ area.descripcion }}</p>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Cumplimiento de plazos</span>
+                    <strong>{{ area.porcentaje_cumplimiento }}%</strong>
+                </div>
+                <div class="progress mb-3" role="progressbar" style="height: 10px;">
+                    <div class="progress-bar {{ area.color_barra }}" style="width: {{ area.porcentaje_cumplimiento }}%;"></div>
+                </div>
+                <div class="row g-2 pt-2 border-top text-center">
+                    <div class="col-4 border-end">
+                        <small class="text-muted d-block">Casos / mes</small>
+                        <strong>{{ area.total_casos_mes }}</strong>
+                    </div>
+                    <div class="col-4 border-end">
+                        <small class="text-muted d-block">Tiempo prom.</small>
+                        <strong>{{ area.tiempo_promedio_dias }} d</strong>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted d-block">Satisfacción</small>
+                        <strong>{{ area.satisfaccion_formato }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

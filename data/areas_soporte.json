@@ -1,0 +1,46 @@
+[
+  {
+    "id_area": "AREA-001",
+    "nombre_area": "Seguridad Ciudadana",
+    "encargado": "Gonzalo Pizarro Tapia",
+    "tiempo_promedio_dias": 2.4,
+    "total_casos_mes": 142,
+    "porcentaje_cumplimiento": 88,
+    "satisfaccion_promedio": 4.6,
+    "icono": "bi-shield-shaded",
+    "descripcion": "Patrullajes preventivos, monitoreo de cámaras de televigilancia comunitaria, coordinación con Carabineros y recepción de alertas barriales en los 6 sectores territoriales."
+  },
+  {
+    "id_area": "AREA-002",
+    "nombre_area": "Servicio a la Comunidad",
+    "encargado": "Valeria Moraga Henríquez",
+    "tiempo_promedio_dias": 3.8,
+    "total_casos_mes": 215,
+    "porcentaje_cumplimiento": 82,
+    "satisfaccion_promedio": 4.2,
+    "icono": "bi-trash3-fill",
+    "descripcion": "Aseo comunal, recolección de microbasurales, mantención y riego de áreas verdes, plazas públicas, podas de emergencia y vialidad en distritos urbanos y rurales."
+  },
+  {
+    "id_area": "AREA-003",
+    "nombre_area": "Gestión Social y Comunitaria",
+    "encargado": "Camila Oyarzún Santander",
+    "tiempo_promedio_dias": 4.5,
+    "total_casos_mes": 180,
+    "porcentaje_cumplimiento": 75,
+    "satisfaccion_promedio": 4.1,
+    "icono": "bi-people-fill",
+    "descripcion": "Becas universitarias, subsidios, ayudas sociales directas por emergencia, asistencia a adultos mayores y apoyo continuo a Juntas de Vecinos."
+  },
+  {
+    "id_area": "AREA-004",
+    "nombre_area": "Instituciones Municipales y Participación",
+    "encargado": "Esteban Barraza Villalobos",
+    "tiempo_promedio_dias": 6.2,
+    "total_casos_mes": 165,
+    "porcentaje_cumplimiento": 58,
+    "satisfaccion_promedio": 3.4,
+    "icono": "bi-building-gear",
+    "descripcion": "Coordinación de eventos y ferias barriales, infraestructura local, uso de espacios comunitarios y canalización de proyectos vecinales con financiamiento municipal."
+  }
+]
