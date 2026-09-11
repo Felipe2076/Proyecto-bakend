@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Agenda colectiva | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item active">Agenda</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-primary-custom">Agenda colectiva</h2>
+            <p class="text-muted small mb-0">Reuniones, terrenos, compromisos ciudadanos y actividades diarias del mes.</p>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline-primary {% if vista == 'calendario' %}active{% endif %}" href="?vista=calendario&amp;anio={{ anio }}&amp;mes={{ mes }}">Calendario</a>
+            <a class="btn btn-outline-primary {% if vista == 'lista' %}active{% endif %}" href="?vista=lista&amp;anio={{ anio }}&amp;mes={{ mes }}">Lista</a>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a class="btn btn-outline-secondary" href="?vista={{ vista }}&amp;anio={{ prev_anio }}&amp;mes={{ prev_mes }}">&laquo; Mes anterior</a>
+        <h3 class="h5 mb-0">{{ nombre_mes }} {{ anio }} · {{ total_mes }} evento(s)</h3>
+        <a class="btn btn-outline-secondary" href="?vista={{ vista }}&amp;anio={{ next_anio }}&amp;mes={{ next_mes }}">Mes siguiente &raquo;</a>
+    </div>
+
+    {% if vista == 'lista' %}
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Título</th>
+                        <th>Delegación</th>
+                        <th>Responsable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in lista_mes %}
+                    <tr>
+                        <td class="font-monospace">{{ evento.fecha_iso }}</td>
+                        <td><span class="badge {{ evento.clase }}">{{ evento.tipo }}</span></td>
+                        <td>
+                            <div class="fw-semibold">{{ evento.titulo }}</div>
+                            <small class="text-muted">{{ evento.detalle }}</small>
+                        </td>
+                        <td>{{ evento.delegacion }}</td>
+                        <td>{{ evento.responsable }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">Sin eventos en este mes.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0 calendar-table">
+                <thead class="table-dark-custom text-white">
+                    <tr>
+                        {% for dia in dias_semana %}
+                        <th class="text-center py-2">{{ dia }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for semana in semanas %}
+                    <tr>
+                        {% for celda in semana %}
+                        <td class="cal-day align-top {% if celda.es_hoy %}cal-today{% endif %}">
+                            {% if celda.dia %}
+                            <div class="fw-bold small mb-1">{{ celda.dia }}</div>
+                            {% for evento in celda.eventos %}
+                            <div class="badge {{ evento.clase }} text-wrap text-start w-100 mb-1 fw-normal">{{ evento.titulo|truncatechars:42 }}</div>
+                            {% endfor %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

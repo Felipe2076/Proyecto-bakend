@@ -11,8 +11,11 @@
                 <span class="badge text-bg-warning text-dark mb-3">Matriz SGR · Seguimiento de Gestión de Resultados</span>
                 <h1 class="display-5 fw-bold mb-3">Sistema Integrado de Atención Vecinal - La Serena</h1>
                 <p class="lead mb-4 text-white-75">
-                    Registro de compromisos con vecinos, medición de funcionarios, tubo de trabajo y semáforo diario para las 6 delegaciones territoriales.
+                    Mockup funcional para la Primera Entrega: captura multicanal, tickets con semáforo, actividades, compromisos, agenda y panel de gestión. Persistencia JSON local, sin MySQL.
                 </p>
+                {% if usuario_actual %}
+                <p class="small mb-3">Sesión: <strong>{{ usuario_actual.nombre }}</strong> · {{ usuario_actual.rol_etiqueta }} · {{ usuario_actual.delegacion }}</p>
+                {% endif %}
                 <div class="d-flex flex-wrap gap-2">
                     <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning btn-lg fw-semibold text-dark">
                         <i class="bi bi-plus-circle-fill me-2"></i>Ingresar requerimiento
@@ -136,15 +139,31 @@
                     <h5 class="fw-bold text-primary-custom">Herramientas de la matriz</h5>
                     <p class="text-muted small">Lo que antes era una planilla de Drive, ahora está centralizado en SIGED.</p>
                     <div class="d-grid gap-2">
-                        <a href="{% url 'funcionarios' %}" class="btn btn-primary-custom">
-                            <i class="bi bi-person-lines-fill me-1"></i>Actividades por funcionario
+                        {% if puede_actividades %}
+                        <a href="{% url 'actividades_diarias' %}" class="btn btn-primary-custom">
+                            <i class="bi bi-journal-check me-1"></i>Actividades y evidencias
                         </a>
+                        {% endif %}
+                        {% if puede_compromisos %}
                         <a href="{% url 'tubo_trabajo' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-calendar2-check me-1"></i>Agenda colectiva
+                            <i class="bi bi-check2-square me-1"></i>Compromisos ciudadanos
                         </a>
+                        {% endif %}
+                        {% if puede_agenda %}
+                        <a href="{% url 'agenda' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-calendar2-week me-1"></i>Agenda colectiva
+                        </a>
+                        {% endif %}
+                        {% if puede_encuestas %}
+                        <a href="{% url 'encuestas' %}" class="btn btn-outline-warning">
+                            <i class="bi bi-star me-1"></i>Encuesta 1 a 5
+                        </a>
+                        {% endif %}
+                        {% if puede_control_gestion %}
                         <a href="{% url 'resumen_delegacion' %}" class="btn btn-outline-secondary">
                             <i class="bi bi-pie-chart me-1"></i>Resumen de gestión
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

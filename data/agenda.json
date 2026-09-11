@@ -1,0 +1,42 @@
+[
+  {
+    "id_evento": "AG-001",
+    "titulo": "Reunión semanal de jefatura Rural",
+    "tipo": "Reunión interna",
+    "fecha": "2026-09-11",
+    "hora": "09:00",
+    "delegacion": "Delegación Rural",
+    "responsable": "Elizabeth Rojas Campos",
+    "lugar": "Oficina Delegación Rural"
+  },
+  {
+    "id_evento": "AG-002",
+    "titulo": "Terreno alumbrado sector Algarrobito",
+    "tipo": "Terreno",
+    "fecha": "2026-09-12",
+    "hora": "11:30",
+    "delegacion": "Delegación Rural",
+    "responsable": "Rodrigo Santander Díaz",
+    "lugar": "Algarrobito"
+  },
+  {
+    "id_evento": "AG-003",
+    "titulo": "Mesa de seguridad Las Compañías",
+    "tipo": "Reunión vecinal",
+    "fecha": "2026-09-15",
+    "hora": "18:00",
+    "delegacion": "Delegación Las Compañías",
+    "responsable": "Gonzalo Pizarro Tapia",
+    "lugar": "Sede JJVV Las Compañías"
+  },
+  {
+    "id_evento": "AG-004",
+    "titulo": "Operativo de aseo Avenida del Mar",
+    "tipo": "Operativo",
+    "fecha": "2026-09-16",
+    "hora": "08:00",
+    "delegacion": "Delegación Avenida del Mar",
+    "responsable": "Valeria Moraga Henríquez",
+    "lugar": "Av. del Mar / Cuatro Esquinas"
+  }
+]

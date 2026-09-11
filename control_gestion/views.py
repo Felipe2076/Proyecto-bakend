@@ -1,13 +1,9 @@
-import json
-import logging
 from datetime import date, datetime
-from pathlib import Path
 
-from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import redirect, render
 
-logger = logging.getLogger(__name__)
+from cuentas.store import cargar_json_seguro, cargar_parametros, guardar_json_seguro
 
 DELEGACIONES_OFICIALES = [
     "Delegación Central",
@@ -20,35 +16,6 @@ DELEGACIONES_OFICIALES = [
 
 ESTADOS_TUBO = ["INGRESADO", "PENDIENTE", "EN PROCESO", "REALIZADO"]
 META_TUBO_PORCENTAJE = 80
-
-
-def cargar_json_seguro(nombre_archivo, fallback=None):
-    if fallback is None:
-        fallback = []
-    ruta = Path(settings.BASE_DIR) / "data" / nombre_archivo
-    try:
-        with open(ruta, "r", encoding="utf-8") as archivo:
-            return json.load(archivo)
-    except FileNotFoundError:
-        logger.error("Archivo no encontrado: %s", ruta)
-        return fallback
-    except json.JSONDecodeError as err:
-        logger.error("Error al decodificar JSON %s: %s", nombre_archivo, err)
-        return fallback
-    except Exception as err:
-        logger.error("Error inesperado en %s: %s", nombre_archivo, err)
-        return fallback
-
-
-def guardar_json_seguro(nombre_archivo, datos):
-    ruta = Path(settings.BASE_DIR) / "data" / nombre_archivo
-    try:
-        with open(ruta, "w", encoding="utf-8") as archivo:
-            json.dump(datos, archivo, ensure_ascii=False, indent=2)
-        return True
-    except Exception as err:
-        logger.error("Error al escribir %s: %s", nombre_archivo, err)
-        return False
 
 
 def parsear_fecha(valor):
@@ -169,16 +136,19 @@ def enriquecer_funcionario(funcionario, periodo, resumen_tubo):
 
 
 def calcular_semaforo_ticket(item):
+    params = cargar_parametros()
+    sla_verde = params["sla_verde_max_dias"]
+    sla_amarillo = params["sla_amarillo_max_dias"]
     dias = item.get("dias_transcurridos", 0)
     try:
         dias = int(dias)
     except (ValueError, TypeError):
         dias = 0
-    if dias <= 3:
+    if dias <= sla_verde:
         nivel = "Verde"
         clase = "bg-success"
         color_dot = "Verde"
-    elif 4 <= dias <= 5:
+    elif dias <= sla_amarillo:
         nivel = "Amarillo"
         clase = "bg-warning text-dark"
         color_dot = "Amarillo"
@@ -482,6 +452,70 @@ def funcionarios_view(request):
     return render(request, "control_gestion/funcionarios.html", contexto)
 
 
+def registrar_actividad_desde_formulario(id_funcionario, post, archivos):
+    contacto = (post.get("contacto") or "").strip()
+    item_nombre = (post.get("item") or "").strip()
+    servicio = (post.get("servicio") or "").strip()
+    imagen = (post.get("imagen_verificadora") or "").strip()
+    fecha_actividad = (post.get("fecha_actividad") or "").strip() or date.today().strftime("%Y-%m-%d")
+    errores = {}
+    if len(contacto) < 3:
+        errores["contacto"] = "Indique el contacto o vecino atendido (mínimo 3 caracteres)."
+    if not item_nombre:
+        errores["item"] = "Seleccione el ítem de la matriz SGR."
+    if len(servicio) < 5:
+        errores["servicio"] = "Describa el servicio o atención (mínimo 5 caracteres)."
+    try:
+        datetime.strptime(fecha_actividad, "%Y-%m-%d")
+    except ValueError:
+        errores["fecha_actividad"] = "Ingrese una fecha válida (AAAA-MM-DD)."
+    archivo = archivos.get("evidencia") if archivos else None
+    if archivo:
+        imagen = archivo.name
+    elif not imagen:
+        imagen = "Registro fotográfico pendiente de adjuntar"
+    if errores:
+        return None, errores
+
+    funcionarios_crudos = cargar_json_seguro("funcionarios.json", [])
+    actividades = cargar_json_seguro("actividades.json", [])
+    funcionario_ref = next(
+        (item for item in funcionarios_crudos if item.get("id_funcionario") == id_funcionario),
+        None,
+    )
+    if funcionario_ref is None:
+        return None, {"id_funcionario": "No se encontró el funcionario indicado."}
+
+    correlativo = len(actividades) + 1
+    codigo = f"VER-{fecha_actividad.replace('-', '')}-{id_funcionario}-{correlativo:03d}"
+    nueva = {
+        "id_actividad": f"ACT-{correlativo:03d}",
+        "id_funcionario": id_funcionario,
+        "funcionario_nombre": funcionario_ref.get("nombre", ""),
+        "cargo": funcionario_ref.get("cargo", ""),
+        "delegacion": funcionario_ref.get("delegacion", ""),
+        "fecha_actividad": fecha_actividad,
+        "contacto": contacto,
+        "item": item_nombre,
+        "servicio": servicio,
+        "codigo_verificador": codigo,
+        "imagen_verificadora": imagen,
+        "punto_validado": True,
+    }
+    actividades.insert(0, nueva)
+    if not guardar_json_seguro("actividades.json", actividades):
+        return None, {"guardar": "No fue posible guardar la actividad en JSON."}
+    for item in funcionarios_crudos:
+        if item.get("id_funcionario") == id_funcionario:
+            item["fecha_ultimo_ingreso"] = fecha_actividad
+            for meta in item.get("items", []):
+                if meta.get("item") == item_nombre:
+                    meta["avance_actual"] = int(meta.get("avance_actual") or 0) + 1
+            break
+    guardar_json_seguro("funcionarios.json", funcionarios_crudos)
+    return nueva, {}
+
+
 def detalle_funcionario_view(request, id_funcionario):
     periodo = cargar_periodo_medicion()
     funcionarios_crudos = cargar_json_seguro("funcionarios.json", [])
@@ -489,50 +523,21 @@ def detalle_funcionario_view(request, id_funcionario):
     compromisos = cargar_json_seguro("tubo_trabajo.json", [])
 
     if request.method == "POST":
-        contacto = request.POST.get("contacto", "").strip()
-        item_nombre = request.POST.get("item", "").strip()
-        servicio = request.POST.get("servicio", "").strip()
-        imagen = request.POST.get("imagen_verificadora", "").strip()
-        if not contacto or not item_nombre or not servicio:
-            messages.error(request, "Complete contacto, ítem y servicio para registrar la actividad.")
-        else:
-            correlativo = len(actividades) + 1
-            fecha_hoy = date.today().strftime("%Y-%m-%d")
-            codigo = f"VER-{fecha_hoy.replace('-', '')}-{id_funcionario}-{correlativo:03d}"
-            funcionario_ref = next(
-                (item for item in funcionarios_crudos if item.get("id_funcionario") == id_funcionario),
-                {},
+        nueva, errores = registrar_actividad_desde_formulario(
+            id_funcionario, request.POST, request.FILES
+        )
+        if errores:
+            messages.error(
+                request,
+                " ".join(errores.values())
+                if errores
+                else "Complete contacto, ítem y servicio para registrar la actividad.",
             )
-            nueva = {
-                "id_actividad": f"ACT-{correlativo:03d}",
-                "id_funcionario": id_funcionario,
-                "funcionario_nombre": funcionario_ref.get("nombre", ""),
-                "cargo": funcionario_ref.get("cargo", ""),
-                "delegacion": funcionario_ref.get("delegacion", ""),
-                "fecha_actividad": fecha_hoy,
-                "contacto": contacto,
-                "item": item_nombre,
-                "servicio": servicio,
-                "codigo_verificador": codigo,
-                "imagen_verificadora": imagen or "Registro fotográfico pendiente de adjuntar",
-                "punto_validado": True,
-            }
-            actividades.insert(0, nueva)
-            if guardar_json_seguro("actividades.json", actividades):
-                for item in funcionarios_crudos:
-                    if item.get("id_funcionario") == id_funcionario:
-                        item["fecha_ultimo_ingreso"] = fecha_hoy
-                        for meta in item.get("items", []):
-                            if meta.get("item") == item_nombre:
-                                meta["avance_actual"] = int(meta.get("avance_actual") or 0) + 1
-                        break
-                guardar_json_seguro("funcionarios.json", funcionarios_crudos)
-                messages.success(
-                    request,
-                    f"Actividad registrada. Código verificador {codigo}.",
-                )
-            else:
-                messages.error(request, "No fue posible guardar la actividad en JSON.")
+        elif nueva:
+            messages.success(
+                request,
+                f"Actividad registrada. Código verificador {nueva.get('codigo_verificador')}.",
+            )
         return redirect("detalle_funcionario", id_funcionario=id_funcionario)
 
     funcionario_crudo = next(
@@ -560,6 +565,7 @@ def detalle_funcionario_view(request, id_funcionario):
         "compromisos": [
             item for item in compromisos if item.get("id_funcionario") == id_funcionario
         ],
+        "fecha_hoy": date.today().strftime("%Y-%m-%d"),
     }
     return render(request, "control_gestion/detalle_funcionario.html", contexto)
 

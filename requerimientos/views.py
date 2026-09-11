@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from datetime import date
 from pathlib import Path
 
@@ -7,6 +8,9 @@ import requests
 from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import redirect, render
+
+from cuentas.auth import requerir_modulo
+from cuentas.store import cargar_parametros
 
 logger = logging.getLogger(__name__)
 
@@ -27,11 +31,11 @@ AREAS_ESTRATEGICAS = [
 ]
 
 CANALES_INGRESO = [
-    "WhatsApp Bot",
-    "Presencial",
+    "Ventanilla",
+    "WhatsApp",
     "Correo",
-    "Telefónico",
-    "Portal Web",
+    "Teléfono",
+    "Portal web",
 ]
 
 TIPOS_ENTRADA = [
@@ -86,18 +90,72 @@ def guardar_requerimientos_json(lista_requerimientos):
         return False
 
 
-def asignar_semaforo(item):
+def _sla_limites():
+    params = cargar_parametros()
+    return params["sla_verde_max_dias"], params["sla_amarillo_max_dias"]
+
+
+def validar_telefono_chileno(telefono):
+    digitos = re.sub(r"\D", "", telefono or "")
+    if digitos.startswith("56"):
+        digitos = digitos[2:]
+    return bool(re.fullmatch(r"9\d{8}", digitos))
+
+
+def validar_email(email):
+    return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email or ""))
+
+
+def validar_formulario_requerimiento(post):
+    valores = {
+        "vecino_nombre": (post.get("vecino_nombre") or "").strip(),
+        "telefono_whatsapp": (post.get("telefono_whatsapp") or "").strip(),
+        "email": (post.get("email") or "").strip(),
+        "delegacion": (post.get("delegacion") or "").strip(),
+        "canal_ingreso": (post.get("canal_ingreso") or "").strip(),
+        "tipo_entrada": (post.get("tipo_entrada") or "").strip(),
+        "area_tematica": (post.get("area_tematica") or "").strip(),
+        "descripcion": (post.get("descripcion") or "").strip(),
+        "funcionario_asignado": (post.get("funcionario_asignado") or "").strip(),
+    }
+    errores = {}
+    if len(valores["vecino_nombre"]) < 5:
+        errores["vecino_nombre"] = "Ingrese el nombre completo del vecino (mínimo 5 caracteres)."
+    if not validar_telefono_chileno(valores["telefono_whatsapp"]):
+        errores["telefono_whatsapp"] = "Ingrese un celular chileno válido, por ejemplo +56 9 1234 5678."
+    canal = valores["canal_ingreso"]
+    if canal == "Correo" and not valores["email"]:
+        errores["email"] = "El correo es obligatorio cuando el canal de ingreso es Correo."
+    elif valores["email"] and not validar_email(valores["email"]):
+        errores["email"] = "El formato del correo no es válido (ejemplo: vecino@correo.cl)."
+    if valores["delegacion"] not in DELEGACIONES_OFICIALES:
+        errores["delegacion"] = "Seleccione una delegación territorial."
+    canales = cargar_parametros().get("canales_ingreso") or CANALES_INGRESO
+    if canal not in canales:
+        errores["canal_ingreso"] = "Seleccione el canal de ingreso (ventanilla, WhatsApp, correo u otro)."
+    if valores["tipo_entrada"] not in TIPOS_ENTRADA:
+        errores["tipo_entrada"] = "Seleccione el tipo de entrada."
+    if valores["area_tematica"] not in AREAS_ESTRATEGICAS:
+        errores["area_tematica"] = "Seleccione el área temática."
+    if len(valores["descripcion"]) < 15:
+        errores["descripcion"] = "Describa el requerimiento con al menos 15 caracteres (lugar y necesidad)."
+    return valores, errores
+
+
+def asignar_semaforo(item, sla_verde=None, sla_amarillo=None):
+    if sla_verde is None or sla_amarillo is None:
+        sla_verde, sla_amarillo = _sla_limites()
     dias = item.get("dias_transcurridos", 0)
     try:
         dias = int(dias)
     except (ValueError, TypeError):
         dias = 0
-    if dias <= 3:
+    if dias <= sla_verde:
         nivel = "Verde"
         badge_class = "bg-success text-white"
-        texto = "DÍA 1-3 (NORMAL)"
+        texto = f"DÍA 1-{sla_verde} (NORMAL)"
         alerta_texto = "Dentro del plazo estándar"
-    elif 4 <= dias <= 5:
+    elif dias <= sla_amarillo:
         nivel = "Amarillo"
         badge_class = "bg-warning text-dark"
         texto = f"DÍA {dias} (ALERTA)"
@@ -247,77 +305,64 @@ def lista_requerimientos_view(request):
 
 
 def nuevo_requerimiento_view(request):
+    bloqueo = requerir_modulo(request, "requerimientos")
+    if bloqueo:
+        return bloqueo
+    params = cargar_parametros()
+    canales = params.get("canales_ingreso") or CANALES_INGRESO
+
+    def contexto_formulario(valores, errores):
+        return {
+            "delegaciones": DELEGACIONES_OFICIALES,
+            "areas": AREAS_ESTRATEGICAS,
+            "canales": canales,
+            "tipos": TIPOS_ENTRADA,
+            "funcionarios": FUNCIONARIOS_REFERENCIA,
+            "valores": valores,
+            "errores": errores,
+        }
+
     if request.method == "POST":
-        nombre_vecino = request.POST.get("vecino_nombre", "").strip()
-        telefono = request.POST.get("telefono_whatsapp", "").strip()
-        email = request.POST.get("email", "").strip()
-        delegacion = request.POST.get("delegacion", "").strip()
-        canal = request.POST.get("canal_ingreso", "").strip()
-        tipo = request.POST.get("tipo_entrada", "").strip()
-        area = request.POST.get("area_tematica", "").strip()
-        descripcion = request.POST.get("descripcion", "").strip()
-        funcionario = request.POST.get("funcionario_asignado", "").strip()
-        if (
-            not nombre_vecino
-            or not telefono
-            or not delegacion
-            or not canal
-            or not tipo
-            or not area
-            or not descripcion
-        ):
+        valores, errores = validar_formulario_requerimiento(request.POST)
+        if errores:
             messages.error(
                 request,
-                "Por favor complete todos los campos obligatorios marcados con (*).",
+                "Por favor corrija los campos obligatorios o con formato inválido. Los mensajes aparecen bajo cada campo.",
             )
-            contexto = {
-                "delegaciones": DELEGACIONES_OFICIALES,
-                "areas": AREAS_ESTRATEGICAS,
-                "canales": CANALES_INGRESO,
-                "tipos": TIPOS_ENTRADA,
-                "funcionarios": FUNCIONARIOS_REFERENCIA,
-                "valores": request.POST,
-            }
-            return render(request, "requerimientos/registro.html", contexto)
+            return render(request, "requerimientos/registro.html", contexto_formulario(valores, errores))
         requerimientos = cargar_requerimientos_json()
         nuevo_numero = 1001 + len(requerimientos)
         nuevo_id = f"TK-{nuevo_numero}"
         nuevo_ticket = {
             "id_ticket": nuevo_id,
-            "vecino_nombre": nombre_vecino,
-            "telefono_whatsapp": telefono,
-            "email": email if email else "no-registra@serena.cl",
-            "delegacion": delegacion,
-            "canal_ingreso": canal,
-            "tipo_entrada": tipo,
-            "area_tematica": area,
-            "descripcion": descripcion,
+            "vecino_nombre": valores["vecino_nombre"],
+            "telefono_whatsapp": valores["telefono_whatsapp"],
+            "email": valores["email"] if valores["email"] else "no-registra@serena.cl",
+            "delegacion": valores["delegacion"],
+            "canal_ingreso": valores["canal_ingreso"],
+            "tipo_entrada": valores["tipo_entrada"],
+            "area_tematica": valores["area_tematica"],
+            "descripcion": valores["descripcion"],
             "fecha_ingreso": date.today().strftime("%Y-%m-%d"),
             "dias_transcurridos": 1,
-            "funcionario_asignado": funcionario
-            if funcionario
+            "funcionario_asignado": valores["funcionario_asignado"]
+            if valores["funcionario_asignado"]
             else "Por Asignar (Jefatura Delegacional)",
             "estado_proceso": "Pendiente",
             "evaluacion_satisfaccion": None,
+            "comentario_satisfaccion": "",
         }
         requerimientos.insert(0, nuevo_ticket)
         if guardar_requerimientos_json(requerimientos):
             messages.success(
                 request,
-                f"Requerimiento {nuevo_id} ingresado exitosamente para {delegacion}. "
+                f"Requerimiento {nuevo_id} ingresado exitosamente para {valores['delegacion']}. "
                 "Semáforo asignado: DÍA 1 (NORMAL).",
             )
             return redirect("lista_requerimientos")
         messages.error(request, "Hubo un error al guardar el requerimiento en el archivo JSON.")
-    contexto = {
-        "delegaciones": DELEGACIONES_OFICIALES,
-        "areas": AREAS_ESTRATEGICAS,
-        "canales": CANALES_INGRESO,
-        "tipos": TIPOS_ENTRADA,
-        "funcionarios": FUNCIONARIOS_REFERENCIA,
-        "valores": {},
-    }
-    return render(request, "requerimientos/registro.html", contexto)
+        return render(request, "requerimientos/registro.html", contexto_formulario(valores, {}))
+    return render(request, "requerimientos/registro.html", contexto_formulario({}, {}))
 
 
 def detalle_requerimiento_view(request, ticket_id):
@@ -331,6 +376,34 @@ def detalle_requerimiento_view(request, ticket_id):
         messages.error(request, f"No se encontró el requerimiento con ID '{ticket_id}'.")
         return redirect("lista_requerimientos")
     if request.method == "POST":
+        accion = (request.POST.get("accion") or "actualizar").strip()
+        if accion == "encuesta":
+            params = cargar_parametros()
+            if not params.get("encuesta_habilitada", True):
+                messages.error(request, "La encuesta de satisfacción está deshabilitada en parámetros.")
+                return redirect("detalle_requerimiento", ticket_id=ticket_id)
+            if requerimientos_crudos[indice_encontrado].get("estado_proceso") != "Resuelto":
+                messages.error(request, "La encuesta solo se aplica cuando el ticket está en estado Resuelto.")
+                return redirect("detalle_requerimiento", ticket_id=ticket_id)
+            nota_raw = (request.POST.get("evaluacion_satisfaccion") or "").strip()
+            comentario = (request.POST.get("comentario_satisfaccion") or "").strip()
+            try:
+                nota = int(nota_raw)
+                if nota < 1 or nota > 5:
+                    raise ValueError
+            except (TypeError, ValueError):
+                messages.error(request, "Seleccione una nota de satisfacción entre 1 y 5.")
+                return redirect("detalle_requerimiento", ticket_id=ticket_id)
+            requerimientos_crudos[indice_encontrado]["evaluacion_satisfaccion"] = nota
+            requerimientos_crudos[indice_encontrado]["comentario_satisfaccion"] = comentario
+            if guardar_requerimientos_json(requerimientos_crudos):
+                messages.success(
+                    request,
+                    f"Encuesta registrada: {nota} de 5 para el ticket {ticket_id}.",
+                )
+            else:
+                messages.error(request, "No fue posible guardar la encuesta en JSON.")
+            return redirect("detalle_requerimiento", ticket_id=ticket_id)
         nuevo_estado = request.POST.get("estado_proceso", "").strip()
         nuevo_funcionario = request.POST.get("funcionario_asignado", "").strip()
         nuevos_dias_raw = request.POST.get("dias_transcurridos", "").strip()
@@ -374,5 +447,36 @@ def detalle_requerimiento_view(request, ticket_id):
             "Resuelto",
         ],
         "funcionarios": FUNCIONARIOS_REFERENCIA,
+        "notas_encuesta": [1, 2, 3, 4, 5],
+        "encuesta_habilitada": cargar_parametros().get("encuesta_habilitada", True),
     }
     return render(request, "requerimientos/detalle.html", contexto)
+
+
+def encuestas_view(request):
+    bloqueo = requerir_modulo(request, "encuestas")
+    if bloqueo:
+        return bloqueo
+    requerimientos = [asignar_semaforo(item) for item in cargar_requerimientos_json()]
+    resueltos = [item for item in requerimientos if item.get("estado_proceso") == "Resuelto"]
+    con_nota = [item for item in resueltos if item.get("evaluacion_satisfaccion")]
+    pendientes = [item for item in resueltos if not item.get("evaluacion_satisfaccion")]
+    promedio = (
+        round(
+            sum(int(item.get("evaluacion_satisfaccion") or 0) for item in con_nota) / len(con_nota),
+            1,
+        )
+        if con_nota
+        else 0.0
+    )
+    contexto = {
+        "resueltos": resueltos,
+        "con_nota": con_nota,
+        "pendientes": pendientes,
+        "promedio": promedio,
+        "total_resueltos": len(resueltos),
+        "total_con_nota": len(con_nota),
+        "total_pendientes": len(pendientes),
+        "encuesta_habilitada": cargar_parametros().get("encuesta_habilitada", True),
+    }
+    return render(request, "requerimientos/encuestas.html", contexto)

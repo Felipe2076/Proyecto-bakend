@@ -1,0 +1,50 @@
+[
+  {
+    "id_usuario": "USR-001",
+    "username": "admin",
+    "password": "admin123",
+    "nombre": "Administrador SIGED",
+    "email": "admin.siged@laserena.cl",
+    "rol": "administrador",
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación Central",
+    "id_funcionario": "",
+    "activo": true
+  },
+  {
+    "id_usuario": "USR-002",
+    "username": "jefatura",
+    "password": "jefatura123",
+    "nombre": "Elizabeth Rojas Campos",
+    "email": "elizabeth.rojas@laserena.cl",
+    "rol": "jefatura",
+    "cargo": "Delegada Territorial",
+    "delegacion": "Delegación Rural",
+    "id_funcionario": "FUN-001",
+    "activo": true
+  },
+  {
+    "id_usuario": "USR-003",
+    "username": "funcionario",
+    "password": "funcionario123",
+    "nombre": "Camila Oyarzún Santander",
+    "email": "camila.oyarzun@laserena.cl",
+    "rol": "funcionario",
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación Rural",
+    "id_funcionario": "FUN-002",
+    "activo": true
+  },
+  {
+    "id_usuario": "USR-004",
+    "username": "ventanilla",
+    "password": "ventanilla123",
+    "nombre": "Marisol Tapia Henríquez",
+    "email": "marisol.tapia@laserena.cl",
+    "rol": "ventanilla",
+    "cargo": "Apoyo Administrativo",
+    "delegacion": "Delegación Rural",
+    "id_funcionario": "FUN-004",
+    "activo": true
+  }
+]

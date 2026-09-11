@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Notificaciones | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item active">Notificaciones</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-primary-custom">Centro de notificaciones</h2>
+            <p class="text-muted small mb-0">Avisos del mockup más alertas automáticas de tickets en semáforo rojo.</p>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="leer_todas">
+            <button class="btn btn-outline-primary" type="submit">Marcar todas como leídas</button>
+        </form>
+    </div>
+
+    <p class="small text-muted">{{ total_pendientes }} sin leer · {{ total }} en total</p>
+
+    {% for ntf in notificaciones %}
+    <div class="card border-0 shadow-sm rounded-4 mb-3 {% if not ntf.leida %}border-start border-4 border-warning{% endif %}">
+        <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between gap-3">
+            <div>
+                <div class="d-flex gap-2 align-items-center mb-1">
+                    <span class="badge {% if ntf.tipo == 'critico' %}text-bg-danger{% elif ntf.tipo == 'aviso' %}text-bg-warning text-dark{% else %}text-bg-info{% endif %}">{{ ntf.tipo }}</span>
+                    <span class="small text-muted">{{ ntf.fecha }}</span>
+                    {% if not ntf.leida %}<span class="badge text-bg-warning text-dark">Nueva</span>{% endif %}
+                </div>
+                <h3 class="h6 fw-bold mb-1">{{ ntf.titulo }}</h3>
+                <p class="mb-0">{{ ntf.mensaje }}</p>
+            </div>
+            <div class="d-flex gap-2 align-items-start">
+                {% if ntf.enlace %}
+                <a class="btn btn-outline-primary btn-sm" href="{{ ntf.enlace }}">Abrir</a>
+                {% endif %}
+                {% if not ntf.leida %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ ntf.id }}">
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">Leída</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-light border">No hay notificaciones.</div>
+    {% endfor %}
+</div>
+{% endblock %}

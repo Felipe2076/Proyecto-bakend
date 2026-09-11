@@ -1,5 +1,22 @@
 [
   {
+    "id_ticket": "TK-1015",
+    "vecino_nombre": "Prueba Automática Valenzuela",
+    "telefono_whatsapp": "+56 9 1234 5678",
+    "email": "prueba.auto@serena.cl",
+    "delegacion": "Delegación Central",
+    "canal_ingreso": "WhatsApp",
+    "tipo_entrada": "Consulta",
+    "area_tematica": "Seguridad Ciudadana",
+    "descripcion": "Ticket de validación automática del sistema de persistencia JSON.",
+    "fecha_ingreso": "2026-09-11",
+    "dias_transcurridos": 1,
+    "funcionario_asignado": "Patrulla Sector 3 (Seguridad)",
+    "estado_proceso": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  },
+  {
     "id_ticket": "TK-1014",
     "vecino_nombre": "Prueba Automática Valenzuela",
     "telefono_whatsapp": "+56 9 1234 5678",

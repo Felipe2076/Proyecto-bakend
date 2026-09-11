@@ -101,14 +101,19 @@
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-4">
                     <h5 class="fw-bold text-primary-custom mb-3">Registrar actividad del día</h5>
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="contacto" class="form-label small">Contacto / usuario</label>
-                            <input type="text" class="form-control" id="contacto" name="contacto" required>
+                            <label for="fecha_actividad" class="form-label small">Fecha de la actividad <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" required value="{{ fecha_hoy }}">
                         </div>
                         <div class="mb-3">
-                            <label for="item" class="form-label small">Ítem a medir</label>
+                            <label for="contacto" class="form-label small">Contacto / usuario <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="contacto" name="contacto" required minlength="3">
+                            <div class="invalid-feedback">Indique el contacto (mínimo 3 caracteres).</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="item" class="form-label small">Ítem a medir <span class="text-danger">*</span></label>
                             <select class="form-select" id="item" name="item" required>
                                 {% for item in funcionario.items %}
                                 <option value="{{ item.item }}">{{ item.item }}</option>
@@ -116,11 +121,16 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="servicio" class="form-label small">Servicio o atención</label>
-                            <input type="text" class="form-control" id="servicio" name="servicio" required>
+                            <label for="servicio" class="form-label small">Servicio o atención <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="servicio" name="servicio" required minlength="5">
+                            <div class="invalid-feedback">Describa el servicio (mínimo 5 caracteres).</div>
                         </div>
                         <div class="mb-3">
-                            <label for="imagen_verificadora" class="form-label small">Nombre de la evidencia</label>
+                            <label for="evidencia" class="form-label small">Evidencia (upload simulado)</label>
+                            <input type="file" class="form-control" id="evidencia" name="evidencia" accept="image/*,.pdf">
+                        </div>
+                        <div class="mb-3">
+                            <label for="imagen_verificadora" class="form-label small">O nombre de la evidencia</label>
                             <input type="text" class="form-control" id="imagen_verificadora" name="imagen_verificadora" placeholder="Foto, acta o llamado">
                         </div>
                         <button type="submit" class="btn btn-primary-custom w-100">Guardar y generar código</button>

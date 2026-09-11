@@ -68,6 +68,33 @@
                     <div class="p-3 rounded-3 bg-body-tertiary border mt-3">
                         <small class="text-muted d-block">Satisfacción ciudadana</small>
                         <strong>{{ ticket.evaluacion_satisfaccion }} / 5</strong>
+                        {% if ticket.comentario_satisfaccion %}
+                        <div class="small mt-1">{{ ticket.comentario_satisfaccion }}</div>
+                        {% endif %}
+                    </div>
+                    {% elif ticket.estado_proceso == 'Resuelto' and encuesta_habilitada %}
+                    <div class="p-3 rounded-3 border border-warning mt-3">
+                        <h6 class="fw-bold">Encuesta de satisfacción (1 a 5)</h6>
+                        <p class="small text-muted">Registre la nota que entregó el vecino al cerrar el caso.</p>
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="encuesta">
+                            <div class="mb-2">
+                                <label class="form-label small" for="evaluacion_satisfaccion">Nota <span class="text-danger">*</span></label>
+                                <select class="form-select" id="evaluacion_satisfaccion" name="evaluacion_satisfaccion" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for nota in notas_encuesta %}
+                                    <option value="{{ nota }}">{{ nota }} — {% if nota == 1 %}Muy insatisfecho{% elif nota == 2 %}Insatisfecho{% elif nota == 3 %}Regular{% elif nota == 4 %}Satisfecho{% else %}Muy satisfecho{% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Seleccione una nota entre 1 y 5.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="comentario_satisfaccion">Comentario (opcional)</label>
+                                <input class="form-control" id="comentario_satisfaccion" name="comentario_satisfaccion" maxlength="200">
+                            </div>
+                            <button class="btn btn-warning text-dark btn-sm" type="submit">Guardar encuesta</button>
+                        </form>
                     </div>
                     {% endif %}
                 </div>
@@ -89,6 +116,7 @@
                     <h5 class="fw-bold text-primary-custom mb-3">Actualizar gestión</h5>
                     <form method="post" action="{% url 'detalle_requerimiento' ticket.id_ticket %}">
                         {% csrf_token %}
+                        <input type="hidden" name="accion" value="actualizar">
                         <div class="mb-3">
                             <label for="estado_proceso" class="form-label small">Estado del proceso</label>
                             <select id="estado_proceso" name="estado_proceso" class="form-select" required>

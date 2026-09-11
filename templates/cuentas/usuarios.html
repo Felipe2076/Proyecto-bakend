@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios | Administración SIGED{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item active">Administración</li>
+        </ol>
+    </nav>
+    <h2 class="fw-bold text-primary-custom mb-3">Administración básica (solo UI + JSON)</h2>
+    {% include 'cuentas/_admin_tabs.html' %}
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom">Nuevo usuario de demostración</h5>
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="crear">
+                        <div class="mb-3">
+                            <label class="form-label" for="username">Usuario <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" maxlength="20" pattern="[a-z0-9._-]{3,20}" value="{{ valores.username }}">
+                            <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}3 a 20 caracteres en minúsculas.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="password">Contraseña <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" required minlength="6">
+                            <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Mínimo 6 caracteres.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="nombre">Nombre completo <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.nombre %}is-invalid{% endif %}" id="nombre" name="nombre" required minlength="5" value="{{ valores.nombre }}">
+                            <div class="invalid-feedback">{% if errores.nombre %}{{ errores.nombre }}{% else %}Ingrese el nombre completo.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="email">Correo</label>
+                            <input type="email" class="form-control {% if errores.email %}is-invalid{% endif %}" id="email" name="email" value="{{ valores.email }}">
+                            <div class="invalid-feedback">{% if errores.email %}{{ errores.email }}{% else %}Correo con formato válido.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="rol">Rol <span class="text-danger">*</span></label>
+                            <select class="form-select {% if errores.rol %}is-invalid{% endif %}" id="rol" name="rol" required>
+                                <option value="">Seleccione...</option>
+                                {% for clave, etiqueta in roles %}
+                                <option value="{{ clave }}" {% if valores.rol == clave %}selected{% endif %}>{{ etiqueta }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">{% if errores.rol %}{{ errores.rol }}{% else %}Seleccione un rol.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="cargo">Cargo <span class="text-danger">*</span></label>
+                            <select class="form-select {% if errores.cargo %}is-invalid{% endif %}" id="cargo" name="cargo" required>
+                                <option value="">Seleccione...</option>
+                                {% for cargo in cargos %}
+                                <option value="{{ cargo.nombre }}" {% if valores.cargo == cargo.nombre %}selected{% endif %}>{{ cargo.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">{% if errores.cargo %}{{ errores.cargo }}{% else %}Seleccione un cargo.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="delegacion">Delegación</label>
+                            <select class="form-select" id="delegacion" name="delegacion">
+                                <option value="">Sin asignar</option>
+                                {% for del in delegaciones %}
+                                <option value="{{ del }}" {% if valores.delegacion == del %}selected{% endif %}>{{ del }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="id_funcionario">Ficha SGR (opcional)</label>
+                            <select class="form-select" id="id_funcionario" name="id_funcionario">
+                                <option value="">Ninguna</option>
+                                {% for fun in funcionarios %}
+                                <option value="{{ fun.id_funcionario }}" {% if valores.id_funcionario == fun.id_funcionario %}selected{% endif %}>{{ fun.id_funcionario }} · {{ fun.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button class="btn btn-primary-custom w-100" type="submit">Guardar usuario</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom">Usuarios actuales</h5>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Nombre / cargo</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in usuarios %}
+                                <tr>
+                                    <td><code>{{ user.username }}</code></td>
+                                    <td>
+                                        <div class="fw-semibold">{{ user.nombre }}</div>
+                                        <small class="text-muted">{{ user.cargo }}</small>
+                                    </td>
+                                    <td><span class="badge text-bg-light border">{{ user.rol }}</span></td>
+                                    <td>
+                                        {% if user.activo %}<span class="badge text-bg-success">Activo</span>{% else %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="accion" value="toggle">
+                                            <input type="hidden" name="id_usuario" value="{{ user.id_usuario }}">
+                                            <button class="btn btn-outline-secondary btn-sm" type="submit">Activar/desactivar</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

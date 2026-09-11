@@ -11,4 +11,5 @@ urlpatterns = [
         views.detalle_requerimiento_view,
         name="detalle_requerimiento",
     ),
+    path("encuestas/", views.encuestas_view, name="encuestas"),
 ]

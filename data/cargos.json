@@ -1,0 +1,44 @@
+[
+  {
+    "id_cargo": "CARGO-01",
+    "nombre": "Administrador del sistema",
+    "descripcion": "Configura usuarios, cargos y parámetros del mockup SIGED-SGR.",
+    "modulo_principal": "Administración"
+  },
+  {
+    "id_cargo": "CARGO-02",
+    "nombre": "Delegada Territorial",
+    "descripcion": "Jefatura de delegación: semáforo SGR, tubo de trabajo y resumen de equipo.",
+    "modulo_principal": "Matriz SGR"
+  },
+  {
+    "id_cargo": "CARGO-03",
+    "nombre": "Gestor Social",
+    "descripcion": "Atenciones sociales, actividades diarias y evidencias en terreno.",
+    "modulo_principal": "Actividades"
+  },
+  {
+    "id_cargo": "CARGO-04",
+    "nombre": "Apoyo Administrativo",
+    "descripcion": "Captura multicanal en ventanilla, WhatsApp y correo.",
+    "modulo_principal": "Requerimientos"
+  },
+  {
+    "id_cargo": "CARGO-05",
+    "nombre": "Gestor de Seguridad",
+    "descripcion": "Patrullajes, alertas barriales y coordinación con Carabineros.",
+    "modulo_principal": "Requerimientos"
+  },
+  {
+    "id_cargo": "CARGO-06",
+    "nombre": "Supervisor DISERCO",
+    "descripcion": "Aseo, alumbrado, áreas verdes y cierre de compromisos operativos.",
+    "modulo_principal": "Compromisos"
+  },
+  {
+    "id_cargo": "CARGO-07",
+    "nombre": "Planificación y Control",
+    "descripcion": "Tablero Kanban, KPIs y cuellos de botella territoriales.",
+    "modulo_principal": "Control de gestión"
+  }
+]

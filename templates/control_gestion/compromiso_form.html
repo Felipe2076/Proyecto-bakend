@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if modo_edicion %}Editar{% else %}Nuevo{% endif %} compromiso | SIGED{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'tubo_trabajo' %}" class="text-decoration-none">Compromisos</a></li>
+            <li class="breadcrumb-item active">{% if modo_edicion %}{{ id_compromiso }}{% else %}Nuevo{% endif %}</li>
+        </ol>
+    </nav>
+    <h2 class="fw-bold text-primary-custom mb-4">{% if modo_edicion %}Editar compromiso {{ id_compromiso }}{% else %}Registrar compromiso ciudadano{% endif %}</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="descripcion">Descripción del compromiso <span class="text-danger">*</span></label>
+                            <textarea class="form-control {% if errores.descripcion %}is-invalid{% endif %}" id="descripcion" name="descripcion" rows="3" required minlength="10">{{ valores.descripcion }}</textarea>
+                            <div class="invalid-feedback">{% if errores.descripcion %}{{ errores.descripcion }}{% else %}Mínimo 10 caracteres.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="vecino">Vecino u organización <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.vecino %}is-invalid{% endif %}" id="vecino" name="vecino" required minlength="3" value="{{ valores.vecino }}">
+                            <div class="invalid-feedback">{% if errores.vecino %}{{ errores.vecino }}{% else %}Obligatorio.{% endif %}</div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="id_funcionario">Funcionario responsable <span class="text-danger">*</span></label>
+                                <select class="form-select {% if errores.id_funcionario %}is-invalid{% endif %}" id="id_funcionario" name="id_funcionario" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for fun in funcionarios %}
+                                    <option value="{{ fun.id_funcionario }}" {% if valores.id_funcionario == fun.id_funcionario %}selected{% endif %}>{{ fun.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">{% if errores.id_funcionario %}{{ errores.id_funcionario }}{% else %}Seleccione funcionario.{% endif %}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="delegacion">Delegación <span class="text-danger">*</span></label>
+                                <select class="form-select {% if errores.delegacion %}is-invalid{% endif %}" id="delegacion" name="delegacion" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for del in delegaciones %}
+                                    <option value="{{ del }}" {% if valores.delegacion == del %}selected{% endif %}>{{ del }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">{% if errores.delegacion %}{{ errores.delegacion }}{% else %}Seleccione delegación.{% endif %}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="fecha_compromiso">Fecha comprometida <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control {% if errores.fecha_compromiso %}is-invalid{% endif %}" id="fecha_compromiso" name="fecha_compromiso" required value="{{ valores.fecha_compromiso }}">
+                                <div class="invalid-feedback">{% if errores.fecha_compromiso %}{{ errores.fecha_compromiso }}{% else %}Fecha obligatoria.{% endif %}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="estado">Estado <span class="text-danger">*</span></label>
+                                <select class="form-select {% if errores.estado %}is-invalid{% endif %}" id="estado" name="estado" required>
+                                    {% for est in estados %}
+                                    <option value="{{ est }}" {% if valores.estado == est %}selected{% endif %}>{{ est }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">{% if errores.estado %}{{ errores.estado }}{% else %}Seleccione estado.{% endif %}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <a class="btn btn-outline-secondary" href="{% url 'tubo_trabajo' %}">Cancelar</a>
+                            <button class="btn btn-primary-custom" type="submit">Guardar compromiso</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
