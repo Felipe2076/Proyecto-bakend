@@ -10,171 +10,86 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
-    <header class="sticky-top">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom">
-            <div class="container-fluid px-lg-4">
-                <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'inicio' %}">
-                    {% include '_marca.html' %}
-                    <span class="d-flex flex-column lh-sm">
-                        <strong class="brand-title">Delegaciones La Serena</strong>
-                        <small class="brand-subtitle">Atención ciudadana · Matriz SGR</small>
-                    </span>
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Abrir menú">
-                    <span class="navbar-toggler-icon"></span>
+<body>
+<div class="siged-app">
+    {% include '_sidebar.html' %}
+    <div class="siged-main">
+        <header class="siged-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-primary btn-sm sidebar-toggle" type="button" data-bs-toggle="offcanvas" data-siged-toggle aria-label="Abrir menú">
+                    <i class="bi bi-list"></i>
                 </button>
-                <div class="collapse navbar-collapse" id="navbarMain">
-                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}" href="{% url 'inicio' %}">Inicio</a>
-                        </li>
-                        {% if puede_requerimientos %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'lista_requerimientos' or request.resolver_match.url_name == 'nuevo_requerimiento' or request.resolver_match.url_name == 'detalle_requerimiento' or request.resolver_match.url_name == 'kanban' or request.resolver_match.url_name == 'encuestas' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Atención ciudadana
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><h6 class="dropdown-header">Tickets del ciudadano</h6></li>
-                                <li><a class="dropdown-item" href="{% url 'nuevo_requerimiento' %}">Ingresar ticket (CU-E02)</a></li>
-                                <li><a class="dropdown-item" href="{% url 'lista_requerimientos' %}">Listado y ficha (CU-E03 / E04)</a></li>
-                                {% if puede_control_gestion %}
-                                <li><a class="dropdown-item" href="{% url 'kanban' %}">Tablero de tickets (CU-E05)</a></li>
-                                {% endif %}
-                                {% if puede_encuestas %}
-                                <li><a class="dropdown-item" href="{% url 'encuestas' %}">Encuesta 1 a 5 (CU-E12)</a></li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                        {% endif %}
-                        {% if puede_actividades or puede_agenda or puede_compromisos %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'actividades_diarias' or request.resolver_match.url_name == 'agenda' or request.resolver_match.url_name == 'tubo_trabajo' or request.resolver_match.url_name == 'compromiso_nuevo' or request.resolver_match.url_name == 'compromiso_editar' or request.resolver_match.url_name == 'detalle_funcionario' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Gestión interna
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                {% if puede_actividades %}
-                                <li><a class="dropdown-item" href="{% url 'actividades_diarias' %}">Actividad y evidencia (CU-E06 / E07)</a></li>
-                                {% endif %}
-                                {% if puede_compromisos %}
-                                <li><a class="dropdown-item" href="{% url 'tubo_trabajo' %}">Compromisos (CU-E08)</a></li>
-                                {% endif %}
-                                {% if puede_agenda %}
-                                <li><a class="dropdown-item" href="{% url 'agenda' %}">Agenda colectiva (CU-E09)</a></li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                        {% endif %}
-                        {% if puede_matriz_sgr or puede_control_gestion %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'semaforo_sgr' or request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'areas_soporte' or request.resolver_match.url_name == 'funcionarios' or request.resolver_match.url_name == 'resumen_delegacion' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Desempeño
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                {% if puede_matriz_sgr %}
-                                <li><a class="dropdown-item" href="{% url 'semaforo_sgr' %}">Semáforo e indicadores (CU-E10)</a></li>
-                                <li><a class="dropdown-item" href="{% url 'funcionarios' %}">Metas por funcionario</a></li>
-                                <li><a class="dropdown-item" href="{% url 'resumen_delegacion' %}">Resumen de delegación</a></li>
-                                {% endif %}
-                                {% if puede_control_gestion %}
-                                <li><a class="dropdown-item" href="{% url 'dashboard' %}">Panel de gestión / KPIs</a></li>
-                                <li><a class="dropdown-item" href="{% url 'areas_soporte' %}">Áreas de soporte</a></li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                        {% endif %}
-                        {% if puede_administracion %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'admin_usuarios' or request.resolver_match.url_name == 'admin_cargos' or request.resolver_match.url_name == 'admin_parametros' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Administración
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'admin_usuarios' %}">Usuarios (CU-E11)</a></li>
-                                <li><a class="dropdown-item" href="{% url 'admin_cargos' %}">Cargos</a></li>
-                                <li><a class="dropdown-item" href="{% url 'admin_parametros' %}">Parámetros</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        {% if puede_notificaciones %}
-                        <li class="nav-item">
-                            <a class="nav-link position-relative {% if request.resolver_match.url_name == 'notificaciones' %}active{% endif %}" href="{% url 'notificaciones' %}" title="Avisos internos">
-                                <i class="bi bi-bell"></i>
-                                {% if notificaciones_pendientes %}
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-warning text-dark">{{ notificaciones_pendientes }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        {% endif %}
-                        {% if usuario_actual %}
-                        <li class="nav-item dropdown ms-lg-2">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span class="badge text-bg-warning text-dark">{{ usuario_actual.rol_etiqueta }}</span>
-                                <span class="d-none d-xl-inline small">{{ usuario_actual.nombre }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><h6 class="dropdown-header">{{ usuario_actual.cargo }}</h6></li>
-                                <li><span class="dropdown-item-text small text-muted">{{ usuario_actual.delegacion }}</span></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">Salir</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                    </ul>
+                <div>
+                    <p class="siged-topbar__title mb-0">{% block topbar_title %}SIGED-SGR Delegaciones La Serena{% endblock %}</p>
+                    <div class="siged-topbar__sub">{% block topbar_sub %}Sistema de gestión territorial · Primera Entrega{% endblock %}</div>
                 </div>
             </div>
-        </nav>
-    </header>
+            <div class="siged-user">
+                {% if puede_notificaciones %}
+                <a class="btn btn-outline-primary btn-sm position-relative" href="{% url 'notificaciones' %}" title="Avisos">
+                    <i class="bi bi-bell"></i>
+                    {% if notificaciones_pendientes %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">{{ notificaciones_pendientes }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+                {% if usuario_actual %}
+                <div class="text-end d-none d-md-block">
+                    <div class="fw-semibold small">{{ usuario_actual.nombre }}</div>
+                    <div class="siged-topbar__sub">{{ usuario_actual.rol_etiqueta }} · {{ usuario_actual.delegacion }}</div>
+                </div>
+                <span class="siged-user__avatar">{{ usuario_actual.nombre|slice:":1" }}</span>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'logout' %}">Salir</a>
+                {% endif %}
+            </div>
+        </header>
 
-    {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% elif message.tags == 'success' %}success{% else %}warning{% endif %} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        {% if messages %}
+        <div class="px-4 pt-3">
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% elif message.tags == 'success' %}success{% else %}warning{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        {% endif %}
+
+        <main class="siged-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="siged-footer">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                <div>
+                    <strong>Los watones PC</strong> — Felipe, Aixa y Gabriel · Proyecto Integrado · SIGED-SGR Delegaciones La Serena · Prof. Jorge Cortés
+                </div>
+                <div>Mockup JSON local · sin MySQL ni APIs de negocio</div>
+            </div>
+        </footer>
     </div>
-    {% endif %}
+</div>
 
-    <main class="flex-grow-1 py-4">
-        {% block content %}{% endblock %}
-    </main>
-
-    <footer class="team-strip py-3 mt-auto">
-        <div class="container">
-            <div class="row g-2 align-items-center">
-                <div class="col-lg-7">
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        {% include '_marca.html' %}
-                        <strong>Los watones PC</strong>
-                    </div>
-                    <p class="mb-0">Felipe, Aixa y Gabriel · Proyecto Integrado · SIGED-SGR Delegaciones La Serena · Prof. Jorge Cortés</p>
-                </div>
-                <div class="col-lg-5 text-lg-end small">
-                    Primera Entrega · mockup en JSON, sin MySQL<br>
-                    {% if puede_requerimientos %}<a href="{% url 'lista_requerimientos' %}" class="link-light text-decoration-none me-2">Tickets</a>{% endif %}
-                    {% if puede_agenda %}<a href="{% url 'agenda' %}" class="link-light text-decoration-none me-2">Agenda</a>{% endif %}
-                    {% if puede_control_gestion %}<a href="{% url 'dashboard' %}" class="link-light text-decoration-none">Desempeño</a>{% endif %}
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-        (() => {
-            const forms = document.querySelectorAll(".needs-validation");
-            Array.from(forms).forEach((form) => {
-                form.addEventListener("submit", (event) => {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    form.classList.add("was-validated");
-                });
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script>
+    (() => {
+        const forms = document.querySelectorAll(".needs-validation");
+        Array.from(forms).forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add("was-validated");
             });
-        })();
-    </script>
-    {% block extra_js %}{% endblock %}
+        });
+        const sidebar = document.getElementById("sigedSidebar");
+        const toggle = document.querySelector("[data-siged-toggle]");
+        if (toggle && sidebar) {
+            toggle.addEventListener("click", () => sidebar.classList.toggle("is-open"));
+        }
+    })();
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -9,93 +9,87 @@
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body class="login-body min-vh-100 d-flex align-items-center py-5">
-    <div class="container">
-        <div class="row justify-content-center g-4">
-            <div class="col-lg-5">
-                <div class="card shadow-sm overflow-hidden">
-                    <div class="bg-primary-custom text-white p-4">
-                        <div class="d-flex align-items-center gap-3">
-                            {% include '_marca.html' %}
-                            <div>
-                                <h1 class="h4 fw-bold mb-1">Delegaciones La Serena</h1>
-                                <p class="small mb-0 text-white-50">CU-E01 · Ingreso al sistema</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        {% if messages %}
-                            {% for message in messages %}
-                            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} py-2">{{ message }}</div>
-                            {% endfor %}
-                        {% endif %}
-                        <p class="note-hand mb-3">Para la Primera Entrega trabajamos con datos locales. No hay base MySQL ni APIs de negocio detrás.</p>
-                        <form method="post" action="{% url 'login' %}" class="needs-validation" novalidate>
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ next_url }}">
-                            <div class="mb-3">
-                                <label for="username" class="form-label fw-semibold">Usuario <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" value="{{ valores.username }}" autocomplete="username">
-                                <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}Escriba su usuario.{% endif %}</div>
-                            </div>
-                            <div class="mb-4">
-                                <label for="password" class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
-                                <input type="password" class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" required minlength="4" autocomplete="current-password">
-                                <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Escriba la contraseña.{% endif %}</div>
-                            </div>
-                            <button type="submit" class="btn btn-primary-custom w-100">Entrar</button>
-                        </form>
-                    </div>
+<body>
+<div class="login-shell">
+    <section class="login-brand">
+        <div>
+            {% include '_marca.html' %}
+            <p class="mt-4 mb-2" style="color:#d4c07a;letter-spacing:.12em;font-size:.75rem;font-weight:700;">MUNICIPALIDAD DE LA SERENA</p>
+            <h1>SIGED-SGR Delegaciones</h1>
+            <p class="lead mt-3" style="max-width:28rem;">Sistema de tickets ciudadanos, actividad, evidencia, compromiso, agenda e indicadores de las seis delegaciones territoriales.</p>
+            <ul class="mt-4 ps-3">
+                <li>Atención ciudadana · ventanilla, WhatsApp y correo</li>
+                <li>Gestión interna · actividad y compromiso</li>
+                <li>Desempeño · semáforo, indicador y meta</li>
+            </ul>
+        </div>
+        <div>
+            <p class="mb-1"><strong>Los watones PC</strong> — Felipe, Aixa, Gabriel</p>
+            <p class="mb-0 small" style="color:#c9ddd6;">Proyecto Integrado · Prof. Jorge Cortés · CU-E01 Ingreso al sistema</p>
+        </div>
+    </section>
+
+    <section class="login-panel">
+        <div class="login-card">
+            <h2 class="h3 fw-bold text-primary-custom mb-1">Ingreso al sistema</h2>
+            <p class="text-muted mb-4">Use un perfil de demostración. Este mockup no usa MySQL ni APIs de negocio.</p>
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} py-2">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            <form method="post" action="{% url 'login' %}" class="needs-validation card p-4" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next_url }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label fw-semibold">Usuario <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" value="{{ valores.username }}" autocomplete="username">
+                    <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}Escriba su usuario.{% endif %}</div>
                 </div>
-                <p class="text-white-50 small mt-3 mb-0">Equipo Los watones PC · Felipe, Aixa, Gabriel · Prof. Jorge Cortés</p>
-            </div>
-            <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body p-4">
-                        <h2 class="h5 fw-bold text-primary-custom">Perfiles de prueba</h2>
-                        <p class="small text-muted">Cada rol abre un menú distinto: atención ciudadana, gestión interna, desempeño o administración.</p>
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Usuario</th>
-                                        <th>Clave</th>
-                                        <th>Rol</th>
-                                        <th>Cargo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for demo in demos %}
-                                    <tr>
-                                        <td><code>{{ demo.username }}</code></td>
-                                        <td><code>{{ demo.password }}</code></td>
-                                        <td class="small">{{ demo.rol }}</td>
-                                        <td class="small">{{ demo.cargo }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="small mb-0 text-muted">Las claves van a la vista porque esto es un prototipo de curso, no un sistema en producción.</p>
-                    </div>
+                <div class="mb-4">
+                    <label for="password" class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" required minlength="4" autocomplete="current-password">
+                    <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Escriba la contraseña.{% endif %}</div>
+                </div>
+                <button type="submit" class="btn btn-primary-custom w-100">Entrar a SIGED-SGR</button>
+            </form>
+
+            <div class="card mt-3 p-3">
+                <h3 class="h6 fw-bold text-primary-custom mb-2">Perfiles de prueba</h3>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr><th>Usuario</th><th>Clave</th><th>Rol</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for demo in demos %}
+                            <tr>
+                                <td><code>{{ demo.username }}</code></td>
+                                <td><code>{{ demo.password }}</code></td>
+                                <td class="small">{{ demo.rol }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-        (() => {
-            const forms = document.querySelectorAll(".needs-validation");
-            Array.from(forms).forEach((form) => {
-                form.addEventListener("submit", (event) => {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    form.classList.add("was-validated");
-                });
+    </section>
+</div>
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script>
+    (() => {
+        const forms = document.querySelectorAll(".needs-validation");
+        Array.from(forms).forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add("was-validated");
             });
-        })();
-    </script>
+        });
+    })();
+</script>
 </body>
 </html>

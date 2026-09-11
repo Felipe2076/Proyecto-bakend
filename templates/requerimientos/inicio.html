@@ -2,141 +2,181 @@
 {% load static %}
 
 {% block title %}Inicio | SIGED-SGR Delegaciones{% endblock %}
+{% block topbar_title %}Tablero de la delegación{% endblock %}
+{% block topbar_sub %}CU-E01 · Vista general de tickets, semáforo e indicadores{% endblock %}
 
 {% block content %}
-<div class="container">
-    <section class="p-4 p-lg-5 mb-4 bg-hero text-white shadow-sm">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-7">
-                {% include '_cu.html' with cu_id='CU-E01' cu_nombre='Sesión iniciada' %}
-                <h1 class="display-6 fw-bold mb-3">Atención ciudadana en las seis delegaciones</h1>
-                <p class="lead mb-3 text-white-75">
-                    Acá se anotan los tickets que llegan por ventanilla, WhatsApp o correo, se les hace seguimiento con semáforo y se registran actividad, evidencia, compromiso y agenda del equipo territorial.
-                </p>
-                {% if usuario_actual %}
-                <p class="small mb-3">Hola, <strong>{{ usuario_actual.nombre }}</strong> — {{ usuario_actual.rol_etiqueta }} en {{ usuario_actual.delegacion }}.</p>
-                {% endif %}
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning fw-semibold text-dark">Ingresar ticket</a>
-                    <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-light">Ver tickets</a>
-                    <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light">Semáforo SGR</a>
-                </div>
+<section class="hero-panel mb-4">
+    <div class="row align-items-center g-3">
+        <div class="col-lg-8">
+            {% include '_cu.html' with cu_id='CU-E01' cu_nombre='Sesión iniciada' %}
+            <h1 class="h2 fw-bold mt-2 mb-2">Atención ciudadana en las seis delegaciones</h1>
+            <p class="mb-3" style="max-width:40rem;color:rgba(255,255,255,.86);">
+                {% if usuario_actual %}Hola, <strong>{{ usuario_actual.nombre }}</strong>.{% endif %}
+                Registre el ticket del ciudadano, dé seguimiento con semáforo y deje actividad, evidencia y compromiso en la agenda del equipo.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning fw-semibold text-dark">Ingresar ticket</a>
+                <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-light">Ver tickets</a>
+                <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light">Semáforo SGR</a>
             </div>
-            <div class="col-lg-5">
-                <div class="card">
-                    <div class="card-body">
-                        <p class="small text-uppercase text-secondary mb-1">Clima en La Serena</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="fw-bold text-primary-custom mb-0">{{ clima.temperatura }}°C</h3>
-                                <small class="text-muted">{{ clima.condicion }}</small>
-                            </div>
-                            <div class="text-end">
-                                <small class="text-muted d-block">{{ clima.velocidad_viento }} km/h</small>
-                                <span class="badge {% if clima.conectado %}text-bg-success{% else %}text-bg-warning{% endif %}">
-                                    {% if clima.conectado %}Open-Meteo{% else %}Dato local{% endif %}
-                                </span>
-                            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="small text-uppercase text-secondary mb-1">Clima en La Serena</div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <div class="h2 fw-bold text-primary-custom mb-0">{{ clima.temperatura }}°C</div>
+                            <small class="text-muted">{{ clima.condicion }}</small>
                         </div>
-                        <p class="note-hand small mt-3 mb-0">El logo PNG del equipo todavía no está; mientras tanto usamos la marca de texto SIGED-SGR.</p>
+                        <span class="badge {% if clima.conectado %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                            {% if clima.conectado %}Open-Meteo{% else %}Dato local{% endif %}
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="row g-3 mb-4">
-        <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
-                <h3 class="fw-bold mb-0">{{ total_casos }}</h3>
-                <span class="text-muted small">Tickets</span>
-            </div>
+<section class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="card kpi-card h-100">
+            <div class="small text-muted">Tickets</div>
+            <h3 class="fw-bold mb-0">{{ total_casos }}</h3>
         </div>
-        <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card shadow-sm text-center p-3 h-100 kpi-card accent-bar">
-                <h3 class="fw-bold text-danger mb-0">{{ casos_criticos }}</h3>
-                <span class="text-muted small">Semáforo rojo</span>
-            </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="card kpi-card kpi-rojo h-100">
+            <div class="small text-muted">Semáforo rojo</div>
+            <h3 class="fw-bold text-danger mb-0">{{ casos_criticos }}</h3>
         </div>
-        <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
-                <h3 class="fw-bold mb-0">{{ casos_pendientes }}</h3>
-                <span class="text-muted small">Pendientes</span>
-            </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="card kpi-card kpi-ambar h-100">
+            <div class="small text-muted">Pendientes</div>
+            <h3 class="fw-bold mb-0" style="color:#d68910;">{{ casos_pendientes }}</h3>
         </div>
-        <div class="col-6 col-md-6 col-xl-2-4">
-            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
-                <h3 class="fw-bold mb-0">{{ casos_en_proceso }}</h3>
-                <span class="text-muted small">En proceso</span>
-            </div>
+    </div>
+    <div class="col-6 col-md-6 col-xl-2-4">
+        <div class="card kpi-card kpi-info h-100">
+            <div class="small text-muted">En proceso</div>
+            <h3 class="fw-bold mb-0">{{ casos_en_proceso }}</h3>
         </div>
-        <div class="col-12 col-md-6 col-xl-2-4">
-            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
-                <h3 class="fw-bold mb-0">{{ casos_resueltos }}</h3>
-                <span class="text-muted small">Cerrados</span>
-            </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-2-4">
+        <div class="card kpi-card kpi-verde h-100">
+            <div class="small text-muted">Cerrados</div>
+            <h3 class="fw-bold text-success mb-0">{{ casos_resueltos }}</h3>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="row g-4 mb-4">
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-bold text-primary-custom">Las 6 delegaciones</h2>
-                    <p class="text-muted small">Centro, Rural, La Antena, La Pampa, Av. del Mar y Las Compañías.</p>
-                    <div class="d-grid gap-2">
-                        {% for del in delegaciones %}
-                        <a href="{% url 'lista_requerimientos' %}?delegacion={{ del|urlencode }}" class="btn btn-outline-primary text-start">{{ del }}</a>
-                        {% endfor %}
+<section class="row g-3 mb-4">
+    <div class="col-12">
+        <h2 class="h5 fw-bold text-primary-custom mb-2">Flujos de los casos de uso</h2>
+    </div>
+    {% if puede_requerimientos %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'nuevo_requerimiento' %}">
+            <div class="flow-card__icon"><i class="bi bi-plus-square"></i></div>
+            <div class="fw-bold">Ingresar ticket</div>
+            <div class="small text-muted">CU-E02 · ciudadano, canal y tipificación</div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'lista_requerimientos' %}">
+            <div class="flow-card__icon"><i class="bi bi-ticket-detailed"></i></div>
+            <div class="fw-bold">Listado y ficha</div>
+            <div class="small text-muted">CU-E03 / E04 · semáforo del ticket</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_actividades %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'actividades_diarias' %}">
+            <div class="flow-card__icon"><i class="bi bi-clipboard-check"></i></div>
+            <div class="fw-bold">Actividad y evidencia</div>
+            <div class="small text-muted">CU-E06 / E07 · gestión interna</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_compromisos %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'tubo_trabajo' %}">
+            <div class="flow-card__icon"><i class="bi bi-check2-square"></i></div>
+            <div class="fw-bold">Compromisos</div>
+            <div class="small text-muted">CU-E08 · acuerdo con el ciudadano</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_agenda %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'agenda' %}">
+            <div class="flow-card__icon"><i class="bi bi-calendar3"></i></div>
+            <div class="fw-bold">Agenda colectiva</div>
+            <div class="small text-muted">CU-E09 · terreno y reuniones</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_matriz_sgr %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'semaforo_sgr' %}">
+            <div class="flow-card__icon"><i class="bi bi-stoplights"></i></div>
+            <div class="fw-bold">Indicadores y metas</div>
+            <div class="small text-muted">CU-E10 · semáforo de desempeño</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_encuestas %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'encuestas' %}">
+            <div class="flow-card__icon"><i class="bi bi-star"></i></div>
+            <div class="fw-bold">Encuesta 1 a 5</div>
+            <div class="small text-muted">CU-E12 · satisfacción del ciudadano</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_administracion %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'admin_usuarios' %}">
+            <div class="flow-card__icon"><i class="bi bi-people"></i></div>
+            <div class="fw-bold">Administración</div>
+            <div class="small text-muted">CU-E11 · usuarios, cargos y parámetros</div>
+        </a>
+    </div>
+    {% endif %}
+</section>
+
+<section class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 fw-bold text-primary-custom">Las 6 delegaciones</h2>
+                <p class="text-muted small">Centro, Rural, La Antena, La Pampa, Av. del Mar y Las Compañías.</p>
+                <div class="row g-2">
+                    {% for del in delegaciones %}
+                    <div class="col-sm-6">
+                        <a class="deleg-chip" href="{% url 'lista_requerimientos' %}?delegacion={{ del|urlencode }}">{{ del }}</a>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-bold text-primary-custom">Semáforo del ticket</h2>
-                    <p class="text-muted small">Plazo de respuesta al ciudadano.</p>
-                    <ul class="list-group list-group-flush mb-3">
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span><span class="badge text-bg-success me-2">Verde</span>Día 1 a 3</span>
-                            <small class="text-muted">En plazo</small>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span><span class="badge text-bg-warning me-2">Amarillo</span>Día 4 a 5</span>
-                            <small class="text-muted">Alerta</small>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span><span class="badge text-bg-danger me-2">Rojo</span>Día 6 o más</span>
-                            <small class="text-muted">Crítico</small>
-                        </li>
-                    </ul>
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary w-100">Ver indicadores</a>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 fw-bold text-primary-custom">Semáforo del ticket</h2>
+                <p class="text-muted small mb-3">Plazo de respuesta al ciudadano.</p>
+                <div class="d-flex flex-column gap-3">
+                    <div class="semaforo semaforo--verde"><span class="semaforo__luz"></span> Verde · día 1 a 3 · en plazo</div>
+                    <div class="semaforo semaforo--ambar"><span class="semaforo__luz"></span> Ámbar · día 4 a 5 · alerta</div>
+                    <div class="semaforo semaforo--rojo"><span class="semaforo__luz"></span> Rojo · día 6 o más · crítico</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-bold text-primary-custom">Módulos del prototipo</h2>
-                    <p class="text-muted small">Agrupados como en las fichas CU.</p>
-                    <div class="d-grid gap-2">
-                        {% if puede_requerimientos %}
-                        <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-primary-custom">Atención ciudadana</a>
-                        {% endif %}
-                        {% if puede_actividades %}
-                        <a href="{% url 'actividades_diarias' %}" class="btn btn-outline-primary">Gestión interna</a>
-                        {% endif %}
-                        {% if puede_matriz_sgr %}
-                        <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-primary">Desempeño</a>
-                        {% endif %}
-                        {% if puede_administracion %}
-                        <a href="{% url 'admin_usuarios' %}" class="btn btn-outline-secondary">Administración</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
+    </div>
+</section>
 {% endblock %}

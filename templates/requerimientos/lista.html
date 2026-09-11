@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Lista de requerimientos | SIGED La Serena{% endblock %}
+{% block title %}Tickets | SIGED-SGR{% endblock %}
+{% block topbar_title %}Listado de tickets{% endblock %}
+{% block topbar_sub %}CU-E03 · ciudadano, delegacion, tipificación y semáforo{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -101,7 +103,10 @@
                         <td><span class="badge text-bg-light border tipo-ticket">{{ req.tipo_entrada }}</span></td>
                         <td class="fw-semibold">{{ req.dias_transcurridos }}</td>
                         <td>
-                            <span class="badge {{ req.semaforo_clase }} rounded-pill">{{ req.semaforo_texto }}</span>
+                            <span class="semaforo semaforo--{{ req.semaforo_nivel|lower }}">
+                                <span class="semaforo__luz"></span>
+                                {{ req.semaforo_texto }}
+                            </span>
                         </td>
                         <td>
                             <span class="badge {% if req.estado_proceso == 'Resuelto' %}text-bg-success{% elif req.estado_proceso == 'En Proceso' %}text-bg-info{% elif req.estado_proceso == 'Cuello Botella Central' %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ req.estado_proceso }}</span>

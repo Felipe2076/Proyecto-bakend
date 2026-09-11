@@ -1,0 +1,90 @@
+<aside class="siged-sidebar" id="sigedSidebar">
+    <a class="siged-brand" href="{% url 'inicio' %}">
+        {% include '_marca.html' %}
+        <span class="siged-brand__meta">
+            <strong>Delegaciones</strong>
+            <small>Municipalidad de La Serena</small>
+        </span>
+    </a>
+
+    <nav class="siged-nav" aria-label="Módulos SIGED">
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'inicio' %}is-active{% endif %}" href="{% url 'inicio' %}">
+            <i class="bi bi-house-door"></i> Inicio
+        </a>
+
+        {% if puede_requerimientos %}
+        <p class="siged-nav__group">Atención ciudadana</p>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'nuevo_requerimiento' %}is-active{% endif %}" href="{% url 'nuevo_requerimiento' %}">
+            <i class="bi bi-plus-square"></i> Ingresar ticket
+        </a>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'lista_requerimientos' or request.resolver_match.url_name == 'detalle_requerimiento' %}is-active{% endif %}" href="{% url 'lista_requerimientos' %}">
+            <i class="bi bi-ticket-detailed"></i> Listado de tickets
+        </a>
+        {% if puede_control_gestion %}
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'kanban' %}is-active{% endif %}" href="{% url 'kanban' %}">
+            <i class="bi bi-kanban"></i> Tablero Kanban
+        </a>
+        {% endif %}
+        {% if puede_encuestas %}
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'encuestas' %}is-active{% endif %}" href="{% url 'encuestas' %}">
+            <i class="bi bi-star"></i> Encuesta 1–5
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {% if puede_actividades or puede_agenda or puede_compromisos %}
+        <p class="siged-nav__group">Gestión interna</p>
+        {% if puede_actividades %}
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'actividades_diarias' or request.resolver_match.url_name == 'detalle_funcionario' %}is-active{% endif %}" href="{% url 'actividades_diarias' %}">
+            <i class="bi bi-clipboard-check"></i> Actividad y evidencia
+        </a>
+        {% endif %}
+        {% if puede_compromisos %}
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'tubo_trabajo' or request.resolver_match.url_name == 'compromiso_nuevo' or request.resolver_match.url_name == 'compromiso_editar' %}is-active{% endif %}" href="{% url 'tubo_trabajo' %}">
+            <i class="bi bi-check2-square"></i> Compromisos
+        </a>
+        {% endif %}
+        {% if puede_agenda %}
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'agenda' %}is-active{% endif %}" href="{% url 'agenda' %}">
+            <i class="bi bi-calendar3"></i> Agenda colectiva
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {% if puede_matriz_sgr or puede_control_gestion %}
+        <p class="siged-nav__group">Desempeño</p>
+        {% if puede_matriz_sgr %}
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'semaforo_sgr' %}is-active{% endif %}" href="{% url 'semaforo_sgr' %}">
+            <i class="bi bi-stoplights"></i> Semáforo / indicadores
+        </a>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'funcionarios' %}is-active{% endif %}" href="{% url 'funcionarios' %}">
+            <i class="bi bi-graph-up"></i> Metas por funcionario
+        </a>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'resumen_delegacion' %}is-active{% endif %}" href="{% url 'resumen_delegacion' %}">
+            <i class="bi bi-building"></i> Resumen delegación
+        </a>
+        {% endif %}
+        {% if puede_control_gestion %}
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}" href="{% url 'dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Panel de gestión
+        </a>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'areas_soporte' %}is-active{% endif %}" href="{% url 'areas_soporte' %}">
+            <i class="bi bi-diagram-3"></i> Áreas de soporte
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {% if puede_administracion %}
+        <p class="siged-nav__group">Administración</p>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'admin_usuarios' %}is-active{% endif %}" href="{% url 'admin_usuarios' %}">
+            <i class="bi bi-people"></i> Usuarios
+        </a>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'admin_cargos' %}is-active{% endif %}" href="{% url 'admin_cargos' %}">
+            <i class="bi bi-briefcase"></i> Cargos
+        </a>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'admin_parametros' %}is-active{% endif %}" href="{% url 'admin_parametros' %}">
+            <i class="bi bi-sliders"></i> Parámetros
+        </a>
+        {% endif %}
+    </nav>
+</aside>
