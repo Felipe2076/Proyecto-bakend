@@ -7,11 +7,12 @@
 
 {% block content %}
 <section class="hero-panel mb-4">
-    <div class="row align-items-center g-3">
+    <div class="row align-items-center g-4">
         <div class="col-lg-8">
+            <p class="hero-kicker">Municipalidad de La Serena · SIGED-SGR / Delegaciones</p>
             {% include '_cu.html' with cu_id='CU-E01' cu_nombre='Sesión iniciada' %}
-            <h1 class="h2 fw-bold mt-2 mb-2">Atención ciudadana en las seis delegaciones</h1>
-            <p class="mb-3" style="max-width:40rem;color:rgba(255,255,255,.86);">
+            <h1 class="mt-2 mb-2">Atención ciudadana en las seis delegaciones</h1>
+            <p class="mb-3" style="max-width:40rem;color:rgba(255,248,238,.88);">
                 {% if usuario_actual %}Hola, <strong>{{ usuario_actual.nombre }}</strong>.{% endif %}
                 Registre el ticket del ciudadano, dé seguimiento con semáforo y deje actividad, evidencia y compromiso en la agenda del equipo.
             </p>
@@ -22,13 +23,16 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card">
+            <div class="card hero-glass text-white">
                 <div class="card-body">
-                    <div class="small text-uppercase text-secondary mb-1">Clima en La Serena</div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <lord-icon src="{% static 'lordicon/27-globe.json' %}" trigger="hover" colors="primary:#f0d7a0,secondary:#fff8ee" style="width:36px;height:36px"></lord-icon>
+                        <div class="small text-uppercase" style="letter-spacing:.12em;color:#f0d7a0;">Clima en La Serena</div>
+                    </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div>
-                            <div class="h2 fw-bold text-primary-custom mb-0">{{ clima.temperatura }}°C</div>
-                            <small class="text-muted">{{ clima.condicion }}</small>
+                            <div class="display-title h2 fw-bold mb-0">{{ clima.temperatura }}°C</div>
+                            <small style="color:rgba(255,248,238,.8);">{{ clima.condicion }}</small>
                         </div>
                         <span class="badge {% if clima.conectado %}text-bg-success{% else %}text-bg-warning{% endif %}">
                             {% if clima.conectado %}Open-Meteo{% else %}Dato local{% endif %}
@@ -40,7 +44,7 @@
     </div>
 </section>
 
-<section class="row g-3 mb-4">
+<section class="row g-3 mb-4 siged-reveal">
     <div class="col-6 col-md-4 col-xl-2-4">
         <div class="card kpi-card h-100">
             <div class="small text-muted">Tickets</div>
@@ -75,19 +79,23 @@
 
 <section class="row g-3 mb-4">
     <div class="col-12">
-        <h2 class="h5 fw-bold text-primary-custom mb-2">Flujos de los casos de uso</h2>
+        <h2 class="h4 text-primary-custom mb-2">Flujos de los casos de uso</h2>
     </div>
     {% if puede_requerimientos %}
     <div class="col-md-6 col-xl-3">
         <a class="card flow-card" href="{% url 'nuevo_requerimiento' %}">
-            <div class="flow-card__icon"><i class="bi bi-plus-square"></i></div>
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/35-pencil.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
             <div class="fw-bold">Ingresar ticket</div>
             <div class="small text-muted">CU-E02 · ciudadano, canal y tipificación</div>
         </a>
     </div>
     <div class="col-md-6 col-xl-3">
         <a class="card flow-card" href="{% url 'lista_requerimientos' %}">
-            <div class="flow-card__icon"><i class="bi bi-ticket-detailed"></i></div>
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/56-document.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
             <div class="fw-bold">Listado y ficha</div>
             <div class="small text-muted">CU-E03 / E04 · semáforo del ticket</div>
         </a>
@@ -96,7 +104,9 @@
     {% if puede_actividades %}
     <div class="col-md-6 col-xl-3">
         <a class="card flow-card" href="{% url 'actividades_diarias' %}">
-            <div class="flow-card__icon"><i class="bi bi-clipboard-check"></i></div>
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/19-magnifier.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
             <div class="fw-bold">Actividad y evidencia</div>
             <div class="small text-muted">CU-E06 / E07 · gestión interna</div>
         </a>
@@ -105,7 +115,9 @@
     {% if puede_compromisos %}
     <div class="col-md-6 col-xl-3">
         <a class="card flow-card" href="{% url 'tubo_trabajo' %}">
-            <div class="flow-card__icon"><i class="bi bi-check2-square"></i></div>
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/21-avatar.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
             <div class="fw-bold">Compromisos</div>
             <div class="small text-muted">CU-E08 · acuerdo con el ciudadano</div>
         </a>
@@ -114,7 +126,9 @@
     {% if puede_agenda %}
     <div class="col-md-6 col-xl-3">
         <a class="card flow-card" href="{% url 'agenda' %}">
-            <div class="flow-card__icon"><i class="bi bi-calendar3"></i></div>
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/45-clock.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
             <div class="fw-bold">Agenda colectiva</div>
             <div class="small text-muted">CU-E09 · terreno y reuniones</div>
         </a>
@@ -132,7 +146,9 @@
     {% if puede_encuestas %}
     <div class="col-md-6 col-xl-3">
         <a class="card flow-card" href="{% url 'encuestas' %}">
-            <div class="flow-card__icon"><i class="bi bi-star"></i></div>
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/56-document.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
             <div class="fw-bold">Encuesta 1 a 5</div>
             <div class="small text-muted">CU-E12 · satisfacción del ciudadano</div>
         </a>
@@ -141,7 +157,9 @@
     {% if puede_administracion %}
     <div class="col-md-6 col-xl-3">
         <a class="card flow-card" href="{% url 'admin_usuarios' %}">
-            <div class="flow-card__icon"><i class="bi bi-people"></i></div>
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/21-avatar.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
             <div class="fw-bold">Administración</div>
             <div class="small text-muted">CU-E11 · usuarios, cargos y parámetros</div>
         </a>
@@ -153,7 +171,10 @@
     <div class="col-lg-7">
         <div class="card h-100">
             <div class="card-body p-4">
-                <h2 class="h5 fw-bold text-primary-custom">Las 6 delegaciones</h2>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <lord-icon src="{% static 'lordicon/18-location-pin.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:34px;height:34px"></lord-icon>
+                    <h2 class="h5 text-primary-custom mb-0">Las 6 delegaciones</h2>
+                </div>
                 <p class="text-muted small">Centro, Rural, La Antena, La Pampa, Av. del Mar y Las Compañías.</p>
                 <div class="row g-2">
                     {% for del in delegaciones %}
@@ -168,7 +189,7 @@
     <div class="col-lg-5">
         <div class="card h-100">
             <div class="card-body p-4">
-                <h2 class="h5 fw-bold text-primary-custom">Semáforo del ticket</h2>
+                <h2 class="h5 text-primary-custom">Semáforo del ticket</h2>
                 <p class="text-muted small mb-3">Plazo de respuesta al ciudadano.</p>
                 <div class="d-flex flex-column gap-3">
                     <div class="semaforo semaforo--verde"><span class="semaforo__luz"></span> Verde · día 1 a 3 · en plazo</div>

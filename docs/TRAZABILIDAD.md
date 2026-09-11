@@ -43,3 +43,17 @@ Sirve para el informe: pantalla del mockup → caso de uso → entidades del DER
 - `indicador`, `meta`, semáforo
 
 Los archivos JSON en `data/` simulan esas tablas. Cuando exista el script SQL / MySQL de la siguiente entrega, este mapa se reutiliza.
+
+## Identidad visual (pantallas tocadas)
+
+Portal municipal premium, paleta **roja** La Serena, copy institucional (ticket, delegación, semáforo, compromiso). Semáforo operacional (verde / ámbar / rojo) se mantiene distinto de la marca.
+
+| Superficie | Qué se ve |
+| --- | --- |
+| Login `/login/` | Marca Municipalidad de La Serena + SIGED-SGR, panel institucional, loader Lottie al entrar |
+| Shell (todas las internas) | Sidebar vino, topbar glass, footer **Los watones PC**, overlay Lottie al navegar |
+| Inicio `/` | Hero costa/desierto propio, KPI, flujos CU con Lordicon FREE, 6 delegaciones |
+| Panel `/control/` | Ilustración analítica recoloreada a rojo municipal |
+| Resto de CU | Misma paleta/tipografía (botones, títulos, chips CU) |
+
+Motion y licencias: [`docs/ASSETS_LIBRES.md`](ASSETS_LIBRES.md).

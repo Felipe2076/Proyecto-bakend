@@ -12,8 +12,11 @@ El mockup cubre la rúbrica §7.2 (template funcional en Git): navegación por m
 
 - Python 3.12+ y Django 6.1
 - Datos en `data/*.json` (sesión mock en cookie firmada; no hay que correr `migrate`)
-- Bootstrap 5.3 + íconos locales
+- Bootstrap 5.3 + íconos locales (layout; la identidad visual no es una plantilla genérica)
+- Paleta municipal **roja**, tipografía display Fraunces (OFL) + Source Sans 3 (OFL)
+- Motion gratis: Lottie original self-hosted, Lordicon *wired/outline* FREE, Lenis (jsDelivr)
 - `requests` solo para el clima de demostración (Open-Meteo), con fallback
+- Licencias y lista de íconos: [`docs/ASSETS_LIBRES.md`](docs/ASSETS_LIBRES.md)
 
 ## Cómo ejecutarlo en Windows (PowerShell)
 
@@ -86,4 +89,4 @@ python tests_siged.py
 ## Documentación de contexto
 
 - `Documentacion_SIGED_LaSerena.pdf` / `.docx` (si el equipo las adjunta en la entrega)
-- El logo PNG institucional todavía no está; el prototipo usa la marca de texto **SIGED-SGR**
+- Marca propia abstracta (faro + costa), no el escudo municipal con copyright. Ver [`docs/ASSETS_LIBRES.md`](docs/ASSETS_LIBRES.md).
