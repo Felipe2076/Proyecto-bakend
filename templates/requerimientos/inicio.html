@@ -1,154 +1,203 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Inicio | SIGED Municipalidad de La Serena{% endblock %}
+{% block title %}Inicio | SIGED-SGR Delegaciones{% endblock %}
+{% block topbar_title %}Tablero de la delegación{% endblock %}
+{% block topbar_sub %}CU-E01 · Vista general de tickets, semáforo e indicadores{% endblock %}
 
 {% block content %}
-<div class="container">
-    <section class="p-4 p-lg-5 mb-4 rounded-4 bg-hero text-white shadow">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-7">
-                <span class="badge text-bg-warning text-dark mb-3">Matriz SGR · Seguimiento de Gestión de Resultados</span>
-                <h1 class="display-5 fw-bold mb-3">Sistema Integrado de Atención Vecinal - La Serena</h1>
-                <p class="lead mb-4 text-white-75">
-                    Registro de compromisos con vecinos, medición de funcionarios, tubo de trabajo y semáforo diario para las 6 delegaciones territoriales.
-                </p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning btn-lg fw-semibold text-dark">
-                        <i class="bi bi-plus-circle-fill me-2"></i>Ingresar requerimiento
-                    </a>
-                    <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-stoplights me-2"></i>Semáforo SGR
-                    </a>
-                    <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-table me-2"></i>Lista de tickets
-                    </a>
-                </div>
+<section class="hero-panel mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <p class="hero-kicker">Municipalidad de La Serena · SIGED-SGR / Delegaciones</p>
+            {% include '_cu.html' with cu_id='CU-E01' cu_nombre='Sesión iniciada' %}
+            <h1 class="mt-2 mb-2">Atención ciudadana en las seis delegaciones</h1>
+            <p class="mb-3" style="max-width:40rem;color:rgba(255,248,238,.88);">
+                {% if usuario_actual %}Hola, <strong>{{ usuario_actual.nombre }}</strong>.{% endif %}
+                Registre el ticket del ciudadano, dé seguimiento con semáforo y deje actividad, evidencia y compromiso en la agenda del equipo.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning fw-semibold text-dark">Ingresar ticket</a>
+                <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-light">Ver tickets</a>
+                <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light">Semáforo SGR</a>
             </div>
-            <div class="col-lg-5">
-                <div class="card border-0 shadow rounded-4 overflow-hidden">
-                    <img src="{% static 'img/faro_monumental.svg' %}" alt="Faro Monumental de La Serena" class="img-fluid w-100" style="max-height: 200px; object-fit: cover;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-semibold small text-uppercase text-secondary">
-                                <i class="bi bi-cloud-sun-fill me-1 text-warning"></i>Clima en vivo
-                            </span>
-                            <span class="badge bg-primary-custom">{{ clima.estado_conexion }}</span>
+        </div>
+        <div class="col-lg-4">
+            <div class="card hero-glass text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <lord-icon src="{% static 'lordicon/27-globe.json' %}" trigger="hover" colors="primary:#f0d7a0,secondary:#fff8ee" style="width:36px;height:36px"></lord-icon>
+                        <div class="small text-uppercase" style="letter-spacing:.12em;color:#f0d7a0;">Clima en La Serena</div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <div class="display-title h2 fw-bold mb-0">{{ clima.temperatura }}°C</div>
+                            <small style="color:rgba(255,248,238,.8);">{{ clima.condicion }}</small>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="fw-bold text-primary-custom mb-0">{{ clima.temperatura }}°C</h3>
-                                <small class="text-muted">{{ clima.condicion }}</small>
-                            </div>
-                            <div class="text-end">
-                                <small class="text-muted d-block"><i class="bi bi-wind me-1"></i>{{ clima.velocidad_viento }} km/h</small>
-                                <span class="badge {% if clima.conectado %}text-bg-success{% else %}text-bg-warning{% endif %}">
-                                    {% if clima.conectado %}Conectado{% else %}Estimado{% endif %}
-                                </span>
-                            </div>
-                        </div>
+                        <span class="badge {% if clima.conectado %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                            {% if clima.conectado %}Open-Meteo{% else %}Dato local{% endif %}
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="row g-3 mb-4">
-        <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-folder-fill fs-2 text-primary mb-2"></i>
-                <h3 class="fw-bold mb-0">{{ total_casos }}</h3>
-                <span class="text-muted small">Total solicitudes</span>
-            </div>
+<section class="row g-3 mb-4 siged-reveal">
+    <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="card kpi-card h-100">
+            <div class="small text-muted">Tickets</div>
+            <h3 class="fw-bold mb-0">{{ total_casos }}</h3>
         </div>
-        <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card accent-bar">
-                <i class="bi bi-exclamation-triangle-fill fs-2 text-danger mb-2"></i>
-                <h3 class="fw-bold text-danger mb-0">{{ casos_criticos }}</h3>
-                <span class="text-muted small">Críticos (≥6 días)</span>
-            </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="card kpi-card kpi-rojo h-100">
+            <div class="small text-muted">Semáforo rojo</div>
+            <h3 class="fw-bold text-danger mb-0">{{ casos_criticos }}</h3>
         </div>
-        <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-hourglass-split fs-2 text-warning mb-2"></i>
-                <h3 class="fw-bold text-warning mb-0">{{ casos_pendientes }}</h3>
-                <span class="text-muted small">Pendientes</span>
-            </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="card kpi-card kpi-ambar h-100">
+            <div class="small text-muted">Pendientes</div>
+            <h3 class="fw-bold mb-0" style="color:#d68910;">{{ casos_pendientes }}</h3>
         </div>
-        <div class="col-6 col-md-6 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-tools fs-2 text-info mb-2"></i>
-                <h3 class="fw-bold text-info mb-0">{{ casos_en_proceso }}</h3>
-                <span class="text-muted small">En proceso</span>
-            </div>
+    </div>
+    <div class="col-6 col-md-6 col-xl-2-4">
+        <div class="card kpi-card kpi-info h-100">
+            <div class="small text-muted">En proceso</div>
+            <h3 class="fw-bold mb-0">{{ casos_en_proceso }}</h3>
         </div>
-        <div class="col-12 col-md-6 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-check-circle-fill fs-2 text-success mb-2"></i>
-                <h3 class="fw-bold text-success mb-0">{{ casos_resueltos }}</h3>
-                <span class="text-muted small">Resueltos</span>
-            </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-2-4">
+        <div class="card kpi-card kpi-verde h-100">
+            <div class="small text-muted">Cerrados</div>
+            <h3 class="fw-bold text-success mb-0">{{ casos_resueltos }}</h3>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="row g-4 mb-4">
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom">Delegaciones territoriales</h5>
-                    <p class="text-muted small">Seis oficinas descentralizadas para acercar la gestión a cada territorio.</p>
-                    <div class="d-grid gap-2">
-                        {% for del in delegaciones %}
-                        <a href="{% url 'lista_requerimientos' %}?delegacion={{ del|urlencode }}" class="btn btn-outline-primary text-start">
-                            <i class="bi bi-building me-2"></i>{{ del }}
-                        </a>
-                        {% endfor %}
+<section class="row g-3 mb-4">
+    <div class="col-12">
+        <h2 class="h4 text-primary-custom mb-2">Flujos de los casos de uso</h2>
+    </div>
+    {% if puede_requerimientos %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'nuevo_requerimiento' %}">
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/35-pencil.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
+            <div class="fw-bold">Ingresar ticket</div>
+            <div class="small text-muted">CU-E02 · ciudadano, canal y tipificación</div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'lista_requerimientos' %}">
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/56-document.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
+            <div class="fw-bold">Listado y ficha</div>
+            <div class="small text-muted">CU-E03 / E04 · semáforo del ticket</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_actividades %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'actividades_diarias' %}">
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/19-magnifier.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
+            <div class="fw-bold">Actividad y evidencia</div>
+            <div class="small text-muted">CU-E06 / E07 · gestión interna</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_compromisos %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'tubo_trabajo' %}">
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/21-avatar.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
+            <div class="fw-bold">Compromisos</div>
+            <div class="small text-muted">CU-E08 · acuerdo con el ciudadano</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_agenda %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'agenda' %}">
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/45-clock.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
+            <div class="fw-bold">Agenda colectiva</div>
+            <div class="small text-muted">CU-E09 · terreno y reuniones</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_matriz_sgr %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'semaforo_sgr' %}">
+            <div class="flow-card__icon"><i class="bi bi-stoplights"></i></div>
+            <div class="fw-bold">Indicadores y metas</div>
+            <div class="small text-muted">CU-E10 · semáforo de desempeño</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_encuestas %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'encuestas' %}">
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/56-document.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
+            <div class="fw-bold">Encuesta 1 a 5</div>
+            <div class="small text-muted">CU-E12 · satisfacción del ciudadano</div>
+        </a>
+    </div>
+    {% endif %}
+    {% if puede_administracion %}
+    <div class="col-md-6 col-xl-3">
+        <a class="card flow-card" href="{% url 'admin_usuarios' %}">
+            <div class="flow-card__icon">
+                <lord-icon src="{% static 'lordicon/21-avatar.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:32px;height:32px"></lord-icon>
+            </div>
+            <div class="fw-bold">Administración</div>
+            <div class="small text-muted">CU-E11 · usuarios, cargos y parámetros</div>
+        </a>
+    </div>
+    {% endif %}
+</section>
+
+<section class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <lord-icon src="{% static 'lordicon/18-location-pin.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:34px;height:34px"></lord-icon>
+                    <h2 class="h5 text-primary-custom mb-0">Las 6 delegaciones</h2>
+                </div>
+                <p class="text-muted small">Centro, Rural, La Antena, La Pampa, Av. del Mar y Las Compañías.</p>
+                <div class="row g-2">
+                    {% for del in delegaciones %}
+                    <div class="col-sm-6">
+                        <a class="deleg-chip" href="{% url 'lista_requerimientos' %}?delegacion={{ del|urlencode }}">{{ del }}</a>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom">Semáforo de tickets</h5>
-                    <p class="text-muted small">Plazo de respuesta a requerimientos vecinales.</p>
-                    <ul class="list-group list-group-flush mb-3">
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><span class="badge text-bg-success me-2">Verde</span>Día 1 a 3</span>
-                            <small class="text-muted">En plazo</small>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><span class="badge text-bg-warning me-2">Amarillo</span>Día 4 a 5</span>
-                            <small class="text-muted">Alerta</small>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><span class="badge text-bg-danger me-2">Rojo</span>Día 6 o más</span>
-                            <small class="text-muted">Crítico</small>
-                        </li>
-                    </ul>
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-danger w-100">Ver cuellos de botella</a>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 text-primary-custom">Semáforo del ticket</h2>
+                <p class="text-muted small mb-3">Plazo de respuesta al ciudadano.</p>
+                <div class="d-flex flex-column gap-3">
+                    <div class="semaforo semaforo--verde"><span class="semaforo__luz"></span> Verde · día 1 a 3 · en plazo</div>
+                    <div class="semaforo semaforo--ambar"><span class="semaforo__luz"></span> Ámbar · día 4 a 5 · alerta</div>
+                    <div class="semaforo semaforo--rojo"><span class="semaforo__luz"></span> Rojo · día 6 o más · crítico</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom">Herramientas de la matriz</h5>
-                    <p class="text-muted small">Lo que antes era una planilla de Drive, ahora está centralizado en SIGED.</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'funcionarios' %}" class="btn btn-primary-custom">
-                            <i class="bi bi-person-lines-fill me-1"></i>Actividades por funcionario
-                        </a>
-                        <a href="{% url 'tubo_trabajo' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-calendar2-check me-1"></i>Agenda colectiva
-                        </a>
-                        <a href="{% url 'resumen_delegacion' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-pie-chart me-1"></i>Resumen de gestión
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
+    </div>
+</section>
 {% endblock %}

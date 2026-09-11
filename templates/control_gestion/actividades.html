@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Actividad y evidencia | SIGED-SGR{% endblock %}
+{% block topbar_title %}Actividad y evidencia{% endblock %}
+{% block topbar_sub %}CU-E06 / E07 · registro diario del funcionario{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item active">Actividades</li>
+                </ol>
+            </nav>
+            {% include '_cu.html' with cu_id='CU-E06 / E07' cu_nombre='Actividad y evidencia' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Actividad del día y evidencia</h2>
+            <p class="text-muted small mb-0">Se genera un código verificador. El archivo no se guarda: solo queda el nombre de la evidencia.</p>
+        </div>
+        <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total }} registro(s)</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom">Nueva actividad</h5>
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="id_funcionario">Funcionario <span class="text-danger">*</span></label>
+                            <select class="form-select {% if errores.id_funcionario %}is-invalid{% endif %}" id="id_funcionario" name="id_funcionario" required>
+                                <option value="">Seleccione...</option>
+                                {% for fun in funcionarios %}
+                                <option value="{{ fun.id_funcionario }}" {% if valores.id_funcionario == fun.id_funcionario %}selected{% endif %}>{{ fun.nombre }} · {{ fun.delegacion }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">{% if errores.id_funcionario %}{{ errores.id_funcionario }}{% else %}Seleccione funcionario.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="fecha_actividad">Fecha <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control {% if errores.fecha_actividad %}is-invalid{% endif %}" id="fecha_actividad" name="fecha_actividad" required value="{{ valores.fecha_actividad|default:fecha_hoy }}">
+                            <div class="invalid-feedback">{% if errores.fecha_actividad %}{{ errores.fecha_actividad }}{% else %}Fecha obligatoria.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="contacto">Contacto / vecino <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.contacto %}is-invalid{% endif %}" id="contacto" name="contacto" required minlength="3" value="{{ valores.contacto }}">
+                            <div class="invalid-feedback">{% if errores.contacto %}{{ errores.contacto }}{% else %}Mínimo 3 caracteres.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="item">Ítem SGR <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.item %}is-invalid{% endif %}" id="item" name="item" required list="items-sgr" value="{{ valores.item }}" placeholder="Escriba o elija un ítem">
+                            <datalist id="items-sgr">
+                                {% for fun in funcionarios %}
+                                    {% for meta in fun.items %}
+                                    <option value="{{ meta.item }}"></option>
+                                    {% endfor %}
+                                {% endfor %}
+                            </datalist>
+                            <div class="invalid-feedback">{% if errores.item %}{{ errores.item }}{% else %}Obligatorio.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="servicio">Servicio o atención <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.servicio %}is-invalid{% endif %}" id="servicio" name="servicio" required minlength="5" value="{{ valores.servicio }}">
+                            <div class="invalid-feedback">{% if errores.servicio %}{{ errores.servicio }}{% else %}Mínimo 5 caracteres.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="evidencia">Evidencia (foto o documento)</label>
+                            <input type="file" class="form-control" id="evidencia" name="evidencia" accept="image/*,.pdf">
+                            <div class="form-text">Simulado: no se almacena el archivo, solo el nombre para el verificador.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="imagen_verificadora">O describa la evidencia</label>
+                            <input class="form-control" id="imagen_verificadora" name="imagen_verificadora" value="{{ valores.imagen_verificadora }}" placeholder="Ej: Foto de terreno">
+                        </div>
+                        <button class="btn btn-primary-custom w-100" type="submit">Guardar y generar código</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 mb-3">
+                <div class="card-body">
+                    <form method="get" class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small" for="delegacion">Delegación</label>
+                            <select class="form-select" id="delegacion" name="delegacion">
+                                <option value="">Todas</option>
+                                {% for del in delegaciones %}
+                                <option value="{{ del }}" {% if filtro_delegacion == del %}selected{% endif %}>{{ del }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small" for="funcionario">Funcionario</label>
+                            <select class="form-select" id="funcionario" name="funcionario">
+                                <option value="">Todos</option>
+                                {% for fun in funcionarios %}
+                                <option value="{{ fun.id_funcionario }}" {% if filtro_funcionario == fun.id_funcionario %}selected{% endif %}>{{ fun.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary-custom w-100" type="submit">Filtrar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Funcionario</th>
+                                <th>Contacto</th>
+                                <th>Servicio</th>
+                                <th>Código</th>
+                                <th>Evidencia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for act in actividades %}
+                            <tr>
+                                <td class="font-monospace small">{{ act.fecha_actividad }}</td>
+                                <td>
+                                    <a href="{% url 'detalle_funcionario' act.id_funcionario %}">{{ act.funcionario_nombre }}</a>
+                                    <div class="small text-muted">{{ act.delegacion }}</div>
+                                </td>
+                                <td>{{ act.contacto }}</td>
+                                <td class="small">{{ act.servicio }}</td>
+                                <td><code>{{ act.codigo_verificador }}</code></td>
+                                <td class="small">{{ act.imagen_verificadora }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">Sin actividades para los filtros.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Marca abstracta SIGED-SGR La Serena">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f3d7a2"/>
+      <stop offset="100%" stop-color="#c9923a"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#6f0c18"/>
+  <path d="M10 42 C18 36 26 46 32 40 C38 34 46 44 54 38" fill="none" stroke="url(#g)" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M10 48 C20 43 28 51 34 46 C40 41 48 49 54 44" fill="none" stroke="#f7efe4" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+  <path d="M32 12 L36 28 H28 Z" fill="url(#g)"/>
+  <rect x="29.2" y="26" width="5.6" height="16" rx="1" fill="#f7efe4"/>
+  <rect x="29.6" y="30" width="4.8" height="3" fill="#b11226"/>
+  <circle cx="32" cy="24.2" r="2.4" fill="#f3d7a2"/>
+</svg>

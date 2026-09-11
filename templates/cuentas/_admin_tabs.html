@@ -1,0 +1,11 @@
+<ul class="nav nav-pills gap-2 mb-4">
+    <li class="nav-item">
+        <a class="nav-link {% if seccion == 'usuarios' %}active bg-primary-custom{% endif %}" href="{% url 'admin_usuarios' %}">Usuarios</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if seccion == 'cargos' %}active bg-primary-custom{% endif %}" href="{% url 'admin_cargos' %}">Cargos</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if seccion == 'parametros' %}active bg-primary-custom{% endif %}" href="{% url 'admin_parametros' %}">Parámetros</a>
+    </li>
+</ul>

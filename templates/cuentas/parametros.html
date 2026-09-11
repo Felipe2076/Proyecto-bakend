@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Parámetros | Administración SIGED{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item active">Parámetros</li>
+        </ol>
+    </nav>
+    <h2 class="fw-bold text-primary-custom mb-3">Parámetros del mockup</h2>
+    {% include 'cuentas/_admin_tabs.html' %}
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <p class="text-muted small">Estos valores se guardan en <code>data/parametros.json</code> y <code>data/medicion.json</code>. Afectan el semáforo y la meta del tubo de trabajo.</p>
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="nombre_sistema">Nombre del sistema <span class="text-danger">*</span></label>
+                        <input class="form-control {% if errores.nombre_sistema %}is-invalid{% endif %}" id="nombre_sistema" name="nombre_sistema" required minlength="8" value="{{ parametros.nombre_sistema }}">
+                        <div class="invalid-feedback">{% if errores.nombre_sistema %}{{ errores.nombre_sistema }}{% else %}Obligatorio.{% endif %}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="comuna">Comuna <span class="text-danger">*</span></label>
+                        <input class="form-control {% if errores.comuna %}is-invalid{% endif %}" id="comuna" name="comuna" required value="{{ parametros.comuna }}">
+                        <div class="invalid-feedback">{% if errores.comuna %}{{ errores.comuna }}{% else %}Obligatorio.{% endif %}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="sla_verde_max_dias">SLA verde (días) <span class="text-danger">*</span></label>
+                        <input type="number" min="1" max="10" class="form-control {% if errores.sla_verde_max_dias %}is-invalid{% endif %}" id="sla_verde_max_dias" name="sla_verde_max_dias" required value="{{ parametros.sla_verde_max_dias }}">
+                        <div class="invalid-feedback">{% if errores.sla_verde_max_dias %}{{ errores.sla_verde_max_dias }}{% else %}Entre 1 y 10.{% endif %}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="sla_amarillo_max_dias">SLA amarillo (días) <span class="text-danger">*</span></label>
+                        <input type="number" min="2" max="15" class="form-control {% if errores.sla_amarillo_max_dias %}is-invalid{% endif %}" id="sla_amarillo_max_dias" name="sla_amarillo_max_dias" required value="{{ parametros.sla_amarillo_max_dias }}">
+                        <div class="invalid-feedback">{% if errores.sla_amarillo_max_dias %}{{ errores.sla_amarillo_max_dias }}{% else %}Mayor que el verde.{% endif %}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="meta_tubo_porcentaje">Meta tubo (%) <span class="text-danger">*</span></label>
+                        <input type="number" min="50" max="100" class="form-control {% if errores.meta_tubo_porcentaje %}is-invalid{% endif %}" id="meta_tubo_porcentaje" name="meta_tubo_porcentaje" required value="{{ parametros.meta_tubo_porcentaje }}">
+                        <div class="invalid-feedback">{% if errores.meta_tubo_porcentaje %}{{ errores.meta_tubo_porcentaje }}{% else %}Entre 50 y 100.{% endif %}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="max_atenciones_mismo_usuario">Máx. atenciones por usuario <span class="text-danger">*</span></label>
+                        <input type="number" min="1" max="10" class="form-control {% if errores.max_atenciones_mismo_usuario %}is-invalid{% endif %}" id="max_atenciones_mismo_usuario" name="max_atenciones_mismo_usuario" required value="{{ parametros.max_atenciones_mismo_usuario }}">
+                        <div class="invalid-feedback">{% if errores.max_atenciones_mismo_usuario %}{{ errores.max_atenciones_mismo_usuario }}{% else %}Entre 1 y 10.{% endif %}</div>
+                    </div>
+                    <div class="col-md-8 d-flex align-items-end">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="encuesta_habilitada" name="encuesta_habilitada" {% if parametros.encuesta_habilitada %}checked{% endif %}>
+                            <label class="form-check-label" for="encuesta_habilitada">Habilitar encuesta de satisfacción 1–5 al cerrar tickets</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="periodo">Periodo de medición <span class="text-danger">*</span></label>
+                        <input class="form-control {% if errores.periodo %}is-invalid{% endif %}" id="periodo" name="periodo" required value="{{ medicion.periodo }}">
+                        <div class="invalid-feedback">{% if errores.periodo %}{{ errores.periodo }}{% else %}Obligatorio.{% endif %}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="fecha_inicio">Inicio <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control {% if errores.fecha_inicio %}is-invalid{% endif %}" id="fecha_inicio" name="fecha_inicio" required value="{{ medicion.fecha_inicio }}">
+                        <div class="invalid-feedback">{% if errores.fecha_inicio %}{{ errores.fecha_inicio }}{% else %}Obligatorio.{% endif %}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="fecha_termino">Término <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="fecha_termino" name="fecha_termino" required value="{{ medicion.fecha_termino }}">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-primary-custom" type="submit">Guardar parámetros</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

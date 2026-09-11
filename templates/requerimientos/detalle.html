@@ -14,8 +14,9 @@
     </nav>
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h2 class="fw-bold mb-1 text-primary-custom">Ficha de trazabilidad #{{ ticket.id_ticket }}</h2>
-            <p class="text-muted small mb-0">Detalle del compromiso registrado en JSON.</p>
+            {% include '_cu.html' with cu_id='CU-E04' cu_nombre='Ficha del ticket' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Ticket {{ ticket.id_ticket }}</h2>
+            <p class="text-muted small mb-0">Ficha del ciudadano, la delegación y el semáforo de plazo.</p>
         </div>
         <span class="badge {{ ticket.semaforo_clase }} fs-6 py-2 px-3 rounded-pill">{{ ticket.semaforo_texto }}</span>
     </div>
@@ -68,6 +69,33 @@
                     <div class="p-3 rounded-3 bg-body-tertiary border mt-3">
                         <small class="text-muted d-block">Satisfacción ciudadana</small>
                         <strong>{{ ticket.evaluacion_satisfaccion }} / 5</strong>
+                        {% if ticket.comentario_satisfaccion %}
+                        <div class="small mt-1">{{ ticket.comentario_satisfaccion }}</div>
+                        {% endif %}
+                    </div>
+                    {% elif ticket.estado_proceso == 'Resuelto' and encuesta_habilitada %}
+                    <div class="p-3 rounded-3 border border-warning mt-3">
+                        <h6 class="fw-bold">Encuesta de satisfacción (1 a 5)</h6>
+                        <p class="small text-muted">Registre la nota que entregó el vecino al cerrar el caso.</p>
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="encuesta">
+                            <div class="mb-2">
+                                <label class="form-label small" for="evaluacion_satisfaccion">Nota <span class="text-danger">*</span></label>
+                                <select class="form-select" id="evaluacion_satisfaccion" name="evaluacion_satisfaccion" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for nota in notas_encuesta %}
+                                    <option value="{{ nota }}">{{ nota }} — {% if nota == 1 %}Muy insatisfecho{% elif nota == 2 %}Insatisfecho{% elif nota == 3 %}Regular{% elif nota == 4 %}Satisfecho{% else %}Muy satisfecho{% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Seleccione una nota entre 1 y 5.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="comentario_satisfaccion">Comentario (opcional)</label>
+                                <input class="form-control" id="comentario_satisfaccion" name="comentario_satisfaccion" maxlength="200">
+                            </div>
+                            <button class="btn btn-warning text-dark btn-sm" type="submit">Guardar encuesta</button>
+                        </form>
                     </div>
                     {% endif %}
                 </div>
@@ -76,7 +104,7 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom mb-3">Datos del vecino</h5>
+                    <h5 class="fw-bold text-primary-custom mb-3">Ciudadano</h5>
                     <p class="mb-2"><small class="text-muted d-block">Nombre</small><strong>{{ ticket.vecino_nombre }}</strong></p>
                     <p class="mb-2"><small class="text-muted d-block">WhatsApp</small>{{ ticket.telefono_whatsapp }}</p>
                     <p class="mb-2"><small class="text-muted d-block">Correo</small>{{ ticket.email }}</p>
@@ -89,6 +117,7 @@
                     <h5 class="fw-bold text-primary-custom mb-3">Actualizar gestión</h5>
                     <form method="post" action="{% url 'detalle_requerimiento' ticket.id_ticket %}">
                         {% csrf_token %}
+                        <input type="hidden" name="accion" value="actualizar">
                         <div class="mb-3">
                             <label for="estado_proceso" class="form-label small">Estado del proceso</label>
                             <select id="estado_proceso" name="estado_proceso" class="form-select" required>

@@ -4,113 +4,108 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}SIGED | Municipalidad de La Serena{% endblock %}</title>
+    <title>{% block title %}SIGED-SGR | Delegaciones La Serena{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.css">
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
-    <header class="sticky-top">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom shadow-sm">
-            <div class="container-fluid px-lg-4">
-                <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'inicio' %}">
-                    <img src="{% static 'img/escudo_la_serena.svg' %}" alt="Escudo de La Serena" width="40" height="40">
-                    <span class="d-flex flex-column lh-sm">
-                        <strong class="brand-title">SIGED La Serena</strong>
-                        <small class="brand-subtitle text-warning">Matriz SGR · 6 Delegaciones</small>
-                    </span>
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Alternar navegación">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarMain">
-                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}" href="{% url 'inicio' %}">
-                                <i class="bi bi-house-door me-1"></i>Inicio
-                            </a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'lista_requerimientos' or request.resolver_match.url_name == 'nuevo_requerimiento' or request.resolver_match.url_name == 'detalle_requerimiento' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-inboxes me-1"></i>Requerimientos
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'lista_requerimientos' %}"><i class="bi bi-traffic-light me-2 text-warning"></i>Semáforo de tickets</a></li>
-                                <li><a class="dropdown-item" href="{% url 'nuevo_requerimiento' %}"><i class="bi bi-plus-circle me-2 text-success"></i>Ingresar requerimiento</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'semaforo_sgr' or request.resolver_match.url_name == 'tubo_trabajo' or request.resolver_match.url_name == 'funcionarios' or request.resolver_match.url_name == 'detalle_funcionario' or request.resolver_match.url_name == 'resumen_delegacion' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-grid-3x3-gap me-1"></i>Matriz SGR
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'semaforo_sgr' %}"><i class="bi bi-stoplights me-2 text-danger"></i>Semáforo diario</a></li>
-                                <li><a class="dropdown-item" href="{% url 'tubo_trabajo' %}"><i class="bi bi-calendar2-week me-2 text-info"></i>Tubo de trabajo</a></li>
-                                <li><a class="dropdown-item" href="{% url 'funcionarios' %}"><i class="bi bi-person-badge me-2 text-primary"></i>Pestaña personal</a></li>
-                                <li><a class="dropdown-item" href="{% url 'resumen_delegacion' %}"><i class="bi bi-clipboard-data me-2 text-success"></i>Resumen delegación</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'kanban' or request.resolver_match.url_name == 'areas_soporte' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-graph-up-arrow me-1"></i>Control de gestión
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2 me-2 text-danger"></i>Cuellos de botella</a></li>
-                                <li><a class="dropdown-item" href="{% url 'kanban' %}"><i class="bi bi-kanban me-2 text-info"></i>Tablero Kanban</a></li>
-                                <li><a class="dropdown-item" href="{% url 'areas_soporte' %}"><i class="bi bi-diagram-3 me-2 text-warning"></i>Áreas estratégicas</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item ms-lg-2">
-                            <span class="badge text-bg-warning text-dark py-2 px-3 rounded-pill">
-                                <i class="bi bi-geo-alt-fill me-1"></i>La Serena
-                            </span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-
-    {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% elif message.tags == 'success' %}success{% else %}warning{% endif %} alert-dismissible fade show shadow-sm" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-        {% endfor %}
+<body>
+<div id="sigedLoader" class="siged-loader" data-lottie="{% static 'lottie/siged-ticket-loader.json' %}" aria-hidden="true" role="status">
+    <div class="siged-loader__box">
+        <div id="sigedLoaderStage" class="siged-loader__stage"></div>
+        <p class="siged-loader__label mb-0">Cargando ticket y gestión…</p>
+        <p class="small text-muted mb-0">Municipalidad de La Serena · SIGED-SGR</p>
     </div>
-    {% endif %}
+</div>
 
-    <main class="flex-grow-1 py-4">
-        {% block content %}{% endblock %}
-    </main>
-
-    <footer class="bg-dark text-white-50 py-4 mt-auto border-top border-secondary">
-        <div class="container">
-            <div class="row g-3 align-items-center">
-                <div class="col-md-5 d-flex align-items-center gap-3">
-                    <img src="{% static 'img/escudo_la_serena.svg' %}" alt="Escudo de La Serena" width="42" height="42" class="opacity-75">
-                    <div>
-                        <h6 class="text-white mb-1">© 2026 Ilustre Municipalidad de La Serena</h6>
-                        <p class="small mb-0">Prat 451, La Serena · SIGED / Matriz SGR</p>
-                    </div>
-                </div>
-                <div class="col-md-4 small">
-                    <a href="{% url 'inicio' %}" class="link-light text-decoration-none me-3">Inicio</a>
-                    <a href="{% url 'lista_requerimientos' %}" class="link-light text-decoration-none me-3">Tickets</a>
-                    <a href="{% url 'semaforo_sgr' %}" class="link-light text-decoration-none me-3">Semáforo SGR</a>
-                    <a href="{% url 'dashboard' %}" class="link-light text-decoration-none">Dashboard</a>
-                </div>
-                <div class="col-md-3 text-md-end">
-                    <span class="badge text-bg-success py-2 px-3">Servidor Back-End Django 6.1 Activo</span>
+<div class="siged-app">
+    {% include '_sidebar.html' %}
+    <div class="siged-main">
+        <header class="siged-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-primary btn-sm sidebar-toggle" type="button" data-bs-toggle="offcanvas" data-siged-toggle aria-label="Abrir menú">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div>
+                    <p class="siged-topbar__title mb-0">{% block topbar_title %}SIGED-SGR Delegaciones La Serena{% endblock %}</p>
+                    <div class="siged-topbar__sub">{% block topbar_sub %}Portal municipal · atención ciudadana y semáforo de compromisos{% endblock %}</div>
                 </div>
             </div>
-        </div>
-    </footer>
+            <div class="siged-user">
+                {% if puede_notificaciones %}
+                <a class="btn btn-outline-primary btn-sm position-relative" href="{% url 'notificaciones' %}" title="Avisos">
+                    <i class="bi bi-bell"></i>
+                    {% if notificaciones_pendientes %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">{{ notificaciones_pendientes }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+                {% if usuario_actual %}
+                <div class="text-end d-none d-md-block">
+                    <div class="fw-semibold small">{{ usuario_actual.nombre }}</div>
+                    <div class="siged-topbar__sub">{{ usuario_actual.rol_etiqueta }} · {{ usuario_actual.delegacion }}</div>
+                </div>
+                <span class="siged-user__avatar">{{ usuario_actual.nombre|slice:":1" }}</span>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'logout' %}">Salir</a>
+                {% endif %}
+            </div>
+        </header>
 
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    {% block extra_js %}{% endblock %}
+        {% if messages %}
+        <div class="px-4 pt-3">
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% elif message.tags == 'success' %}success{% else %}warning{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" data-bs-dismiss="alert" aria-label="Cerrar" class="btn-close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <main class="siged-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="siged-footer">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                <div>
+                    <strong>Los watones PC</strong> — Felipe, Aixa y Gabriel · Proyecto Integrado · SIGED-SGR Delegaciones La Serena · Prof. Jorge Cortés
+                </div>
+                <div>Municipalidad de La Serena · mockup JSON local · sin MySQL ni APIs de negocio</div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/lottie.min.js' %}"></script>
+<script src="{% static 'js/lordicon.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<script src="{% static 'js/siged-motion.js' %}"></script>
+<script>
+    (() => {
+        const forms = document.querySelectorAll(".needs-validation");
+        Array.from(forms).forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add("was-validated");
+            });
+        });
+        const sidebar = document.getElementById("sigedSidebar");
+        const toggle = document.querySelector("[data-siged-toggle]");
+        if (toggle && sidebar) {
+            toggle.addEventListener("click", () => sidebar.classList.toggle("is-open"));
+        }
+    })();
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

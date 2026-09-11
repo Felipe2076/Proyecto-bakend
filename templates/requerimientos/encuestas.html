@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Encuesta de satisfacción | SIGED La Serena{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item active">Encuesta</li>
+        </ol>
+    </nav>
+    {% include '_cu.html' with cu_id='CU-E12' cu_nombre='Encuesta de satisfacción' %}
+    <h2 class="fw-bold text-primary-custom mb-1">Encuesta al ciudadano (1 a 5)</h2>
+    <p class="text-muted small mb-4">Se aplica cuando el ticket queda Resuelto. La nota queda en el registro local.</p>
+
+    {% if not encuesta_habilitada %}
+    <div class="alert alert-warning">La encuesta está deshabilitada en parámetros de administración.</div>
+    {% endif %}
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center">
+                <small class="text-muted">Promedio</small>
+                <h3 class="fw-bold mb-0">{{ promedio }} / 5</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center">
+                <small class="text-muted">Con nota</small>
+                <h3 class="fw-bold mb-0">{{ total_con_nota }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center">
+                <small class="text-muted">Pendientes de encuestar</small>
+                <h3 class="fw-bold text-warning mb-0">{{ total_pendientes }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-primary-custom">Pendientes</h5>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Vecino</th>
+                            <th>Delegación</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in pendientes %}
+                        <tr>
+                            <td class="font-monospace">{{ t.id_ticket }}</td>
+                            <td>{{ t.vecino_nombre }}</td>
+                            <td>{{ t.delegacion }}</td>
+                            <td class="text-end"><a class="btn btn-sm btn-warning text-dark" href="{% url 'detalle_requerimiento' t.id_ticket %}">Aplicar encuesta</a></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-muted">No hay tickets resueltos pendientes de nota.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-primary-custom">Encuestas registradas</h5>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Vecino</th>
+                            <th>Nota</th>
+                            <th>Comentario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in con_nota %}
+                        <tr>
+                            <td><a href="{% url 'detalle_requerimiento' t.id_ticket %}">{{ t.id_ticket }}</a></td>
+                            <td>{{ t.vecino_nombre }}</td>
+                            <td>
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= t.evaluacion_satisfaccion %}<i class="bi bi-star-fill text-warning"></i>{% else %}<i class="bi bi-star text-muted"></i>{% endif %}
+                                {% endfor %}
+                                <span class="ms-1">{{ t.evaluacion_satisfaccion }}/5</span>
+                            </td>
+                            <td class="small">{{ t.comentario_satisfaccion|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-muted">Aún no hay notas registradas. Puede marcar un ticket como Resuelto y aplicar la encuesta en su ficha.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

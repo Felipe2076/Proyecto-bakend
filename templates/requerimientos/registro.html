@@ -1,83 +1,94 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Registro de requerimiento | SIGED La Serena{% endblock %}
+{% block title %}Ingresar ticket | SIGED-SGR{% endblock %}
+{% block topbar_title %}Ingresar ticket del ciudadano{% endblock %}
+{% block topbar_sub %}CU-E02 · canal ventanilla / WhatsApp / correo{% endblock %}
 
 {% block content %}
 <div class="container">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-1 small">
             <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'lista_requerimientos' %}" class="text-decoration-none">Requerimientos</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'lista_requerimientos' %}" class="text-decoration-none">Tickets</a></li>
             <li class="breadcrumb-item active" aria-current="page">Nuevo</li>
         </ol>
     </nav>
-    <h2 class="fw-bold mb-1 text-primary-custom">Captura de requerimientos territoriales</h2>
-    <p class="text-muted small mb-4">Registro de compromisos con vecinos por canal presencial, web, correo, teléfono o WhatsApp.</p>
+    {% include '_cu.html' with cu_id='CU-E02' cu_nombre='Registrar ticket' %}
+    <h2 class="fw-bold mb-1 text-primary-custom">Ingreso de ticket del ciudadano</h2>
+    <p class="text-muted small mb-4">Ventanilla, WhatsApp o correo. Tipifique como RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA o FELICITACIÓN.</p>
 
     <div class="row justify-content-center">
         <div class="col-lg-10 col-xl-9">
-            <div class="card border-0 shadow rounded-4 overflow-hidden mb-5">
+            <div class="card shadow-sm overflow-hidden mb-5">
                 <div class="card-header bg-primary-custom text-white py-3 px-4">
-                    <h5 class="fw-bold mb-0">Formulario de ingreso</h5>
+                    <h5 class="fw-bold mb-0">Datos del ticket</h5>
                 </div>
                 <div class="card-body p-4 p-md-5">
-                    <form method="post" action="{% url 'nuevo_requerimiento' %}" class="needs-validation">
+                    <form method="post" action="{% url 'nuevo_requerimiento' %}" class="needs-validation" novalidate>
                         {% csrf_token %}
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label for="vecino_nombre" class="form-label fw-semibold">Nombre del vecino <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="vecino_nombre" name="vecino_nombre" required placeholder="Ej: María González Pérez" value="{{ valores.vecino_nombre }}">
+                                <label for="vecino_nombre" class="form-label fw-semibold">Ciudadano <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control {% if errores.vecino_nombre %}is-invalid{% endif %}" id="vecino_nombre" name="vecino_nombre" required minlength="5" placeholder="Nombre y apellido" value="{{ valores.vecino_nombre }}">
+                                <div class="invalid-feedback">{% if errores.vecino_nombre %}{{ errores.vecino_nombre }}{% else %}Indique el nombre del ciudadano (mínimo 5 caracteres).{% endif %}</div>
                             </div>
                             <div class="col-md-6">
-                                <label for="telefono_whatsapp" class="form-label fw-semibold">Teléfono WhatsApp <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control" id="telefono_whatsapp" name="telefono_whatsapp" required placeholder="+56 9 8765 4321" value="{{ valores.telefono_whatsapp }}">
+                                <label for="telefono_whatsapp" class="form-label fw-semibold">Teléfono / WhatsApp <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control {% if errores.telefono_whatsapp %}is-invalid{% endif %}" id="telefono_whatsapp" name="telefono_whatsapp" required placeholder="+56 9 8765 4321" pattern="(\+56\s?)?9[\s-]?\d{4}[\s-]?\d{4}" value="{{ valores.telefono_whatsapp }}">
+                                <div class="invalid-feedback">{% if errores.telefono_whatsapp %}{{ errores.telefono_whatsapp }}{% else %}Use un celular chileno, por ejemplo +56 9 1234 5678.{% endif %}</div>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label for="email" class="form-label fw-semibold">Correo electrónico</label>
-                                <input type="email" class="form-control" id="email" name="email" placeholder="vecino@correo.cl" value="{{ valores.email }}">
+                                <label for="email" class="form-label fw-semibold">Correo del ciudadano <span class="text-muted small">(obligatorio si entra por correo)</span></label>
+                                <input type="email" class="form-control {% if errores.email %}is-invalid{% endif %}" id="email" name="email" placeholder="vecino@correo.cl" value="{{ valores.email }}">
+                                <div class="invalid-feedback">{% if errores.email %}{{ errores.email }}{% else %}Ingrese un correo válido.{% endif %}</div>
                             </div>
                             <div class="col-md-6">
-                                <label for="delegacion" class="form-label fw-semibold">Delegación territorial <span class="text-danger">*</span></label>
-                                <select class="form-select" id="delegacion" name="delegacion" required>
+                                <label for="delegacion" class="form-label fw-semibold">Delegación <span class="text-danger">*</span></label>
+                                <select class="form-select {% if errores.delegacion %}is-invalid{% endif %}" id="delegacion" name="delegacion" required>
                                     <option value="" disabled {% if not valores.delegacion %}selected{% endif %}>Seleccione delegación...</option>
                                     {% for del in delegaciones %}
                                     <option value="{{ del }}" {% if valores.delegacion == del %}selected{% endif %}>{{ del }}</option>
                                     {% endfor %}
                                 </select>
+                                <div class="invalid-feedback">{% if errores.delegacion %}{{ errores.delegacion }}{% else %}Seleccione una delegación.{% endif %}</div>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label for="canal_ingreso" class="form-label fw-semibold">Canal de ingreso <span class="text-danger">*</span></label>
-                                <select class="form-select" id="canal_ingreso" name="canal_ingreso" required>
+                                <label for="canal_ingreso" class="form-label fw-semibold">Canal <span class="text-danger">*</span></label>
+                                <select class="form-select {% if errores.canal_ingreso %}is-invalid{% endif %}" id="canal_ingreso" name="canal_ingreso" required>
                                     <option value="" disabled {% if not valores.canal_ingreso %}selected{% endif %}>Seleccione canal...</option>
                                     {% for canal in canales %}
                                     <option value="{{ canal }}" {% if valores.canal_ingreso == canal %}selected{% endif %}>{{ canal }}</option>
                                     {% endfor %}
                                 </select>
+                                <div class="form-text">Solo ventanilla, WhatsApp o correo.</div>
+                                <div class="invalid-feedback">{% if errores.canal_ingreso %}{{ errores.canal_ingreso }}{% else %}Seleccione el canal.{% endif %}</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="area_tematica" class="form-label fw-semibold">Área temática <span class="text-danger">*</span></label>
-                                <select class="form-select" id="area_tematica" name="area_tematica" required>
+                                <select class="form-select {% if errores.area_tematica %}is-invalid{% endif %}" id="area_tematica" name="area_tematica" required>
                                     <option value="" disabled {% if not valores.area_tematica %}selected{% endif %}>Seleccione área...</option>
                                     {% for area in areas %}
                                     <option value="{{ area }}" {% if valores.area_tematica == area %}selected{% endif %}>{{ area }}</option>
                                     {% endfor %}
                                 </select>
+                                <div class="invalid-feedback">{% if errores.area_tematica %}{{ errores.area_tematica }}{% else %}Seleccione el área.{% endif %}</div>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label for="tipo_entrada" class="form-label fw-semibold">Tipo de entrada <span class="text-danger">*</span></label>
-                                <select class="form-select" id="tipo_entrada" name="tipo_entrada" required>
+                                <label for="tipo_entrada" class="form-label fw-semibold">Tipificación <span class="text-danger">*</span></label>
+                                <select class="form-select {% if errores.tipo_entrada %}is-invalid{% endif %}" id="tipo_entrada" name="tipo_entrada" required>
                                     <option value="" disabled {% if not valores.tipo_entrada %}selected{% endif %}>Seleccione tipo...</option>
                                     {% for tipo in tipos %}
                                     <option value="{{ tipo }}" {% if valores.tipo_entrada == tipo %}selected{% endif %}>{{ tipo }}</option>
                                     {% endfor %}
                                 </select>
+                                <div class="invalid-feedback">{% if errores.tipo_entrada %}{{ errores.tipo_entrada }}{% else %}Seleccione el tipo.{% endif %}</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="funcionario_asignado" class="form-label fw-semibold">Funcionario / cuadrilla</label>
@@ -90,12 +101,13 @@
                             </div>
                         </div>
                         <div class="mb-4">
-                            <label for="descripcion" class="form-label fw-semibold">Descripción de la situación <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="descripcion" name="descripcion" rows="4" required placeholder="Describa el requerimiento, ubicación y necesidad del vecino...">{{ valores.descripcion }}</textarea>
+                            <label for="descripcion" class="form-label fw-semibold">Descripción del ticket <span class="text-danger">*</span></label>
+                            <textarea class="form-control {% if errores.descripcion %}is-invalid{% endif %}" id="descripcion" name="descripcion" rows="4" required minlength="15" placeholder="Qué ocurrió, en qué calle o sector y qué pide el ciudadano...">{{ valores.descripcion }}</textarea>
+                            <div class="invalid-feedback">{% if errores.descripcion %}{{ errores.descripcion }}{% else %}Mínimo 15 caracteres.{% endif %}</div>
                         </div>
                         <div class="d-flex flex-wrap justify-content-between gap-3 pt-3 border-top">
-                            <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-secondary">Volver al listado</a>
-                            <button type="submit" class="btn btn-primary-custom btn-lg">Guardar y generar ticket</button>
+                            <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-secondary">Volver a los tickets</a>
+                            <button type="submit" class="btn btn-primary-custom">Guardar ticket</button>
                         </div>
                     </form>
                 </div>

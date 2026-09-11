@@ -13,10 +13,13 @@
                     <li class="breadcrumb-item active" aria-current="page">Tubo de trabajo</li>
                 </ol>
             </nav>
-            <h2 class="fw-bold mb-1 text-primary-custom">Agenda colectiva de compromisos</h2>
-            <p class="text-muted small mb-0">Estados: Ingresado, Pendiente, En proceso y Realizado. El cumplimiento del tubo exige un 80%.</p>
+            {% include '_cu.html' with cu_id='CU-E08' cu_nombre='Compromisos' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Compromisos con el ciudadano</h2>
+            <p class="text-muted small mb-0">Tubo de trabajo: ingresado, pendiente, en proceso y realizado. Meta de cumplimiento 80%.</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'compromiso_nuevo' %}" class="btn btn-warning text-dark fw-semibold">Nuevo compromiso</a>
+            <a href="{% url 'agenda' %}" class="btn btn-outline-primary">Ver agenda</a>
             <span class="badge text-bg-success fs-6 py-2">{{ pct_realizado }}% realizado</span>
             <span class="badge text-bg-warning fs-6 py-2">{{ pct_pendiente }}% pendiente</span>
         </div>
@@ -70,6 +73,10 @@
                         </div>
                         <p class="small mb-2">{{ item.descripcion }}</p>
                         <div class="small text-muted mb-2">{{ item.vecino }} · {{ item.funcionario }}</div>
+                        <div class="d-flex gap-1 mb-2">
+                            <a class="btn btn-outline-primary btn-sm py-0" href="{% url 'compromiso_editar' item.id_compromiso %}">Editar</a>
+                            <a class="btn btn-outline-danger btn-sm py-0" href="{% url 'compromiso_eliminar' item.id_compromiso %}">Eliminar</a>
+                        </div>
                         <form method="post" action="{% url 'tubo_trabajo' %}">
                             {% csrf_token %}
                             <input type="hidden" name="id_compromiso" value="{{ item.id_compromiso }}">

@@ -1,5 +1,19 @@
 [
   {
+    "id_actividad": "ACT-013",
+    "id_funcionario": "FUN-002",
+    "funcionario_nombre": "Camila Oyarzún Santander",
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación Rural",
+    "fecha_actividad": "2026-09-11",
+    "contacto": "Rosa Gallardo Vega",
+    "item": "Atenciones sociales (hasta 3 por usuario)",
+    "servicio": "Seguimiento de canasta de alimentos",
+    "codigo_verificador": "VER-20260911-FUN-002-013",
+    "imagen_verificadora": "foto_terreno.jpg",
+    "punto_validado": true
+  },
+  {
     "id_actividad": "ACT-001",
     "id_funcionario": "FUN-002",
     "funcionario_nombre": "Camila Oyarzún Santander",
@@ -102,7 +116,7 @@
     "id_funcionario": "FUN-006",
     "funcionario_nombre": "Valeria Moraga Henríquez",
     "cargo": "Coordinadora DISERCO",
-    "delegacion": "Delegación Avenida del Mar",
+    "delegacion": "Delegación Av. del Mar",
     "fecha_actividad": "2026-09-01",
     "contacto": "María González Pérez",
     "item": "Respuesta a reclamos de ornato",
@@ -116,7 +130,7 @@
     "id_funcionario": "FUN-007",
     "funcionario_nombre": "Esteban Barraza Villalobos",
     "cargo": "Proyectos y Compras",
-    "delegacion": "Delegación Central",
+    "delegacion": "Delegación Centro",
     "fecha_actividad": "2026-08-28",
     "contacto": "Dirección de Administración y Finanzas",
     "item": "Órdenes de compra territoriales",

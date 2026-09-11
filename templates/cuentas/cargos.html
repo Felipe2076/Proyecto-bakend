@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Cargos | Administración SIGED{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item active">Cargos</li>
+        </ol>
+    </nav>
+    <h2 class="fw-bold text-primary-custom mb-3">Cargos municipales</h2>
+    {% include 'cuentas/_admin_tabs.html' %}
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom">Nuevo cargo</h5>
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="nombre">Nombre <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.nombre %}is-invalid{% endif %}" id="nombre" name="nombre" required minlength="4" value="{{ valores.nombre }}">
+                            <div class="invalid-feedback">{% if errores.nombre %}{{ errores.nombre }}{% else %}Mínimo 4 caracteres.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="modulo_principal">Módulo principal <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.modulo_principal %}is-invalid{% endif %}" id="modulo_principal" name="modulo_principal" required value="{{ valores.modulo_principal }}" placeholder="Ej: Matriz SGR">
+                            <div class="invalid-feedback">{% if errores.modulo_principal %}{{ errores.modulo_principal }}{% else %}Indique el módulo.{% endif %}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="descripcion">Descripción <span class="text-danger">*</span></label>
+                            <textarea class="form-control {% if errores.descripcion %}is-invalid{% endif %}" id="descripcion" name="descripcion" rows="3" required minlength="10">{{ valores.descripcion }}</textarea>
+                            <div class="invalid-feedback">{% if errores.descripcion %}{{ errores.descripcion }}{% else %}Mínimo 10 caracteres.{% endif %}</div>
+                        </div>
+                        <button class="btn btn-primary-custom w-100" type="submit">Guardar cargo</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary-custom">Catálogo</h5>
+                    {% for cargo in cargos %}
+                    <div class="border rounded-3 p-3 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ cargo.nombre }}</strong>
+                            <span class="badge text-bg-light border">{{ cargo.id_cargo }}</span>
+                        </div>
+                        <div class="small text-muted mb-1">Módulo: {{ cargo.modulo_principal }}</div>
+                        <p class="small mb-0">{{ cargo.descripcion }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">Sin cargos.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

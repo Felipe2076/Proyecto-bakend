@@ -13,8 +13,9 @@
                     <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
                 </ol>
             </nav>
-            <h2 class="fw-bold mb-1 text-primary-custom">Cuellos de botella y carga territorial</h2>
-            <p class="text-muted small mb-0">Casos con 6 o más días de atraso y distribución por delegación.</p>
+            {% include '_cu.html' with cu_id='CU-E10' cu_nombre='Panel de gestión' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Indicadores y cuellos de botella</h2>
+            <p class="text-muted small mb-0">Tickets con 6 o más días y carga por delegación.</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             <a href="{% url 'kanban' %}" class="btn btn-outline-primary">Tablero Kanban</a>

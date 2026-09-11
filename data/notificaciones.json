@@ -1,0 +1,26 @@
+[
+  {
+    "id": "NTF-001",
+    "titulo": "Bienvenida al mockup SIGED-SGR",
+    "mensaje": "Este entorno usa persistencia JSON local. No hay base de datos ni APIs de negocio conectadas.",
+    "tipo": "info",
+    "fecha": "2026-09-01",
+    "enlace": "/"
+  },
+  {
+    "id": "NTF-002",
+    "titulo": "Encuesta de satisfacción pendiente",
+    "mensaje": "Recuerde aplicar la encuesta 1 a 5 al cerrar tickets resueltos con el vecino.",
+    "tipo": "aviso",
+    "fecha": "2026-09-08",
+    "enlace": "/encuestas/"
+  },
+  {
+    "id": "NTF-003",
+    "titulo": "Agenda colectiva de la semana",
+    "mensaje": "Revise compromisos con fecha de terreno y reuniones vecinales en la agenda.",
+    "tipo": "agenda",
+    "fecha": "2026-09-10",
+    "enlace": "/control/agenda/"
+  }
+]
