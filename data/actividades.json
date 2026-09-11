@@ -1,5 +1,19 @@
 [
   {
+    "id_actividad": "ACT-013",
+    "id_funcionario": "FUN-002",
+    "funcionario_nombre": "Camila Oyarzún Santander",
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación Rural",
+    "fecha_actividad": "2026-09-11",
+    "contacto": "Rosa Gallardo Vega",
+    "item": "Atenciones sociales (hasta 3 por usuario)",
+    "servicio": "Seguimiento de canasta de alimentos",
+    "codigo_verificador": "VER-20260911-FUN-002-013",
+    "imagen_verificadora": "foto_terreno.jpg",
+    "punto_validado": true
+  },
+  {
     "id_actividad": "ACT-001",
     "id_funcionario": "FUN-002",
     "funcionario_nombre": "Camila Oyarzún Santander",

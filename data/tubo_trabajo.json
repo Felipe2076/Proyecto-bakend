@@ -1,5 +1,16 @@
 [
   {
+    "descripcion": "Poda de emergencia en plaza El Faro para el mockup",
+    "vecino": "JJVV El Faro",
+    "funcionario": "Valeria Moraga Henríquez",
+    "id_funcionario": "FUN-006",
+    "delegacion": "Delegación Avenida del Mar",
+    "fecha_compromiso": "2026-09-20",
+    "estado": "INGRESADO",
+    "id_compromiso": "TUB-011",
+    "fecha_ingreso": "2026-09-11"
+  },
+  {
     "id_compromiso": "TUB-001",
     "descripcion": "Retiro de escombros en Av. Cuatro Esquinas con Av. del Mar",
     "vecino": "María González Pérez",

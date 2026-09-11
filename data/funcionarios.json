@@ -17,9 +17,9 @@
     "nombre": "Camila Oyarzún Santander",
     "cargo": "Gestor Social",
     "delegacion": "Delegación Rural",
-    "fecha_ultimo_ingreso": "2026-08-30",
+    "fecha_ultimo_ingreso": "2026-09-11",
     "items": [
-      {"item": "Atenciones sociales (hasta 3 por usuario)", "ponderador": 40, "meta_trimestre": 120, "avance_actual": 74},
+      {"item": "Atenciones sociales (hasta 3 por usuario)", "ponderador": 40, "meta_trimestre": 120, "avance_actual": 75},
       {"item": "Fichas y ayudas de emergencia", "ponderador": 30, "meta_trimestre": 60, "avance_actual": 38},
       {"item": "Seguimiento a adultos mayores", "ponderador": 30, "meta_trimestre": 45, "avance_actual": 22}
     ]
