@@ -64,7 +64,7 @@
     "id_funcionario": "FUN-006",
     "nombre": "Valeria Moraga Henríquez",
     "cargo": "Coordinadora DISERCO",
-    "delegacion": "Delegación Avenida del Mar",
+    "delegacion": "Delegación Av. del Mar",
     "fecha_ultimo_ingreso": "2026-09-01",
     "items": [
       {"item": "Coordinación de cuadrillas comunales", "ponderador": 35, "meta_trimestre": 60, "avance_actual": 48},
@@ -76,7 +76,7 @@
     "id_funcionario": "FUN-007",
     "nombre": "Esteban Barraza Villalobos",
     "cargo": "Proyectos y Compras",
-    "delegacion": "Delegación Central",
+    "delegacion": "Delegación Centro",
     "fecha_ultimo_ingreso": "2026-08-28",
     "items": [
       {"item": "Órdenes de compra territoriales", "ponderador": 40, "meta_trimestre": 30, "avance_actual": 19},

@@ -11,40 +11,19 @@ from django.shortcuts import redirect, render
 
 from cuentas.auth import requerir_modulo
 from cuentas.store import cargar_parametros
+from cuentas.vocabulario import (
+    AREAS_ESTRATEGICAS,
+    CANALES_INGRESO,
+    DELEGACIONES_OFICIALES,
+    TIPOS_TICKET,
+    normalizar_canal,
+    normalizar_delegacion,
+    normalizar_tipo,
+)
 
 logger = logging.getLogger(__name__)
 
-DELEGACIONES_OFICIALES = [
-    "Delegación Central",
-    "Delegación Rural",
-    "Delegación La Antena",
-    "Delegación La Pampa",
-    "Delegación Avenida del Mar",
-    "Delegación Las Compañías",
-]
-
-AREAS_ESTRATEGICAS = [
-    "Seguridad Ciudadana",
-    "Gestión Social y Comunitaria",
-    "Servicio a la Comunidad",
-    "Instituciones Municipales y Participación",
-]
-
-CANALES_INGRESO = [
-    "Ventanilla",
-    "WhatsApp",
-    "Correo",
-    "Teléfono",
-    "Portal web",
-]
-
-TIPOS_ENTRADA = [
-    "Reclamo",
-    "Solicitud de Ayuda",
-    "Consulta",
-    "Sugerencia",
-    "Felicitación",
-]
+TIPOS_ENTRADA = TIPOS_TICKET
 
 FUNCIONARIOS_REFERENCIA = [
     "Patrulla Sector 3 (Seguridad)",
@@ -120,25 +99,28 @@ def validar_formulario_requerimiento(post):
     }
     errores = {}
     if len(valores["vecino_nombre"]) < 5:
-        errores["vecino_nombre"] = "Ingrese el nombre completo del vecino (mínimo 5 caracteres)."
+        errores["vecino_nombre"] = "Indique el nombre del ciudadano (mínimo 5 caracteres)."
     if not validar_telefono_chileno(valores["telefono_whatsapp"]):
         errores["telefono_whatsapp"] = "Ingrese un celular chileno válido, por ejemplo +56 9 1234 5678."
+    valores["canal_ingreso"] = normalizar_canal(valores["canal_ingreso"])
+    valores["delegacion"] = normalizar_delegacion(valores["delegacion"])
+    valores["tipo_entrada"] = normalizar_tipo(valores["tipo_entrada"])
     canal = valores["canal_ingreso"]
-    if canal == "Correo" and not valores["email"]:
-        errores["email"] = "El correo es obligatorio cuando el canal de ingreso es Correo."
+    if canal == "correo" and not valores["email"]:
+        errores["email"] = "Si el ticket entra por correo, el e-mail del ciudadano es obligatorio."
     elif valores["email"] and not validar_email(valores["email"]):
-        errores["email"] = "El formato del correo no es válido (ejemplo: vecino@correo.cl)."
+        errores["email"] = "Revise el formato del correo (ejemplo: vecino@correo.cl)."
     if valores["delegacion"] not in DELEGACIONES_OFICIALES:
-        errores["delegacion"] = "Seleccione una delegación territorial."
+        errores["delegacion"] = "Seleccione la delegación (Centro, Rural, La Antena, La Pampa, Av. del Mar o Las Compañías)."
     canales = cargar_parametros().get("canales_ingreso") or CANALES_INGRESO
     if canal not in canales:
-        errores["canal_ingreso"] = "Seleccione el canal de ingreso (ventanilla, WhatsApp, correo u otro)."
+        errores["canal_ingreso"] = "El canal debe ser ventanilla, WhatsApp o correo."
     if valores["tipo_entrada"] not in TIPOS_ENTRADA:
-        errores["tipo_entrada"] = "Seleccione el tipo de entrada."
+        errores["tipo_entrada"] = "Tipifique el ticket: RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA o FELICITACIÓN."
     if valores["area_tematica"] not in AREAS_ESTRATEGICAS:
         errores["area_tematica"] = "Seleccione el área temática."
     if len(valores["descripcion"]) < 15:
-        errores["descripcion"] = "Describa el requerimiento con al menos 15 caracteres (lugar y necesidad)."
+        errores["descripcion"] = "Cuente qué pasó y dónde, en al menos 15 caracteres."
     return valores, errores
 
 

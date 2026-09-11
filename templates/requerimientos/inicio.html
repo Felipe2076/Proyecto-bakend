@@ -1,55 +1,44 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Inicio | SIGED Municipalidad de La Serena{% endblock %}
+{% block title %}Inicio | SIGED-SGR Delegaciones{% endblock %}
 
 {% block content %}
 <div class="container">
-    <section class="p-4 p-lg-5 mb-4 rounded-4 bg-hero text-white shadow">
+    <section class="p-4 p-lg-5 mb-4 bg-hero text-white shadow-sm">
         <div class="row align-items-center g-4">
             <div class="col-lg-7">
-                <span class="badge text-bg-warning text-dark mb-3">Matriz SGR · Seguimiento de Gestión de Resultados</span>
-                <h1 class="display-5 fw-bold mb-3">Sistema Integrado de Atención Vecinal - La Serena</h1>
-                <p class="lead mb-4 text-white-75">
-                    Mockup funcional para la Primera Entrega: captura multicanal, tickets con semáforo, actividades, compromisos, agenda y panel de gestión. Persistencia JSON local, sin MySQL.
+                {% include '_cu.html' with cu_id='CU-E01' cu_nombre='Sesión iniciada' %}
+                <h1 class="display-6 fw-bold mb-3">Atención ciudadana en las seis delegaciones</h1>
+                <p class="lead mb-3 text-white-75">
+                    Acá se anotan los tickets que llegan por ventanilla, WhatsApp o correo, se les hace seguimiento con semáforo y se registran actividad, evidencia, compromiso y agenda del equipo territorial.
                 </p>
                 {% if usuario_actual %}
-                <p class="small mb-3">Sesión: <strong>{{ usuario_actual.nombre }}</strong> · {{ usuario_actual.rol_etiqueta }} · {{ usuario_actual.delegacion }}</p>
+                <p class="small mb-3">Hola, <strong>{{ usuario_actual.nombre }}</strong> — {{ usuario_actual.rol_etiqueta }} en {{ usuario_actual.delegacion }}.</p>
                 {% endif %}
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning btn-lg fw-semibold text-dark">
-                        <i class="bi bi-plus-circle-fill me-2"></i>Ingresar requerimiento
-                    </a>
-                    <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-stoplights me-2"></i>Semáforo SGR
-                    </a>
-                    <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-table me-2"></i>Lista de tickets
-                    </a>
+                    <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning fw-semibold text-dark">Ingresar ticket</a>
+                    <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-light">Ver tickets</a>
+                    <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light">Semáforo SGR</a>
                 </div>
             </div>
             <div class="col-lg-5">
-                <div class="card border-0 shadow rounded-4 overflow-hidden">
-                    <img src="{% static 'img/faro_monumental.svg' %}" alt="Faro Monumental de La Serena" class="img-fluid w-100" style="max-height: 200px; object-fit: cover;">
+                <div class="card">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-semibold small text-uppercase text-secondary">
-                                <i class="bi bi-cloud-sun-fill me-1 text-warning"></i>Clima en vivo
-                            </span>
-                            <span class="badge bg-primary-custom">{{ clima.estado_conexion }}</span>
-                        </div>
+                        <p class="small text-uppercase text-secondary mb-1">Clima en La Serena</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h3 class="fw-bold text-primary-custom mb-0">{{ clima.temperatura }}°C</h3>
                                 <small class="text-muted">{{ clima.condicion }}</small>
                             </div>
                             <div class="text-end">
-                                <small class="text-muted d-block"><i class="bi bi-wind me-1"></i>{{ clima.velocidad_viento }} km/h</small>
+                                <small class="text-muted d-block">{{ clima.velocidad_viento }} km/h</small>
                                 <span class="badge {% if clima.conectado %}text-bg-success{% else %}text-bg-warning{% endif %}">
-                                    {% if clima.conectado %}Conectado{% else %}Estimado{% endif %}
+                                    {% if clima.conectado %}Open-Meteo{% else %}Dato local{% endif %}
                                 </span>
                             </div>
                         </div>
+                        <p class="note-hand small mt-3 mb-0">El logo PNG del equipo todavía no está; mientras tanto usamos la marca de texto SIGED-SGR.</p>
                     </div>
                 </div>
             </div>
@@ -58,111 +47,91 @@
 
     <section class="row g-3 mb-4">
         <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-folder-fill fs-2 text-primary mb-2"></i>
+            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
                 <h3 class="fw-bold mb-0">{{ total_casos }}</h3>
-                <span class="text-muted small">Total solicitudes</span>
+                <span class="text-muted small">Tickets</span>
             </div>
         </div>
         <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card accent-bar">
-                <i class="bi bi-exclamation-triangle-fill fs-2 text-danger mb-2"></i>
+            <div class="card shadow-sm text-center p-3 h-100 kpi-card accent-bar">
                 <h3 class="fw-bold text-danger mb-0">{{ casos_criticos }}</h3>
-                <span class="text-muted small">Críticos (≥6 días)</span>
+                <span class="text-muted small">Semáforo rojo</span>
             </div>
         </div>
         <div class="col-6 col-md-4 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-hourglass-split fs-2 text-warning mb-2"></i>
-                <h3 class="fw-bold text-warning mb-0">{{ casos_pendientes }}</h3>
+            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
+                <h3 class="fw-bold mb-0">{{ casos_pendientes }}</h3>
                 <span class="text-muted small">Pendientes</span>
             </div>
         </div>
         <div class="col-6 col-md-6 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-tools fs-2 text-info mb-2"></i>
-                <h3 class="fw-bold text-info mb-0">{{ casos_en_proceso }}</h3>
+            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
+                <h3 class="fw-bold mb-0">{{ casos_en_proceso }}</h3>
                 <span class="text-muted small">En proceso</span>
             </div>
         </div>
         <div class="col-12 col-md-6 col-xl-2-4">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100 kpi-card">
-                <i class="bi bi-check-circle-fill fs-2 text-success mb-2"></i>
-                <h3 class="fw-bold text-success mb-0">{{ casos_resueltos }}</h3>
-                <span class="text-muted small">Resueltos</span>
+            <div class="card shadow-sm text-center p-3 h-100 kpi-card">
+                <h3 class="fw-bold mb-0">{{ casos_resueltos }}</h3>
+                <span class="text-muted small">Cerrados</span>
             </div>
         </div>
     </section>
 
     <section class="row g-4 mb-4">
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card shadow-sm h-100">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom">Delegaciones territoriales</h5>
-                    <p class="text-muted small">Seis oficinas descentralizadas para acercar la gestión a cada territorio.</p>
+                    <h2 class="h5 fw-bold text-primary-custom">Las 6 delegaciones</h2>
+                    <p class="text-muted small">Centro, Rural, La Antena, La Pampa, Av. del Mar y Las Compañías.</p>
                     <div class="d-grid gap-2">
                         {% for del in delegaciones %}
-                        <a href="{% url 'lista_requerimientos' %}?delegacion={{ del|urlencode }}" class="btn btn-outline-primary text-start">
-                            <i class="bi bi-building me-2"></i>{{ del }}
-                        </a>
+                        <a href="{% url 'lista_requerimientos' %}?delegacion={{ del|urlencode }}" class="btn btn-outline-primary text-start">{{ del }}</a>
                         {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card shadow-sm h-100">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom">Semáforo de tickets</h5>
-                    <p class="text-muted small">Plazo de respuesta a requerimientos vecinales.</p>
+                    <h2 class="h5 fw-bold text-primary-custom">Semáforo del ticket</h2>
+                    <p class="text-muted small">Plazo de respuesta al ciudadano.</p>
                     <ul class="list-group list-group-flush mb-3">
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <li class="list-group-item d-flex justify-content-between px-0">
                             <span><span class="badge text-bg-success me-2">Verde</span>Día 1 a 3</span>
                             <small class="text-muted">En plazo</small>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <li class="list-group-item d-flex justify-content-between px-0">
                             <span><span class="badge text-bg-warning me-2">Amarillo</span>Día 4 a 5</span>
                             <small class="text-muted">Alerta</small>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <li class="list-group-item d-flex justify-content-between px-0">
                             <span><span class="badge text-bg-danger me-2">Rojo</span>Día 6 o más</span>
                             <small class="text-muted">Crítico</small>
                         </li>
                     </ul>
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-danger w-100">Ver cuellos de botella</a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary w-100">Ver indicadores</a>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card shadow-sm h-100">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom">Herramientas de la matriz</h5>
-                    <p class="text-muted small">Lo que antes era una planilla de Drive, ahora está centralizado en SIGED.</p>
+                    <h2 class="h5 fw-bold text-primary-custom">Módulos del prototipo</h2>
+                    <p class="text-muted small">Agrupados como en las fichas CU.</p>
                     <div class="d-grid gap-2">
+                        {% if puede_requerimientos %}
+                        <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-primary-custom">Atención ciudadana</a>
+                        {% endif %}
                         {% if puede_actividades %}
-                        <a href="{% url 'actividades_diarias' %}" class="btn btn-primary-custom">
-                            <i class="bi bi-journal-check me-1"></i>Actividades y evidencias
-                        </a>
+                        <a href="{% url 'actividades_diarias' %}" class="btn btn-outline-primary">Gestión interna</a>
                         {% endif %}
-                        {% if puede_compromisos %}
-                        <a href="{% url 'tubo_trabajo' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-check2-square me-1"></i>Compromisos ciudadanos
-                        </a>
+                        {% if puede_matriz_sgr %}
+                        <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-primary">Desempeño</a>
                         {% endif %}
-                        {% if puede_agenda %}
-                        <a href="{% url 'agenda' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-calendar2-week me-1"></i>Agenda colectiva
-                        </a>
-                        {% endif %}
-                        {% if puede_encuestas %}
-                        <a href="{% url 'encuestas' %}" class="btn btn-outline-warning">
-                            <i class="bi bi-star me-1"></i>Encuesta 1 a 5
-                        </a>
-                        {% endif %}
-                        {% if puede_control_gestion %}
-                        <a href="{% url 'resumen_delegacion' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-pie-chart me-1"></i>Resumen de gestión
-                        </a>
+                        {% if puede_administracion %}
+                        <a href="{% url 'admin_usuarios' %}" class="btn btn-outline-secondary">Administración</a>
                         {% endif %}
                     </div>
                 </div>

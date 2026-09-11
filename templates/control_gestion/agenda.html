@@ -12,8 +12,9 @@
                     <li class="breadcrumb-item active">Agenda</li>
                 </ol>
             </nav>
-            <h2 class="fw-bold mb-1 text-primary-custom">Agenda colectiva</h2>
-            <p class="text-muted small mb-0">Reuniones, terrenos, compromisos ciudadanos y actividades diarias del mes.</p>
+            {% include '_cu.html' with cu_id='CU-E09' cu_nombre='Agenda colectiva' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Agenda de la delegación</h2>
+            <p class="text-muted small mb-0">Reuniones, terreno, compromisos y actividades del mes.</p>
         </div>
         <div class="btn-group">
             <a class="btn btn-outline-primary {% if vista == 'calendario' %}active{% endif %}" href="?vista=calendario&amp;anio={{ anio }}&amp;mes={{ mes }}">Calendario</a>

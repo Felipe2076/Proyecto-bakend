@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ingreso | SIGED-SGR La Serena</title>
+    <title>Ingreso | SIGED-SGR Delegaciones</title>
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
@@ -13,13 +13,13 @@
     <div class="container">
         <div class="row justify-content-center g-4">
             <div class="col-lg-5">
-                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card shadow-sm overflow-hidden">
                     <div class="bg-primary-custom text-white p-4">
                         <div class="d-flex align-items-center gap-3">
-                            <img src="{% static 'img/escudo_la_serena.svg' %}" alt="Escudo de La Serena" width="52" height="52">
+                            {% include '_marca.html' %}
                             <div>
-                                <h1 class="h4 fw-bold mb-1">SIGED-SGR Delegaciones</h1>
-                                <p class="small mb-0 text-white-50">Municipalidad de La Serena · Login de demostración</p>
+                                <h1 class="h4 fw-bold mb-1">Delegaciones La Serena</h1>
+                                <p class="small mb-0 text-white-50">CU-E01 · Ingreso al sistema</p>
                             </div>
                         </div>
                     </div>
@@ -29,38 +29,39 @@
                             <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} py-2">{{ message }}</div>
                             {% endfor %}
                         {% endif %}
-                        <p class="text-muted small">Mockup funcional de la Primera Entrega. No hay conexión a MySQL ni a APIs de negocio.</p>
+                        <p class="note-hand mb-3">Para la Primera Entrega trabajamos con datos locales. No hay base MySQL ni APIs de negocio detrás.</p>
                         <form method="post" action="{% url 'login' %}" class="needs-validation" novalidate>
                             {% csrf_token %}
                             <input type="hidden" name="next" value="{{ next_url }}">
                             <div class="mb-3">
                                 <label for="username" class="form-label fw-semibold">Usuario <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" value="{{ valores.username }}" autocomplete="username">
-                                <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}Ingrese el usuario.{% endif %}</div>
+                                <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}Escriba su usuario.{% endif %}</div>
                             </div>
                             <div class="mb-4">
                                 <label for="password" class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
                                 <input type="password" class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" required minlength="4" autocomplete="current-password">
-                                <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Ingrese la contraseña.{% endif %}</div>
+                                <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Escriba la contraseña.{% endif %}</div>
                             </div>
-                            <button type="submit" class="btn btn-primary-custom w-100 btn-lg">Ingresar al sistema</button>
+                            <button type="submit" class="btn btn-primary-custom w-100">Entrar</button>
                         </form>
                     </div>
                 </div>
+                <p class="text-white-50 small mt-3 mb-0">Equipo Los watones PC · Felipe, Aixa, Gabriel · Prof. Jorge Cortés</p>
             </div>
             <div class="col-lg-6">
-                <div class="card border-0 shadow rounded-4 h-100">
+                <div class="card shadow-sm h-100">
                     <div class="card-body p-4">
-                        <h2 class="h5 fw-bold text-primary-custom">Usuarios de demostración por rol</h2>
-                        <p class="small text-muted">Use estas credenciales para recorrer el menú filtrado por perfil.</p>
+                        <h2 class="h5 fw-bold text-primary-custom">Perfiles de prueba</h2>
+                        <p class="small text-muted">Cada rol abre un menú distinto: atención ciudadana, gestión interna, desempeño o administración.</p>
                         <div class="table-responsive">
                             <table class="table table-sm align-middle">
-                                <thead class="table-light">
+                                <thead>
                                     <tr>
                                         <th>Usuario</th>
                                         <th>Clave</th>
                                         <th>Rol</th>
-                                        <th>Verá principalmente</th>
+                                        <th>Cargo</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -75,9 +76,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="alert alert-warning small mb-0">
-                            Las contraseñas están visibles porque este es un mockup académico. En producción se usaría autenticación institucional.
-                        </div>
+                        <p class="small mb-0 text-muted">Las claves van a la vista porque esto es un prototipo de curso, no un sistema en producción.</p>
                     </div>
                 </div>
             </div>

@@ -159,21 +159,14 @@ def administracion_usuarios_view(request):
                 messages.success(request, f"Usuario {username} creado en el mockup JSON.")
                 return redirect("admin_usuarios")
             messages.error(request, "No fue posible guardar usuarios.json.")
-    delegaciones = [
-        "Delegación Central",
-        "Delegación Rural",
-        "Delegación La Antena",
-        "Delegación La Pampa",
-        "Delegación Avenida del Mar",
-        "Delegación Las Compañías",
-    ]
+    from cuentas.vocabulario import DELEGACIONES_OFICIALES
 
     contexto = {
         "usuarios": usuarios,
         "funcionarios": funcionarios,
         "cargos": cargos,
         "roles": ROLES_DISPONIBLES,
-        "delegaciones": delegaciones,
+        "delegaciones": DELEGACIONES_OFICIALES,
         "errores": errores,
         "valores": valores,
         "seccion": "usuarios",

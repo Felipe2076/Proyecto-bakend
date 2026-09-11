@@ -4,114 +4,103 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}SIGED | Municipalidad de La Serena{% endblock %}</title>
+    <title>{% block title %}SIGED-SGR | Delegaciones La Serena{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+<body class="d-flex flex-column min-vh-100">
     <header class="sticky-top">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom shadow-sm">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom">
             <div class="container-fluid px-lg-4">
                 <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'inicio' %}">
-                    <img src="{% static 'img/escudo_la_serena.svg' %}" alt="Escudo de La Serena" width="40" height="40">
+                    {% include '_marca.html' %}
                     <span class="d-flex flex-column lh-sm">
-                        <strong class="brand-title">SIGED-SGR La Serena</strong>
-                        <small class="brand-subtitle text-warning">Delegaciones · Mockup funcional</small>
+                        <strong class="brand-title">Delegaciones La Serena</strong>
+                        <small class="brand-subtitle">Atención ciudadana · Matriz SGR</small>
                     </span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Alternar navegación">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Abrir menú">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarMain">
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}" href="{% url 'inicio' %}">
-                                <i class="bi bi-house-door me-1"></i>Inicio
-                            </a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}" href="{% url 'inicio' %}">Inicio</a>
                         </li>
                         {% if puede_requerimientos %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'lista_requerimientos' or request.resolver_match.url_name == 'nuevo_requerimiento' or request.resolver_match.url_name == 'detalle_requerimiento' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-inboxes me-1"></i>Requerimientos
+                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'lista_requerimientos' or request.resolver_match.url_name == 'nuevo_requerimiento' or request.resolver_match.url_name == 'detalle_requerimiento' or request.resolver_match.url_name == 'kanban' or request.resolver_match.url_name == 'encuestas' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Atención ciudadana
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'lista_requerimientos' %}"><i class="bi bi-traffic-light me-2 text-warning"></i>Listado y semáforo</a></li>
-                                <li><a class="dropdown-item" href="{% url 'nuevo_requerimiento' %}"><i class="bi bi-plus-circle me-2 text-success"></i>Registrar (multicanal)</a></li>
+                                <li><h6 class="dropdown-header">Tickets del ciudadano</h6></li>
+                                <li><a class="dropdown-item" href="{% url 'nuevo_requerimiento' %}">Ingresar ticket (CU-E02)</a></li>
+                                <li><a class="dropdown-item" href="{% url 'lista_requerimientos' %}">Listado y ficha (CU-E03 / E04)</a></li>
                                 {% if puede_control_gestion %}
-                                <li><a class="dropdown-item" href="{% url 'kanban' %}"><i class="bi bi-kanban me-2 text-info"></i>Tablero Kanban</a></li>
+                                <li><a class="dropdown-item" href="{% url 'kanban' %}">Tablero de tickets (CU-E05)</a></li>
+                                {% endif %}
+                                {% if puede_encuestas %}
+                                <li><a class="dropdown-item" href="{% url 'encuestas' %}">Encuesta 1 a 5 (CU-E12)</a></li>
                                 {% endif %}
                             </ul>
                         </li>
                         {% endif %}
-                        {% if puede_matriz_sgr %}
+                        {% if puede_actividades or puede_agenda or puede_compromisos %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'semaforo_sgr' or request.resolver_match.url_name == 'tubo_trabajo' or request.resolver_match.url_name == 'funcionarios' or request.resolver_match.url_name == 'detalle_funcionario' or request.resolver_match.url_name == 'resumen_delegacion' or request.resolver_match.url_name == 'compromiso_nuevo' or request.resolver_match.url_name == 'compromiso_editar' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-grid-3x3-gap me-1"></i>Matriz SGR
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'semaforo_sgr' %}"><i class="bi bi-stoplights me-2 text-danger"></i>Semáforo diario</a></li>
-                                {% if puede_compromisos %}
-                                <li><a class="dropdown-item" href="{% url 'tubo_trabajo' %}"><i class="bi bi-check2-square me-2 text-info"></i>Compromisos / tubo</a></li>
-                                {% endif %}
-                                <li><a class="dropdown-item" href="{% url 'funcionarios' %}"><i class="bi bi-person-badge me-2 text-primary"></i>Pestaña personal</a></li>
-                                <li><a class="dropdown-item" href="{% url 'resumen_delegacion' %}"><i class="bi bi-clipboard-data me-2 text-success"></i>Resumen delegación</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        {% if puede_actividades or puede_agenda %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'actividades_diarias' or request.resolver_match.url_name == 'agenda' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-calendar3 me-1"></i>Operación
+                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'actividades_diarias' or request.resolver_match.url_name == 'agenda' or request.resolver_match.url_name == 'tubo_trabajo' or request.resolver_match.url_name == 'compromiso_nuevo' or request.resolver_match.url_name == 'compromiso_editar' or request.resolver_match.url_name == 'detalle_funcionario' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Gestión interna
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 {% if puede_actividades %}
-                                <li><a class="dropdown-item" href="{% url 'actividades_diarias' %}"><i class="bi bi-journal-check me-2 text-success"></i>Actividades y evidencias</a></li>
+                                <li><a class="dropdown-item" href="{% url 'actividades_diarias' %}">Actividad y evidencia (CU-E06 / E07)</a></li>
+                                {% endif %}
+                                {% if puede_compromisos %}
+                                <li><a class="dropdown-item" href="{% url 'tubo_trabajo' %}">Compromisos (CU-E08)</a></li>
                                 {% endif %}
                                 {% if puede_agenda %}
-                                <li><a class="dropdown-item" href="{% url 'agenda' %}"><i class="bi bi-calendar2-week me-2 text-info"></i>Agenda colectiva</a></li>
+                                <li><a class="dropdown-item" href="{% url 'agenda' %}">Agenda colectiva (CU-E09)</a></li>
                                 {% endif %}
                             </ul>
                         </li>
                         {% endif %}
-                        {% if puede_control_gestion %}
+                        {% if puede_matriz_sgr or puede_control_gestion %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'kanban' or request.resolver_match.url_name == 'areas_soporte' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-graph-up-arrow me-1"></i>Control
+                            <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'semaforo_sgr' or request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'areas_soporte' or request.resolver_match.url_name == 'funcionarios' or request.resolver_match.url_name == 'resumen_delegacion' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Desempeño
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2 me-2 text-danger"></i>KPIs / cuellos de botella</a></li>
-                                <li><a class="dropdown-item" href="{% url 'kanban' %}"><i class="bi bi-kanban me-2 text-info"></i>Tablero Kanban</a></li>
-                                <li><a class="dropdown-item" href="{% url 'areas_soporte' %}"><i class="bi bi-diagram-3 me-2 text-warning"></i>Áreas estratégicas</a></li>
+                                {% if puede_matriz_sgr %}
+                                <li><a class="dropdown-item" href="{% url 'semaforo_sgr' %}">Semáforo e indicadores (CU-E10)</a></li>
+                                <li><a class="dropdown-item" href="{% url 'funcionarios' %}">Metas por funcionario</a></li>
+                                <li><a class="dropdown-item" href="{% url 'resumen_delegacion' %}">Resumen de delegación</a></li>
+                                {% endif %}
+                                {% if puede_control_gestion %}
+                                <li><a class="dropdown-item" href="{% url 'dashboard' %}">Panel de gestión / KPIs</a></li>
+                                <li><a class="dropdown-item" href="{% url 'areas_soporte' %}">Áreas de soporte</a></li>
+                                {% endif %}
                             </ul>
-                        </li>
-                        {% endif %}
-                        {% if puede_encuestas %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'encuestas' %}active{% endif %}" href="{% url 'encuestas' %}">
-                                <i class="bi bi-star me-1"></i>Encuesta
-                            </a>
                         </li>
                         {% endif %}
                         {% if puede_administracion %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'admin_usuarios' or request.resolver_match.url_name == 'admin_cargos' or request.resolver_match.url_name == 'admin_parametros' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-gear me-1"></i>Admin
+                                Administración
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'admin_usuarios' %}"><i class="bi bi-people me-2"></i>Usuarios</a></li>
-                                <li><a class="dropdown-item" href="{% url 'admin_cargos' %}"><i class="bi bi-briefcase me-2"></i>Cargos</a></li>
-                                <li><a class="dropdown-item" href="{% url 'admin_parametros' %}"><i class="bi bi-sliders me-2"></i>Parámetros</a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin_usuarios' %}">Usuarios (CU-E11)</a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin_cargos' %}">Cargos</a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin_parametros' %}">Parámetros</a></li>
                             </ul>
                         </li>
                         {% endif %}
                         {% if puede_notificaciones %}
                         <li class="nav-item">
-                            <a class="nav-link position-relative {% if request.resolver_match.url_name == 'notificaciones' %}active{% endif %}" href="{% url 'notificaciones' %}" title="Notificaciones">
+                            <a class="nav-link position-relative {% if request.resolver_match.url_name == 'notificaciones' %}active{% endif %}" href="{% url 'notificaciones' %}" title="Avisos internos">
                                 <i class="bi bi-bell"></i>
                                 {% if notificaciones_pendientes %}
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">{{ notificaciones_pendientes }}</span>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-warning text-dark">{{ notificaciones_pendientes }}</span>
                                 {% endif %}
                             </a>
                         </li>
@@ -126,7 +115,7 @@
                                 <li><h6 class="dropdown-header">{{ usuario_actual.cargo }}</h6></li>
                                 <li><span class="dropdown-item-text small text-muted">{{ usuario_actual.delegacion }}</span></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Salir</a></li>
                             </ul>
                         </li>
                         {% endif %}
@@ -139,7 +128,7 @@
     {% if messages %}
     <div class="container mt-3">
         {% for message in messages %}
-        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% elif message.tags == 'success' %}success{% else %}warning{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% elif message.tags == 'success' %}success{% else %}warning{% endif %} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
         </div>
@@ -151,24 +140,21 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-dark text-white-50 py-4 mt-auto border-top border-secondary">
+    <footer class="team-strip py-3 mt-auto">
         <div class="container">
-            <div class="row g-3 align-items-center">
-                <div class="col-md-5 d-flex align-items-center gap-3">
-                    <img src="{% static 'img/escudo_la_serena.svg' %}" alt="Escudo de La Serena" width="42" height="42" class="opacity-75">
-                    <div>
-                        <h6 class="text-white mb-1">© 2026 Ilustre Municipalidad de La Serena</h6>
-                        <p class="small mb-0">Prat 451, La Serena · SIGED-SGR Delegaciones · Primera Entrega</p>
+            <div class="row g-2 align-items-center">
+                <div class="col-lg-7">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        {% include '_marca.html' %}
+                        <strong>Los watones PC</strong>
                     </div>
+                    <p class="mb-0">Felipe, Aixa y Gabriel · Proyecto Integrado · SIGED-SGR Delegaciones La Serena · Prof. Jorge Cortés</p>
                 </div>
-                <div class="col-md-4 small">
-                    <a href="{% url 'inicio' %}" class="link-light text-decoration-none me-3">Inicio</a>
-                    {% if puede_requerimientos %}<a href="{% url 'lista_requerimientos' %}" class="link-light text-decoration-none me-3">Tickets</a>{% endif %}
-                    {% if puede_agenda %}<a href="{% url 'agenda' %}" class="link-light text-decoration-none me-3">Agenda</a>{% endif %}
-                    {% if puede_control_gestion %}<a href="{% url 'dashboard' %}" class="link-light text-decoration-none">KPIs</a>{% endif %}
-                </div>
-                <div class="col-md-3 text-md-end">
-                    <span class="badge text-bg-success py-2 px-3">Mockup Django · JSON local</span>
+                <div class="col-lg-5 text-lg-end small">
+                    Primera Entrega · mockup en JSON, sin MySQL<br>
+                    {% if puede_requerimientos %}<a href="{% url 'lista_requerimientos' %}" class="link-light text-decoration-none me-2">Tickets</a>{% endif %}
+                    {% if puede_agenda %}<a href="{% url 'agenda' %}" class="link-light text-decoration-none me-2">Agenda</a>{% endif %}
+                    {% if puede_control_gestion %}<a href="{% url 'dashboard' %}" class="link-light text-decoration-none">Desempeño</a>{% endif %}
                 </div>
             </div>
         </div>

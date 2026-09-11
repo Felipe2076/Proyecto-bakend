@@ -14,8 +14,9 @@
     </nav>
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h2 class="fw-bold mb-1 text-primary-custom">Ficha de trazabilidad #{{ ticket.id_ticket }}</h2>
-            <p class="text-muted small mb-0">Detalle del compromiso registrado en JSON.</p>
+            {% include '_cu.html' with cu_id='CU-E04' cu_nombre='Ficha del ticket' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Ticket {{ ticket.id_ticket }}</h2>
+            <p class="text-muted small mb-0">Ficha del ciudadano, la delegación y el semáforo de plazo.</p>
         </div>
         <span class="badge {{ ticket.semaforo_clase }} fs-6 py-2 px-3 rounded-pill">{{ ticket.semaforo_texto }}</span>
     </div>
@@ -103,7 +104,7 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary-custom mb-3">Datos del vecino</h5>
+                    <h5 class="fw-bold text-primary-custom mb-3">Ciudadano</h5>
                     <p class="mb-2"><small class="text-muted d-block">Nombre</small><strong>{{ ticket.vecino_nombre }}</strong></p>
                     <p class="mb-2"><small class="text-muted d-block">WhatsApp</small>{{ ticket.telefono_whatsapp }}</p>
                     <p class="mb-2"><small class="text-muted d-block">Correo</small>{{ ticket.email }}</p>

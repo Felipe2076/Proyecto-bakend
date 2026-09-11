@@ -48,11 +48,9 @@ def cargar_parametros():
     if not isinstance(datos, dict):
         datos = {}
     canales = datos.get("canales_ingreso") or [
-        "Ventanilla",
+        "ventanilla",
         "WhatsApp",
-        "Correo",
-        "Teléfono",
-        "Portal web",
+        "correo",
     ]
     return {
         "nombre_sistema": datos.get("nombre_sistema", "SIGED-SGR Delegaciones La Serena"),

@@ -13,8 +13,9 @@
                     <li class="breadcrumb-item active" aria-current="page">Semáforo SGR</li>
                 </ol>
             </nav>
-            <h2 class="fw-bold mb-1 text-primary-custom">Semáforo de avance al día</h2>
-            <p class="text-muted small mb-0">Compara el cumplimiento ponderado de cada funcionario con el porcentaje diario esperado del trimestre (90 días = 100%).</p>
+            {% include '_cu.html' with cu_id='CU-E10' cu_nombre='Indicadores y metas' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Semáforo de indicadores</h2>
+            <p class="text-muted small mb-0">Compara el avance de cada funcionario contra la meta del trimestre (90 días = 100%).</p>
         </div>
     </div>
 

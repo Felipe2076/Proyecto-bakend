@@ -13,11 +13,12 @@
                     <li class="breadcrumb-item active" aria-current="page">Requerimientos</li>
                 </ol>
             </nav>
-            <h2 class="fw-bold mb-1 text-primary-custom">Panel semáforo de cumplimiento diario</h2>
-            <p class="text-muted mb-0 small">Filtro por delegación y nivel de semáforo de tickets vecinales.</p>
+            {% include '_cu.html' with cu_id='CU-E03' cu_nombre='Consultar tickets' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Tickets y semáforo</h2>
+            <p class="text-muted mb-0 small">Filtro por delegación, tipificación y plazo (verde / amarillo / rojo).</p>
         </div>
         <div class="d-flex gap-2 align-items-center">
-            <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning text-dark fw-semibold">Nuevo requerimiento</a>
+            <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning text-dark fw-semibold">Nuevo ticket</a>
             <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_resultados }} ticket(s)</span>
         </div>
     </div>
@@ -27,7 +28,7 @@
             <form method="get" action="{% url 'lista_requerimientos' %}" class="row g-3 align-items-end">
                 <div class="col-12 col-md-3">
                     <label for="busqueda" class="form-label small fw-semibold">Búsqueda</label>
-                    <input type="text" class="form-control" id="busqueda" name="busqueda" value="{{ filtro_busqueda }}" placeholder="Ticket, vecino, descripción...">
+                    <input type="text" class="form-control" id="busqueda" name="busqueda" value="{{ filtro_busqueda }}" placeholder="N° ticket, ciudadano, descripción...">
                 </div>
                 <div class="col-12 col-sm-6 col-md-3">
                     <label for="delegacion" class="form-label small fw-semibold">Delegación</label>
@@ -73,10 +74,10 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-dark-custom text-white">
                     <tr>
-                        <th class="py-3 px-3">ID ticket</th>
-                        <th class="py-3">Vecino</th>
-                        <th class="py-3">Delegación</th>
-                        <th class="py-3">Tipo entrada</th>
+                        <th class="py-3 px-3">ticket</th>
+                        <th class="py-3">ciudadano</th>
+                        <th class="py-3">delegacion</th>
+                        <th class="py-3">tipificación</th>
                         <th class="py-3">Días</th>
                         <th class="py-3">Semáforo</th>
                         <th class="py-3">Estado</th>
@@ -97,7 +98,7 @@
                             <span class="badge text-bg-light border">{{ req.delegacion }}</span>
                             <div class="small text-secondary">{{ req.area_tematica }}</div>
                         </td>
-                        <td>{{ req.tipo_entrada }}</td>
+                        <td><span class="badge text-bg-light border tipo-ticket">{{ req.tipo_entrada }}</span></td>
                         <td class="fw-semibold">{{ req.dias_transcurridos }}</td>
                         <td>
                             <span class="badge {{ req.semaforo_clase }} rounded-pill">{{ req.semaforo_texto }}</span>

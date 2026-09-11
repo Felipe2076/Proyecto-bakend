@@ -10,7 +10,8 @@
             <li class="breadcrumb-item active">Administración</li>
         </ol>
     </nav>
-    <h2 class="fw-bold text-primary-custom mb-3">Administración básica (solo UI + JSON)</h2>
+    {% include '_cu.html' with cu_id='CU-E11' cu_nombre='Administrar usuarios' %}
+    <h2 class="fw-bold text-primary-custom mb-3">Usuarios del prototipo</h2>
     {% include 'cuentas/_admin_tabs.html' %}
 
     <div class="row g-4">

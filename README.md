@@ -1,30 +1,21 @@
 # SIGED-SGR Delegaciones La Serena
 
-Mockup **funcional** del Sistema Integrado de Gestión de Requerimientos y Matriz SGR para las 6 delegaciones territoriales de la Municipalidad de La Serena.
+Prototipo web de la **Primera Entrega** del Proyecto Integrado.
 
-Entrega: **Primera_Entrega / Proyecto Integrado** (profesor Jorge Cortés).  
-Repositorio: [Felipe2076/Proyecto-bakend](https://github.com/Felipe2076/Proyecto-bakend)
+**Equipo Los watones PC** — Felipe, Aixa y Gabriel  
+Municipalidad de La Serena · 6 delegaciones territoriales  
+Profesor: Jorge Cortés
 
-Este entorno cubre la rúbrica §7.2 (template/mockup funcional en Git):
-
-- Navegación entre pantallas principales, con menú según **rol**
-- Flujo de interfaz consistente (Bootstrap 5, textos en español)
-- Formularios con validación de obligatorios, formatos y mensajes al usuario
-- Persistencia **JSON local** (sin MySQL ni APIs de negocio)
+El mockup cubre la rúbrica §7.2 (template funcional en Git): navegación por módulos, formularios con validación y persistencia **JSON local**. No se conecta MySQL ni APIs de negocio.
 
 ## Stack
 
-- Python 3.12+
-- Django 6.1
-- Persistencia en archivos `data/*.json`
-- Sesión mock en cookie firmada (no requiere `migrate` ni MySQL)
-- Bootstrap 5.3 + Bootstrap Icons (archivos locales en `static/`)
-- Bootstrap 5.3 + Bootstrap Icons (archivos locales en `static/`)
-- `requests` solo para el clima de demostración (Open-Meteo), con fallback si no hay red
+- Python 3.12+ y Django 6.1
+- Datos en `data/*.json` (sesión mock en cookie firmada; no hay que correr `migrate`)
+- Bootstrap 5.3 + íconos locales
+- `requests` solo para el clima de demostración (Open-Meteo), con fallback
 
-No hay dependencia de MySQL para ejecutar el mockup.
-
-## Cómo ejecutar en Windows (PowerShell)
+## Cómo ejecutarlo en Windows (PowerShell)
 
 ```powershell
 git clone https://github.com/Felipe2076/Proyecto-bakend.git
@@ -35,14 +26,14 @@ pip install -r requirements.txt
 python manage.py runserver
 ```
 
-Si PowerShell bloquea la activación del entorno:
+Si PowerShell no deja activar el entorno:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\venv\Scripts\Activate.ps1
 ```
 
-Abrir [http://127.0.0.1:8000/](http://127.0.0.1:8000/). El sistema pide login de demostración.
+Abrir http://127.0.0.1:8000/
 
 ### Linux / macOS
 
@@ -53,30 +44,40 @@ pip install -r requirements.txt
 python manage.py runserver
 ```
 
-## Usuarios de demostración
+## Quién entra (demo)
 
-| Usuario | Contraseña | Rol | Qué ve en el menú |
-| --- | --- | --- | --- |
-| `admin` | `admin123` | Administrador | Todas las pantallas + administración |
-| `jefatura` | `jefatura123` | Jefatura | Matriz SGR, control de gestión, operación |
-| `funcionario` | `funcionario123` | Funcionario territorial | Tickets, actividades, agenda, compromisos |
-| `ventanilla` | `ventanilla123` | Ventanilla ciudadana | Captura multicanal, listado, encuesta, agenda |
+| Usuario | Clave | Rol |
+| --- | --- | --- |
+| `admin` | `admin123` | Administración (ve todo) |
+| `jefatura` | `jefatura123` | Jefatura / control de gestión |
+| `funcionario` | `funcionario123` | Equipo territorial |
+| `ventanilla` | `ventanilla123` | Atención en ventanilla |
 
-Las claves están visibles a propósito: es un mockup académico, no un sistema productivo.
+Las claves están a la vista a propósito: es un prototipo de curso.
 
-## Pantallas del mockup
+## Pantallas ↔ casos de uso
 
-1. **Login (mock)** y **inicio / dashboard** de KPIs
-2. **Registrar requerimiento ciudadano** (ventanilla, WhatsApp, correo, teléfono, portal) con validaciones
-3. **Listado / detalle de tickets** y **Kanban** con semáforo visual (verde / amarillo / rojo)
-4. **Actividades diarias** y evidencias (upload simulado: se guarda el nombre del archivo)
-5. **Compromisos ciudadanos** (CRUD simple sobre el tubo de trabajo)
-6. **Agenda colectiva** (calendario y lista)
-7. **Panel semáforo SGR / KPIs** (datos demo)
-8. **Administración**: usuarios, cargos y parámetros (solo UI + JSON)
-9. **Notificaciones** y **encuesta de satisfacción 1–5**
+| Módulo | Pantalla | CU |
+| --- | --- | --- |
+| Ingreso | Login | CU-E01 |
+| Atención ciudadana | Ingresar ticket (ventanilla / WhatsApp / correo) | CU-E02 |
+| Atención ciudadana | Listado de tickets + semáforo | CU-E03 |
+| Atención ciudadana | Ficha del ticket | CU-E04 |
+| Atención ciudadana | Tablero Kanban | CU-E05 |
+| Gestión interna | Actividad diaria | CU-E06 |
+| Gestión interna | Evidencia (upload simulado) | CU-E07 |
+| Gestión interna | Compromisos (CRUD) | CU-E08 |
+| Gestión interna | Agenda colectiva | CU-E09 |
+| Desempeño | Semáforo, indicadores y metas | CU-E10 |
+| Administración | Usuarios, cargos, parámetros | CU-E11 |
+| Atención / avisos | Encuesta 1–5 y notificaciones | CU-E12 |
 
-## Pruebas rápidas
+Detalle para el informe: [`docs/TRAZABILIDAD.md`](docs/TRAZABILIDAD.md).
+
+Delegaciones de demo: **Centro, Rural, La Antena, La Pampa, Av. del Mar, Las Compañías**.  
+Tipificación de ticket: **RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA, FELICITACIÓN**.
+
+## Pruebas
 
 ```powershell
 python tests_siged.py
@@ -84,5 +85,5 @@ python tests_siged.py
 
 ## Documentación de contexto
 
-- `Documentacion_SIGED_LaSerena.pdf`
-- `Documentacion_SIGED_LaSerena.docx`
+- `Documentacion_SIGED_LaSerena.pdf` / `.docx` (si el equipo las adjunta en la entrega)
+- El logo PNG institucional todavía no está; el prototipo usa la marca de texto **SIGED-SGR**

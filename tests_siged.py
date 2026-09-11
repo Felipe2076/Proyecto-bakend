@@ -16,6 +16,7 @@ from requerimientos.views import (
     validar_formulario_requerimiento,
 )
 from control_gestion.views import cargar_json_seguro
+from cuentas.vocabulario import DELEGACIONES_OFICIALES, TIPOS_TICKET
 
 
 def _login(client: Client, username: str = "admin", password: str = "admin123") -> None:
@@ -49,6 +50,17 @@ def run_tests() -> None:
     assert len(usuarios) >= 4, "Faltan usuarios de demostración"
     print(f"   [OK] usuarios.json: {len(usuarios)} perfiles mock")
 
+    assert "Delegación Centro" in DELEGACIONES_OFICIALES
+    assert len(DELEGACIONES_OFICIALES) == 6
+    assert TIPOS_TICKET == [
+        "RECLAMO",
+        "SOLICITUD",
+        "CONSULTA",
+        "SUGERENCIA",
+        "FELICITACIÓN",
+    ]
+    print("   [OK] Vocabulario DER: 6 delegaciones y tipificación oficial")
+
     print("\n2. Probando lógica de semáforo de cumplimiento...")
     item_verde = asignar_semaforo({"dias_transcurridos": 2})
     assert item_verde["semaforo_nivel"] == "Verde", "Fallo en semáforo verde"
@@ -64,7 +76,7 @@ def run_tests() -> None:
             "vecino_nombre": "Ana",
             "telefono_whatsapp": "123",
             "email": "malo",
-            "canal_ingreso": "Correo",
+            "canal_ingreso": "correo",
         }
     )
     assert "vecino_nombre" in errs
@@ -160,9 +172,9 @@ def run_tests() -> None:
         "vecino_nombre": "Prueba Automática Valenzuela",
         "telefono_whatsapp": "+56 9 1234 5678",
         "email": "prueba.auto@serena.cl",
-        "delegacion": "Delegación Central",
+        "delegacion": "Delegación Centro",
         "canal_ingreso": "WhatsApp",
-        "tipo_entrada": "Consulta",
+        "tipo_entrada": "CONSULTA",
         "area_tematica": "Seguridad Ciudadana",
         "descripcion": "Ticket de validación automática del sistema de persistencia JSON.",
         "funcionario_asignado": "Patrulla Sector 3 (Seguridad)",

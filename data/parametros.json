@@ -8,10 +8,8 @@
   "encuesta_habilitada": true,
   "max_atenciones_mismo_usuario": 3,
   "canales_ingreso": [
-    "Ventanilla",
+    "ventanilla",
     "WhatsApp",
-    "Correo",
-    "Teléfono",
-    "Portal web"
+    "correo"
   ]
 }

@@ -12,8 +12,9 @@
                     <li class="breadcrumb-item active">Notificaciones</li>
                 </ol>
             </nav>
-            <h2 class="fw-bold mb-1 text-primary-custom">Centro de notificaciones</h2>
-            <p class="text-muted small mb-0">Avisos del mockup más alertas automáticas de tickets en semáforo rojo.</p>
+            {% include '_cu.html' with cu_id='CU-E12' cu_nombre='Avisos internos' %}
+            <h2 class="fw-bold mb-1 text-primary-custom">Avisos del equipo</h2>
+            <p class="text-muted small mb-0">Mensajes internos y alertas de tickets en semáforo rojo.</p>
         </div>
         <form method="post">
             {% csrf_token %}

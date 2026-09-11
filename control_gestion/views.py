@@ -4,15 +4,7 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 
 from cuentas.store import cargar_json_seguro, cargar_parametros, guardar_json_seguro
-
-DELEGACIONES_OFICIALES = [
-    "Delegación Central",
-    "Delegación Rural",
-    "Delegación La Antena",
-    "Delegación La Pampa",
-    "Delegación Avenida del Mar",
-    "Delegación Las Compañías",
-]
+from cuentas.vocabulario import DELEGACIONES_OFICIALES
 
 ESTADOS_TUBO = ["INGRESADO", "PENDIENTE", "EN PROCESO", "REALIZADO"]
 META_TUBO_PORCENTAJE = 80
