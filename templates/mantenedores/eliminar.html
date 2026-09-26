@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar {{ titulo }} | Sistema Municipal{% endblock %}
+{% block topbar_title %}Eliminar{% endblock %}
+{% block topbar_sub %}Mantenedor · confirmación{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_lista }}" class="text-decoration-none">{{ titulo }}</a></li>
+            <li class="breadcrumb-item active">Eliminar</li>
+        </ol>
+    </nav>
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold text-primary-custom h4">Confirmar eliminación</h2>
+                    <p>¿Confirma eliminar {{ articulo }} <strong>{{ objeto }}</strong>?</p>
+                    <p class="small text-muted mb-4">Esta acción no se puede deshacer. Si hay registros que dependen de él, el sistema no lo eliminará.</p>
+                    <form method="post" class="d-flex justify-content-between">
+                        {% csrf_token %}
+                        <a class="btn btn-outline-secondary" href="{{ url_lista }}">Cancelar</a>
+                        <button class="btn btn-danger" type="submit">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

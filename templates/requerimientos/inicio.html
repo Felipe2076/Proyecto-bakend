@@ -2,8 +2,8 @@
 {% load static %}
 
 {% block title %}Inicio | SIGED-SGR Delegaciones{% endblock %}
-{% block topbar_title %}Tablero de la delegación{% endblock %}
-{% block topbar_sub %}CU-E01 · Vista general de tickets, semáforo e indicadores{% endblock %}
+{% block topbar_title %}Mi panel{% endblock %}
+{% block topbar_sub %}Tickets, semáforo y metas de su usuario{% endblock %}
 
 {% block content %}
 <section class="hero-panel e3d-escena mb-4">
@@ -49,38 +49,11 @@
     </div>
 </section>
 
-<section class="row g-3 mb-4 siged-reveal">
-    <div class="col-6 col-md-4 col-xl-2-4">
-        <div class="card kpi-card h-100">
-            <div class="small text-muted">Tickets</div>
-            <h3 class="fw-bold mb-0">{{ total_casos }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-4 col-xl-2-4">
-        <div class="card kpi-card kpi-rojo h-100">
-            <div class="small text-muted">Semáforo rojo</div>
-            <h3 class="fw-bold text-danger mb-0">{{ casos_criticos }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-4 col-xl-2-4">
-        <div class="card kpi-card kpi-ambar h-100">
-            <div class="small text-muted">Pendientes</div>
-            <h3 class="fw-bold mb-0" style="color:#d68910;">{{ casos_pendientes }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-6 col-xl-2-4">
-        <div class="card kpi-card kpi-info h-100">
-            <div class="small text-muted">En proceso</div>
-            <h3 class="fw-bold mb-0">{{ casos_en_proceso }}</h3>
-        </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-2-4">
-        <div class="card kpi-card kpi-verde h-100">
-            <div class="small text-muted">Cerrados</div>
-            <h3 class="fw-bold text-success mb-0">{{ casos_resueltos }}</h3>
-        </div>
-    </div>
-</section>
+{% include "panel/_mis_cifras.html" %}
+{% include "panel/_mi_semaforo.html" %}
+{% include "panel/_mis_tickets.html" %}
+{% include "panel/_mi_desempeno.html" %}
+{% include "panel/_ambito.html" %}
 
 <section class="row g-3 mb-4">
     <div class="col-12">
@@ -178,9 +151,9 @@
             <div class="card-body p-4">
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <lord-icon src="{% static 'lordicon/18-location-pin.json' %}" trigger="hover" colors="primary:#5c0b14,secondary:#b11226" style="width:34px;height:34px"></lord-icon>
-                    <h2 class="h5 text-primary-custom mb-0">Las 6 delegaciones</h2>
+                    <h2 class="h5 text-primary-custom mb-0">{% if panel.ver_global %}Delegaciones{% else %}Mi delegación{% endif %}</h2>
                 </div>
-                <p class="text-muted small">Centro, Rural, La Antena, La Pampa, Av. del Mar y Las Compañías.</p>
+                <p class="text-muted small">Solo el territorio de su usuario.</p>
                 <div class="row g-2">
                     {% for del in delegaciones %}
                     <div class="col-sm-6">
@@ -197,9 +170,9 @@
                 <h2 class="h5 text-primary-custom">Semáforo del ticket</h2>
                 <p class="text-muted small mb-3">Plazo de respuesta al ciudadano.</p>
                 <div class="d-flex flex-column gap-3">
-                    <div class="semaforo semaforo--verde"><span class="semaforo__luz"></span> Verde · día 1 a 3 · en plazo</div>
-                    <div class="semaforo semaforo--ambar"><span class="semaforo__luz"></span> Ámbar · día 4 a 5 · alerta</div>
-                    <div class="semaforo semaforo--rojo"><span class="semaforo__luz"></span> Rojo · día 6 o más · crítico</div>
+                    <div class="semaforo semaforo--verde"><span class="semaforo__luz"></span> Verde · hasta el día {{ panel.sla_verde }} · en plazo</div>
+                    <div class="semaforo semaforo--ambar"><span class="semaforo__luz"></span> Ámbar · hasta el día {{ panel.sla_amarillo }} · alerta</div>
+                    <div class="semaforo semaforo--rojo"><span class="semaforo__luz"></span> Rojo · después del día {{ panel.sla_amarillo }} · crítico</div>
                 </div>
             </div>
         </div>

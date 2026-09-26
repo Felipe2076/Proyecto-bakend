@@ -1,0 +1,24 @@
+{% extends 'cuentas/_auth_layout.html' %}
+
+{% block title %}Recuperar contraseña | Sistema Municipal{% endblock %}
+
+{% block auth_contenido %}
+<p class="login-kicker mb-2" style="color:#8b1524;">Sistema Municipal</p>
+<h2 class="fw-bold text-primary-custom mb-1">Recuperar contraseña</h2>
+<p class="text-muted">Ingresa tu correo electrónico y te enviaremos las instrucciones para recuperar tu contraseña.</p>
+<form method="post" class="needs-validation card login-glass p-4" novalidate>
+    {% csrf_token %}
+    <div class="mb-4">
+        <label for="correo" class="form-label">Correo electrónico <span class="text-danger">*</span></label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input type="email" class="form-control {% if errores.correo %}is-invalid{% endif %}" id="correo" name="correo" required value="{{ correo }}" placeholder="Correo electrónico" autocomplete="email">
+            <div class="invalid-feedback">{% if errores.correo %}{{ errores.correo }}{% else %}Ingrese su correo.{% endif %}</div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary-custom w-100">Enviar instrucciones</button>
+    <div class="text-center mt-3">
+        <a href="{% url 'login' %}">Volver al login</a>
+    </div>
+</form>
+{% endblock %}

@@ -8,15 +8,25 @@ import django
 
 django.setup()
 
+from django.contrib.auth import get_user_model
 from django.test import Client
+
+from control_gestion.models import Medicion
+from cuentas.models import Cargo, Delegacion, EstadoRegistro, ParametroSistema, Rol, Usuario
+from cuentas.servicios import siguiente_codigo
+from cuentas.store import cargar_json_seguro
+from cuentas.vocabulario import DELEGACIONES_OFICIALES, TIPOS_TICKET
+from requerimientos.models import AreaSoporte, CanalIngreso, Requerimiento, TipoGestion, Vecino
 from requerimientos.views import (
     asignar_semaforo,
-    cargar_requerimientos_json,
     obtener_clima_la_serena,
     validar_formulario_requerimiento,
 )
-from control_gestion.views import cargar_json_seguro
-from cuentas.vocabulario import DELEGACIONES_OFICIALES, TIPOS_TICKET
+
+
+def _cliente() -> Client:
+    # El Client de Django usa el host "testserver"; el proyecto solo permite localhost.
+    return Client(HTTP_HOST="localhost")
 
 
 def _login(client: Client, username: str = "admin", password: str = "admin123") -> None:
@@ -25,16 +35,97 @@ def _login(client: Client, username: str = "admin", password: str = "admin123") 
     assert client.session.get("usuario"), f"No quedó sesión mock para {username}"
 
 
+def _asegurar_acceso(username: str, password: str, rol_codigo: str, nombre: str, email: str) -> None:
+    """Deja usable el perfil de demostración en la base (sin leer usuarios.json en la vista)."""
+    User = get_user_model()
+    rol, _ = Rol.objects.get_or_create(
+        codigo=rol_codigo, defaults={"nombre": rol_codigo.capitalize(), "descripcion": "Perfil de prueba"}
+    )
+    usuario = Usuario.objects.filter(username=username).select_related("user").first()
+    user = usuario.user if usuario and usuario.user_id else User.objects.filter(username=username).first()
+    if user is None:
+        user = User.objects.create_user(username=username, email=email, password=password)
+    elif not user.has_usable_password():
+        user.set_password(password)
+        user.is_active = True
+        user.save()
+    if usuario is None:
+        Usuario.objects.create(
+            codigo=siguiente_codigo(Usuario, "codigo", "USR-", 3),
+            user=user,
+            username=username,
+            nombre=nombre,
+            correo=email,
+            rol=rol,
+            estado=EstadoRegistro.ACTIVO,
+        )
+    else:
+        usuario.user = user
+        usuario.estado = EstadoRegistro.ACTIVO
+        usuario.rol = rol
+        usuario.save()
+
+
+def _asegurar_ticket() -> str:
+    existente = Requerimiento.objects.order_by("codigo").first()
+    if existente:
+        return existente.codigo
+    delegacion, _ = Delegacion.objects.get_or_create(nombre="Delegación Centro", defaults={"comuna": "La Serena"})
+    canal, _ = CanalIngreso.objects.get_or_create(nombre="ventanilla")
+    tipo, _ = TipoGestion.objects.get_or_create(nombre="SOLICITUD")
+    area = AreaSoporte.objects.filter(nombre="Seguridad Ciudadana").first()
+    if area is None:
+        area = AreaSoporte.objects.create(codigo="AREA-TEST", nombre="Seguridad Ciudadana")
+    vecino, _ = Vecino.objects.get_or_create(nombre="Vecino de prueba", defaults={"delegacion": delegacion})
+    from datetime import date, timedelta
+
+    req = Requerimiento.objects.create(
+        codigo="TK-1001",
+        vecino=vecino,
+        delegacion=delegacion,
+        canal_ingreso=canal,
+        tipo_gestion=tipo,
+        area=area,
+        descripcion="Ticket mínimo para la suite de integración.",
+        fecha_ingreso=date.today() - timedelta(days=2),
+        estado=Requerimiento.Estado.PENDIENTE,
+    )
+    return req.codigo
+
+
+def _preparar_bd() -> str:
+    if not ParametroSistema.objects.exists():
+        ParametroSistema.objects.create()
+    if not Medicion.objects.exists():
+        delegacion, _ = Delegacion.objects.get_or_create(
+            nombre="Delegación Rural", defaults={"comuna": "La Serena"}
+        )
+        from datetime import date
+
+        Medicion.objects.create(
+            periodo="Trimestre de prueba",
+            delegacion_piloto=delegacion,
+            fecha_inicio=date(2026, 7, 1),
+            fecha_termino=date(2026, 9, 28),
+            dias_totales=90,
+            meta_cumplimiento_tubo=80,
+        )
+    _asegurar_acceso("admin", "admin123", "administrador", "Administrador SIGED", "admin.siged@laserena.cl")
+    _asegurar_acceso("ventanilla", "ventanilla123", "ventanilla", "Marisol Tapia", "marisol.tapia@laserena.cl")
+    Cargo.objects.get_or_create(nombre="Administrador del sistema", defaults={"codigo": "CARGO-01"})
+    return _asegurar_ticket()
+
+
 def run_tests() -> None:
     print("=" * 48)
     print("INICIANDO PRUEBAS DE INTEGRACIÓN SIGED")
     print("=" * 48)
 
-    client = Client()
+    client = _cliente()
     errores: list[str] = []
 
-    print("\n1. Probando carga de archivos JSON...")
-    reqs = cargar_requerimientos_json()
+    print("\n1. Probando archivos JSON de origen (el import los lee; las vistas ya no)...")
+    reqs = cargar_json_seguro("requerimientos.json", [])
     assert len(reqs) > 0, "requerimientos.json está vacío"
     print(f"   [OK] requerimientos.json: {len(reqs)} registros")
 
@@ -93,13 +184,14 @@ def run_tests() -> None:
         f"Temp: {clima['temperatura']}°C ({clima['estado_conexion']})"
     )
 
-    print("\n5. Probando redirección a login sin sesión...")
-    anon = Client()
+    print("\n5. Probando portada pública y dashboard con login...")
+    anon = _cliente()
     response_anon: Any = anon.get("/", follow=False)
-    if response_anon.status_code in (301, 302) and "/login/" in response_anon["Location"]:
-        print("   [OK] / redirige a /login/ sin sesión")
+    response_dash: Any = anon.get("/control/", follow=False)
+    if response_anon.status_code == 200 and response_dash.status_code in (301, 302) and "/login/" in response_dash["Location"]:
+        print("   [OK] / es público y /control/ redirige a /login/ sin sesión")
     else:
-        msg = f"Se esperaba redirect a login, se obtuvo {response_anon.status_code}"
+        msg = f"Portada {response_anon.status_code}, dashboard {response_dash.status_code}"
         errores.append(msg)
         print(f"   [FAIL] {msg}")
 
@@ -108,9 +200,8 @@ def run_tests() -> None:
     assert bad.status_code == 200
     assert not client.session.get("usuario")
     print("   [OK] Credencial inválida no inicia sesión")
+    primer_ticket_id = _preparar_bd()
     _login(client)
-
-    primer_ticket_id = reqs[0]["id_ticket"]
     urls_to_test = [
         ("/", "Portada institucional"),
         ("/lista/", "Lista de requerimientos"),
@@ -145,7 +236,7 @@ def run_tests() -> None:
             print(f"   [FAIL] {msg}")
 
     print("\n8. Probando denegación de administración por rol ventanilla...")
-    ventanilla = Client()
+    ventanilla = _cliente()
     _login(ventanilla, "ventanilla", "ventanilla123")
     resp_admin: Any = ventanilla.get("/administracion/usuarios/", follow=True)
     if resp_admin.status_code == 200:
@@ -156,18 +247,18 @@ def run_tests() -> None:
         print(f"   [FAIL] {msg}")
 
     print("\n9. Probando validación POST incompleto (no debe guardar)...")
-    total_antes = len(cargar_requerimientos_json())
+    total_antes = Requerimiento.objects.count()
     resp_invalido: Any = client.post(
         "/requerimientos/nuevo/",
         data={"vecino_nombre": "Ana", "telefono_whatsapp": "123"},
         follow=True,
     )
     assert resp_invalido.status_code == 200
-    total_despues_invalido = len(cargar_requerimientos_json())
+    total_despues_invalido = Requerimiento.objects.count()
     assert total_despues_invalido == total_antes, "Se guardó un ticket con datos inválidos"
     print("   [OK] POST inválido no persiste el requerimiento")
 
-    print("\n10. Probando creación de nuevo ticket (POST)...")
+    print("\n10. Probando creación de nuevo ticket (POST, ORM)...")
     data_post = {
         "vecino_nombre": "Prueba Automática Valenzuela",
         "telefono_whatsapp": "+56 9 1234 5678",
@@ -176,20 +267,18 @@ def run_tests() -> None:
         "canal_ingreso": "WhatsApp",
         "tipo_entrada": "CONSULTA",
         "area_tematica": "Seguridad Ciudadana",
-        "descripcion": "Ticket de validación automática del sistema de persistencia JSON.",
+        "descripcion": "Ticket de validación automática del sistema de persistencia en base de datos.",
         "funcionario_asignado": "Patrulla Sector 3 (Seguridad)",
     }
     response_post: Any = client.post("/requerimientos/nuevo/", data=data_post, follow=True)
     assert response_post.status_code == 200, f"Error en POST: {response_post.status_code}"
 
-    reqs_after = cargar_requerimientos_json()
-    guardado = any(
-        item["vecino_nombre"] == "Prueba Automática Valenzuela"
-        and item.get("canal_ingreso") == "WhatsApp"
-        for item in reqs_after
-    )
-    assert guardado, "No se guardó el ticket en requerimientos.json"
-    print("   [OK] Ticket insertado y verificado en requerimientos.json")
+    guardado = Requerimiento.objects.filter(
+        vecino__nombre="Prueba Automática Valenzuela",
+        canal_ingreso__nombre="WhatsApp",
+    ).exists()
+    assert guardado, "No se guardó el ticket en la base de datos"
+    print("   [OK] Ticket insertado y verificado con el ORM")
 
     print("\n" + "=" * 48)
     if errores:
