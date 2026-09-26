@@ -90,3 +90,24 @@ python tests_siged.py
 
 - `Documentacion_SIGED_LaSerena.pdf` / `.docx` (si el equipo las adjunta en la entrega)
 - Marca propia abstracta (faro + costa), no el escudo municipal con copyright. Ver [`docs/ASSETS_LIBRES.md`](docs/ASSETS_LIBRES.md).
+
+## Backend con MySQL (Evaluación Sumativa 2)
+
+Desde la rama `backend-mysql` los datos viven en **MySQL** (Django ORM + Django Admin). Los `data/*.json` quedan solo como origen para migrar los datos.
+
+1. Copiar `.env.example` como `.env` y completar `SECRET_KEY`, `ALLOWED_HOSTS` y las variables `DB_*` (el `.env` no se sube a GitHub).
+2. Crear la base de datos vacía (`CREATE DATABASE gestion_muni CHARACTER SET utf8mb4;`). Las tablas deben ser **InnoDB** (ya se fuerza en `settings.py`).
+3. Instalar y migrar:
+
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py loaddata 01_catalogos 02_datos_sistema   # roles, delegaciones, tipos, datos migrados del JSON
+python manage.py importar_json                            # (opcional) re-lee data/*.json y crea usuarios Django con clave hasheada
+python manage.py createsuperuser                          # acceso a /admin/
+python manage.py collectstatic                            # solo en el servidor (EC2)
+```
+
+- `fixtures/01_catalogos.json`: roles, delegaciones, tipos de gestión, tipos/sub atención, canales, metas y parámetros.
+- `fixtures/02_datos_sistema.json`: todo lo migrado desde `data/*.json` más vecinos y atenciones de ejemplo del mockup (sin contraseñas).
+- `python manage.py importar_json [--sin-auth]`: comando idempotente que migra los JSON a la base de datos.
