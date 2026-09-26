@@ -12,3 +12,6 @@ Thumbs.db
 _doc_evidencias.html
 _generar_evidencias_docx.py
 *.zip
+
+.env
+staticfiles/

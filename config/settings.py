@@ -1,12 +1,34 @@
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-siged-la-serena-inacap-evaluacion-sumativa-2026-key"
+# Variables sensibles en .env (no versionado). Ver .env.example.
+load_dotenv(BASE_DIR / ".env")
 
-DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+def env_list(nombre, por_defecto=""):
+    valor = os.getenv(nombre, por_defecto)
+    return [item.strip() for item in valor.split(",") if item.strip()]
+
+
+def env_obligatoria(nombre):
+    valor = os.getenv(nombre)
+    if not valor:
+        raise ImproperlyConfigured(f"Falta la variable de entorno {nombre} (revise el archivo .env).")
+    return valor
+
+
+# Único valor con respaldo seguro: si no se define, DEBUG queda apagado.
+DEBUG = os.getenv("DEBUG", "False").strip().lower() in ("1", "true", "yes", "si", "sí")
+
+SECRET_KEY = env_obligatoria("SECRET_KEY")
+
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -53,10 +75,20 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
+# MySQL 8.x (WAMP en local, MySQL/MariaDB en EC2). Driver: PyMySQL (ver config/__init__.py).
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env_obligatoria("DB_NAME"),
+        "USER": env_obligatoria("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD", ""),
+        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+        "PORT": os.getenv("DB_PORT", "3306"),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            # InnoDB obligatorio: WAMP trae MyISAM por defecto (sin llaves foráneas).
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB",
+        },
     }
 }
 
@@ -80,5 +112,10 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+# Destino de `python manage.py collectstatic` (servidor web en EC2).
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Fixtures del proyecto (python manage.py loaddata 01_catalogos ...).
+FIXTURE_DIRS = [BASE_DIR / "fixtures"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
