@@ -171,20 +171,13 @@ def obtener_clima_la_serena():
 
 
 def inicio_view(request):
-    requerimientos = _tickets_con_semaforo()
-    total_casos = len(requerimientos)
-    casos_resueltos = sum(1 for item in requerimientos if item.get("estado_proceso") == "Resuelto")
-    casos_criticos = sum(1 for item in requerimientos if item.get("semaforo_nivel") == "Rojo")
-    casos_en_proceso = sum(1 for item in requerimientos if item.get("estado_proceso") == "En Proceso")
-    casos_pendientes = sum(1 for item in requerimientos if item.get("estado_proceso") == "Pendiente")
+    from control_gestion.panel_personal import construir_panel_personal, perfil_de_request
+
+    panel = construir_panel_personal(perfil_de_request(request))
     contexto = {
-        "total_casos": total_casos,
-        "casos_resueltos": casos_resueltos,
-        "casos_criticos": casos_criticos,
-        "casos_en_proceso": casos_en_proceso,
-        "casos_pendientes": casos_pendientes,
+        "panel": panel,
         "clima": obtener_clima_la_serena(),
-        "delegaciones": nombres_delegaciones(),
+        "delegaciones": panel["delegaciones"],
     }
     return render(request, "requerimientos/inicio.html", contexto)
 

@@ -1,0 +1,32 @@
+<section class="card card-calculo e3d-tilt border-0 shadow-sm rounded-4 mb-4" aria-label="Mis tickets">
+    <div class="card-body p-4">
+        <h2 class="h5 fw-bold text-primary-custom mb-1">Mis tickets</h2>
+        <p class="text-muted small mb-3">Asignados a su usuario. Verde hasta el día {{ panel.sla_verde }}, ámbar hasta el día {{ panel.sla_amarillo }}, rojo después.</p>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Vecino</th>
+                        <th>Estado</th>
+                        <th class="text-end">Días</th>
+                        <th>Semáforo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in panel.tickets %}
+                    <tr>
+                        <td class="fw-semibold"><a href="{% url 'detalle_requerimiento' ticket.codigo %}">{{ ticket.codigo }}</a></td>
+                        <td>{{ ticket.vecino }}</td>
+                        <td>{{ ticket.estado }}</td>
+                        <td class="text-end">{{ ticket.dias }}</td>
+                        <td><span class="badge {{ ticket.clase }}">{{ ticket.nivel }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">No tiene tickets asignados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
