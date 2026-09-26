@@ -1,0 +1,17 @@
+/* Aparición al hacer scroll (js/modulos/revelar.js) y movimiento reducido */
+.js-listo [data-revelar] {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+    transition: opacity 0.7s cubic-bezier(.2, .8, .2, 1), transform 0.7s cubic-bezier(.2, .8, .2, 1);
+    transition-delay: var(--d, 0s);
+}
+.js-listo [data-revelar].is-visible { opacity: 1; transform: none; }
+html:not(.puntero-fino) .e3d-tilt-on { transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    .js-listo [data-revelar] { opacity: 1; transform: none; }
+    .e3d-tilt-on, .v3-hero__img, .e3d-capa, .v3-servicio:hover, .v3-btn:hover, .v3-foto-card:hover img,
+    .v3-tramite:hover, .v3-noticia:hover, .v3-noticia:hover .bi, .v3-hero__atajos a:hover .bi,
+    .v3-pagina-cabecera__img, .v3-agenda__foto img, .v3-login__visual > img { transform: none !important; }
+}

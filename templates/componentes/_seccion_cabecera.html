@@ -1,0 +1,11 @@
+{# Encabezado de sección. Parámetros: eyebrow, titulo, bajada, enlace_url, enlace_texto, externo, id_titulo #}
+<div class="v3-seccion__cabecera{% if enlace_url %} v3-seccion__cabecera--con-enlace{% endif %}" data-revelar>
+    <div>
+        {% if eyebrow %}<span class="v3-eyebrow">{{ eyebrow }}</span>{% endif %}
+        <h2 class="v3-h2"{% if id_titulo %} id="{{ id_titulo }}"{% endif %}>{{ titulo }}</h2>
+        {% if bajada %}<p class="v3-lead mb-0">{{ bajada }}</p>{% endif %}
+    </div>
+    {% if enlace_url %}
+    <a class="v3-enlace-mas" href="{{ enlace_url }}"{% if externo %} target="_blank" rel="noopener"{% endif %}>{{ enlace_texto }} <i class="bi {% if externo %}bi-box-arrow-up-right{% else %}bi-arrow-right{% endif %}"></i></a>
+    {% endif %}
+</div>

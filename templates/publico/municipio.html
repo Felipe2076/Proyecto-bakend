@@ -1,0 +1,26 @@
+{% extends 'publico/base_publica.html' %}
+{% block titulo %}Municipio{% endblock %}
+{% block contenido %}
+{% include 'publico/partials/_cabecera_pagina.html' with miga="Municipio" titulo="El Municipio" bajada="Historia, identidad, autoridades y organización de la Ilustre Municipalidad de La Serena." foto="img/laserena/plaza-de-armas.jpg" %}
+<section class="v3-seccion v3-seccion--compacta" id="conocenos" aria-labelledby="conocenos-titulo">
+    <div class="v3-contenedor">
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Conócenos" titulo="La Serena y su municipio" bajada="Contenido publicado en el sitio oficial laserena.cl." id_titulo="conocenos-titulo" %}
+        <div class="row g-4">
+            {% for i in conocenos %}
+            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono=i.icono titulo=i.titulo texto=i.texto url=i.url externo=True revelar_d=forloop.counter0 %}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<section class="v3-seccion" id="juzgados" aria-labelledby="autoridades-titulo">
+    <div class="v3-contenedor">
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Autoridades y organización" titulo="Concejo, direcciones y juzgados" id_titulo="autoridades-titulo" %}
+        <div class="row g-4">
+            {% for i in municipio %}
+            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono=i.icono titulo=i.titulo texto=i.texto url=i.url externo=True revelar_d=forloop.counter0 %}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% include 'publico/partials/_transparencia.html' %}
+{% endblock %}

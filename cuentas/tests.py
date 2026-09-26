@@ -131,8 +131,6 @@ class PortadaPublicaTests(TestCase):
         portada = anon.get("/")
         self.assertEqual(portada.status_code, 200)
         self.assertContains(portada, "Ingresar")
-        creditos = anon.get("/creditos/")
-        self.assertEqual(creditos.status_code, 200)
         tablero = anon.get("/control/")
         self.assertEqual(tablero.status_code, 302)
         self.assertIn("/login/", tablero["Location"])

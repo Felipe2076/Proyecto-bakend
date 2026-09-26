@@ -1,0 +1,12 @@
+{# Últimas noticias: tarjetas con títulos propios que llevan a la nota oficial. Parámetros: noticias, url_noticias #}
+<section class="v3-seccion" aria-labelledby="noticias-titulo">
+    <div class="v3-contenedor">
+        {% url 'publico_noticias' as url_pag_noticias %}
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Noticias" titulo="Lo último en La Serena" bajada="Resumen de las publicaciones recientes; la nota completa está en laserena.cl." enlace_url=url_pag_noticias enlace_texto="Más noticias" id_titulo="noticias-titulo" %}
+        <div class="v3-rejilla-noticias">
+            {% for n in noticias %}
+            {% include 'componentes/_noticia.html' with n=n revelar_d=forloop.counter0 %}
+            {% endfor %}
+        </div>
+    </div>
+</section>

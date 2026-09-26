@@ -1,0 +1,11 @@
+{# Accesos rápidos a servicios públicos (banners de la portada oficial). Parámetros: accesos, titulo #}
+<section class="v3-seccion" aria-labelledby="accesos-titulo">
+    <div class="v3-contenedor">
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Accesos rápidos" titulo=titulo|default:"Otros servicios útiles" bajada="Enlaces a servicios del Estado y de la Municipalidad." id_titulo="accesos-titulo" %}
+        <div class="v3-rejilla-accesos" data-revelar>
+            {% for a in accesos %}
+            {% include 'componentes/_tramite.html' with icono=a.icono titulo=a.titulo url=a.url %}
+            {% endfor %}
+        </div>
+    </div>
+</section>

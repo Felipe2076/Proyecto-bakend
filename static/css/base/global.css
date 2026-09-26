@@ -1,0 +1,14 @@
+/* Reglas globales del tema claro */
+body {
+    background: var(--ls-gris-50) !important;
+    background-image: none !important;
+    color: var(--ls-texto);
+}
+a { color: var(--ls-rojo); text-underline-offset: 2px; }
+a:hover { color: var(--ls-rojo-700); }
+::selection { background: var(--ls-rojo); color: #fff; }
+:focus-visible { outline: 3px solid rgba(184, 0, 3, 0.35); outline-offset: 2px; }
+.text-primary-custom { color: var(--ls-texto) !important; }
+.v3-contenedor { width: min(var(--ls-contenedor), 100% - 2.5rem); margin-inline: auto; }
+.v3-eyebrow { color: var(--ls-rojo); display: inline-block; margin-bottom: 0.6rem; }
+.v3-muted { color: var(--ls-texto-suave) !important; }

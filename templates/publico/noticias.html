@@ -1,0 +1,16 @@
+{% extends 'publico/base_publica.html' %}
+{% block titulo %}Noticias{% endblock %}
+{% block contenido %}
+{% include 'publico/partials/_cabecera_pagina.html' with miga="Noticias" titulo="Noticias y agenda" bajada="Lo más reciente de la comuna. Cada nota completa está publicada en laserena.cl." foto="img/laserena/faro-atardecer.jpg" %}
+<section class="v3-seccion v3-seccion--compacta" aria-labelledby="not-titulo">
+    <div class="v3-contenedor">
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Noticias" titulo="Publicaciones recientes" enlace_url=url_noticias enlace_texto="Archivo completo en laserena.cl" externo=True id_titulo="not-titulo" %}
+        <div class="v3-rejilla-noticias">
+            {% for n in noticias %}
+            {% include 'componentes/_noticia.html' with n=n revelar_d=forloop.counter0 %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% include 'publico/partials/_agenda.html' with agenda=agenda %}
+{% endblock %}

@@ -1,0 +1,55 @@
+/* Tokens de diseño (tema claro institucional, inspirado en laserena.cl) */
+:root {
+    /* Marca */
+    --ls-rojo: #b80003;          /* rojo del logo oficial */
+    --ls-rojo-700: #920000;      /* rojo base de laserena.cl */
+    --ls-rojo-900: #5c0002;
+    --ls-rojo-50: #fdf1f1;
+    --ls-rojo-100: #fbe1e2;
+    /* Neutros */
+    --ls-blanco: #ffffff;
+    --ls-gris-25: #fafbfc;
+    --ls-gris-50: #f5f6f8;
+    --ls-gris-100: #eef0f3;
+    --ls-gris-200: #e3e6eb;
+    --ls-gris-300: #d7dde4;
+    --ls-gris-500: #8a929c;
+    --ls-texto: #17202a;
+    --ls-texto-suave: #545d68;
+    --ls-carbon: #1c2128;
+    /* Semáforo */
+    --ls-verde: #1e8449;
+    --ls-ambar: #c77700;
+    --ls-rojo-semaforo: #c0392b;
+    /* Forma */
+    --ls-radio-sm: 10px;
+    --ls-radio: 16px;
+    --ls-radio-lg: 24px;
+    --ls-sombra-sm: 0 1px 2px rgba(23, 32, 42, 0.06), 0 1px 3px rgba(23, 32, 42, 0.08);
+    --ls-sombra-md: 0 10px 24px -10px rgba(23, 32, 42, 0.18), 0 2px 6px rgba(23, 32, 42, 0.05);
+    --ls-sombra-lg: 0 28px 56px -24px rgba(23, 32, 42, 0.28), 0 6px 16px rgba(23, 32, 42, 0.06);
+    --ls-sombra-roja: 0 12px 28px -12px rgba(184, 0, 3, 0.55);
+    --ls-trans: 0.22s cubic-bezier(.2, .8, .2, 1);
+    --ls-contenedor: 1200px;
+
+    /* Puente con las variables heredadas de style.css (así las pantallas
+       internas y los listados de Jake adoptan el tema claro sin tocar HTML) */
+    --siged-rojo: var(--ls-rojo);
+    --siged-rojo-mid: #cc1014;
+    --siged-rojo-deep: var(--ls-rojo-700);
+    --siged-vino: var(--ls-rojo-900);
+    --siged-rojo-soft: var(--ls-rojo-50);
+    --siged-cream: var(--ls-gris-50);
+    --siged-sand: var(--ls-gris-200);
+    --siged-paper: var(--ls-blanco);
+    --siged-ink: var(--ls-texto);
+    --siged-muted: var(--ls-texto-suave);
+    --siged-line: var(--ls-gris-200);
+    --siged-gold: var(--ls-rojo);
+    --siged-teal: var(--ls-rojo);
+    --siged-teal-deep: var(--ls-rojo-700);
+    --siged-teal-soft: var(--ls-rojo-50);
+    --radius: var(--ls-radio);
+    --shadow: var(--ls-sombra-sm);
+    --shadow-lift: var(--ls-sombra-md);
+}

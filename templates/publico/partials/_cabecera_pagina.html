@@ -1,0 +1,14 @@
+{% load static %}
+{# Encabezado de páginas interiores públicas. Parámetros: miga, titulo, bajada, foto #}
+<section class="v3-pagina-cabecera">
+    <div class="v3-contenedor">
+        <div class="v3-pagina-cabecera__marco">
+            <img class="v3-pagina-cabecera__img" src="{% static foto|default:'img/laserena/plaza-de-armas.jpg' %}" alt="" data-parallax="0.08">
+            <div class="v3-pagina-cabecera__texto">
+                <nav aria-label="Ruta de navegación"><ol class="v3-miga"><li><a href="{% url 'inicio' %}">Inicio</a></li><li aria-current="page">{{ miga }}</li></ol></nav>
+                <h1>{{ titulo }}</h1>
+                {% if bajada %}<p>{{ bajada }}</p>{% endif %}
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,24 @@
+/* ==========================================================================
+   app.css — punto de entrada de estilos SIGED-SGR (diseño v3, tema claro
+   institucional La Serena). Sólo importa módulos; no escribir reglas aquí.
+   Orden: base → layout → componentes → páginas → utilidades.
+   ========================================================================== */
+@import url("base/variables.css");
+@import url("base/tipografia.css");
+@import url("base/global.css");
+@import url("layout/app-interna.css");
+@import url("componentes/botones.css");
+@import url("componentes/tarjetas.css");
+@import url("componentes/formularios.css");
+@import url("componentes/tablas.css");
+@import url("componentes/header-publico.css");
+@import url("componentes/hero.css");
+@import url("componentes/footer-publico.css");
+@import url("componentes/cabecera-pagina.css");
+@import url("componentes/tramites.css");
+@import url("componentes/noticias.css");
+@import url("componentes/secciones.css");
+@import url("paginas/landing.css");
+@import url("paginas/login.css");
+@import url("paginas/dashboard.css");
+@import url("utilidades/movimiento.css");

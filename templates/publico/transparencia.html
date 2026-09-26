@@ -1,0 +1,16 @@
+{% extends 'publico/base_publica.html' %}
+{% block titulo %}Transparencia{% endblock %}
+{% block contenido %}
+{% include 'publico/partials/_cabecera_pagina.html' with miga="Transparencia" titulo="Transparencia y participación" bajada="Acceso a la información pública y a los espacios de participación ciudadana." foto="img/laserena/plaza-de-armas.jpg" %}
+<section class="v3-seccion v3-seccion--compacta" aria-labelledby="tr-titulo">
+    <div class="v3-contenedor">
+        <h2 class="visually-hidden" id="tr-titulo">Opciones de transparencia</h2>
+        <div class="row g-4">
+            {% for i in items %}
+            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono=i.icono titulo=i.titulo texto=i.texto url=i.url externo=True revelar_d=forloop.counter0 %}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% include 'publico/partials/_sitios.html' %}
+{% endblock %}

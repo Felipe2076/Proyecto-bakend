@@ -1,0 +1,80 @@
+/* Tarjetas: genéricas (Bootstrap .card), de servicio, de foto y tilt sutil */
+.card {
+    background: var(--ls-blanco);
+    border: 1px solid var(--ls-gris-200) !important;
+    border-radius: var(--ls-radio) !important;
+    box-shadow: var(--ls-sombra-sm);
+}
+
+.v3-servicio {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.8rem;
+    background: var(--ls-blanco);
+    border: 1px solid var(--ls-gris-200);
+    border-radius: 20px;
+    box-shadow: var(--ls-sombra-sm);
+    color: var(--ls-texto);
+    text-decoration: none;
+    transition: box-shadow var(--ls-trans), border-color var(--ls-trans), transform var(--ls-trans);
+}
+.v3-servicio:hover { color: var(--ls-texto); box-shadow: var(--ls-sombra-md); border-color: var(--ls-gris-300); transform: translateY(-3px); }
+.v3-servicio__icono {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 1.35rem;
+    color: var(--ls-rojo);
+    background: var(--ls-rojo-50);
+    margin-bottom: 1.2rem;
+    transition: background var(--ls-trans), color var(--ls-trans);
+}
+.v3-servicio:hover .v3-servicio__icono { background: var(--ls-rojo); color: #fff; }
+.v3-servicio h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+.v3-servicio p { color: var(--ls-texto-suave); margin-bottom: 1.2rem; flex: 1; }
+.v3-servicio__enlace { color: var(--ls-rojo); font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem; }
+.v3-servicio__enlace .bi { transition: transform var(--ls-trans); }
+.v3-servicio:hover .v3-servicio__enlace .bi { transform: translateX(3px); }
+
+.v3-foto-card {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 20px;
+    min-height: 280px;
+    box-shadow: var(--ls-sombra-sm);
+    isolation: isolate;
+    background: var(--ls-gris-100);
+}
+.v3-foto-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s cubic-bezier(.2, .8, .2, 1); }
+.v3-foto-card:hover img { transform: scale(1.04); }
+.v3-foto-card__pie {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 1.3rem 1.4rem;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(23, 10, 12, 0.82));
+    z-index: 1;
+}
+.v3-foto-card__pie strong { font-family: var(--font-display); font-size: 1.2rem; display: block; }
+.v3-foto-card__pie span { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono); opacity: 0.9; }
+
+/* Tilt 3D sutil (lo activa js/modulos/tilt.js en .e3d-tilt, .kpi-card, .flow-card) */
+.e3d-tilt-on {
+    --e3d-tx: 0;
+    --e3d-ty: 0;
+    --e3d-lift: 0;
+    --e3d-max: 3;
+    will-change: transform;
+    transform:
+        perspective(900px)
+        rotateX(calc(var(--e3d-ty) * var(--e3d-max) * -1deg))
+        rotateY(calc(var(--e3d-tx) * var(--e3d-max) * 1deg))
+        translateY(calc(var(--e3d-lift) * -3px));
+    box-shadow:
+        calc(var(--e3d-tx) * -8px) calc(4px + var(--e3d-lift) * 12px) calc(12px + var(--e3d-lift) * 22px) rgba(23, 32, 42, calc(0.06 + var(--e3d-lift) * 0.1)),
+        0 1px 2px rgba(23, 32, 42, 0.05) !important;
+}

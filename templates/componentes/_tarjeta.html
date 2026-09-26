@@ -1,0 +1,7 @@
+{# Tarjeta de enlace con ícono. Parámetros: icono, titulo, texto, url, externo (bool), accion (texto del enlace), revelar_d #}
+<a class="v3-servicio e3d-tilt" href="{{ url }}"{% if externo %} target="_blank" rel="noopener"{% endif %} data-revelar{% if revelar_d %} style="--d:calc({{ revelar_d }} * .08s)"{% endif %}>
+    <span class="v3-servicio__icono" aria-hidden="true"><i class="bi {{ icono }}"></i></span>
+    <h3>{{ titulo }}</h3>
+    {% if texto %}<p>{{ texto }}</p>{% endif %}
+    <span class="v3-servicio__enlace">{{ accion|default:"Ir al sitio oficial" }} <i class="bi {% if externo %}bi-box-arrow-up-right{% else %}bi-arrow-right{% endif %}" aria-hidden="true"></i>{% if externo %}<span class="visually-hidden"> (se abre en otra pestaña)</span>{% endif %}</span>
+</a>

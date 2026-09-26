@@ -1,0 +1,21 @@
+/* Encabezado de páginas públicas interiores (publico/partials/_cabecera_pagina.html) */
+.v3-pagina-cabecera { padding: 1.6rem 0 0; }
+.v3-pagina-cabecera__marco {
+    position: relative;
+    min-height: 260px;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    isolation: isolate;
+    background: var(--ls-rojo-900);
+    box-shadow: var(--ls-sombra-md);
+}
+.v3-pagina-cabecera__img { position: absolute; inset: -8% 0; width: 100%; height: 116%; object-fit: cover; z-index: -2; transform: translate3d(0, var(--parallax-y, 0px), 0); }
+.v3-pagina-cabecera__marco::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(92, 0, 2, 0.94), rgba(184, 0, 3, 0.7) 55%, rgba(184, 0, 3, 0.25)); }
+.v3-pagina-cabecera__texto { padding: clamp(1.6rem, 4vw, 2.8rem); color: #fff; max-width: 46rem; }
+.v3-pagina-cabecera h1 { color: #fff; font-size: clamp(2rem, 4.2vw, 3.1rem); letter-spacing: -0.04em; line-height: 1.05; margin: 0.6rem 0 0.6rem; }
+.v3-pagina-cabecera p { color: rgba(255, 255, 255, 0.9); font-size: 1.05rem; margin: 0; }
+.v3-miga { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; margin: 0; font-size: 0.82rem; color: rgba(255, 255, 255, 0.8); }
+.v3-miga li + li::before { content: "/"; margin-right: 0.4rem; opacity: 0.6; }
+.v3-miga a { color: #fff; }

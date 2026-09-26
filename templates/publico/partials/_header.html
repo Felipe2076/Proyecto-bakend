@@ -1,0 +1,42 @@
+{% load static %}
+{# Cabecera roja con menú principal y submenús (espejo del menú de laserena.cl) #}
+<header class="v3-header">
+    <nav class="navbar navbar-expand-lg" aria-label="Navegación principal">
+        <div class="v3-contenedor d-flex flex-wrap align-items-center justify-content-between">
+            <a class="navbar-brand" href="{% url 'inicio' %}" aria-label="Inicio — Municipalidad de La Serena">
+                <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="152" height="42">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPublico" aria-controls="menuPublico" aria-expanded="false" aria-label="Abrir menú">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="menuPublico">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    {% for item in menu %}
+                    {% if item.hijos %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if seccion == item.ruta %}active{% endif %}" href="{% url item.ruta %}" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ item.titulo }}</a>
+                        <ul class="dropdown-menu v3-submenu">
+                            <li><a class="dropdown-item v3-submenu__todo" href="{% url item.ruta %}">Ver {{ item.titulo|lower }}</a></li>
+                            {% for hijo in item.hijos %}
+                            <li>
+                                {% if hijo.url %}
+                                <a class="dropdown-item" href="{{ hijo.url }}" target="_blank" rel="noopener">{{ hijo.titulo }} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
+                                {% else %}
+                                <a class="dropdown-item" href="{% url hijo.ruta %}{% if hijo.ancla %}#{{ hijo.ancla }}{% endif %}">{{ hijo.titulo }}</a>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link {% if seccion == item.ruta %}active{% endif %}" {% if seccion == item.ruta %}aria-current="page"{% endif %} href="{% url item.ruta %}">{{ item.titulo }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
+                        <a class="v3-btn v3-btn--blanco v3-btn--sm" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Ingresar</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>

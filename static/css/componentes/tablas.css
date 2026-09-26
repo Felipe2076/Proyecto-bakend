@@ -1,0 +1,7 @@
+/* Tablas (listados / mantenedores) */
+.table { --bs-table-bg: transparent; }
+.siged-content .table > thead th { color: var(--ls-texto-suave); border-bottom-width: 1px; }
+.siged-content .table > tbody > tr { transition: background-color var(--ls-trans); }
+.siged-content .table-hover > tbody > tr:hover > *,
+.siged-content .table > tbody > tr:hover > * { --bs-table-bg-state: var(--ls-rojo-50); }
+.siged-content .table-responsive { border-radius: inherit; }

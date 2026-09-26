@@ -1,0 +1,16 @@
+{% extends 'publico/base_publica.html' %}
+{% block titulo %}Trámites en línea{% endblock %}
+{% block contenido %}
+{% include 'publico/partials/_cabecera_pagina.html' with miga="Trámites en línea" titulo="Trámites en línea" bajada="Pagos y trámites municipales disponibles en las plataformas oficiales." foto="img/laserena/faro-monumental.jpg" %}
+<section class="v3-seccion v3-seccion--compacta" aria-labelledby="tram-titulo">
+    <div class="v3-contenedor">
+        <div class="v3-aviso" data-revelar><i class="bi bi-shield-check"></i><p class="mb-0">Serás dirigido a la pasarela de pago oficial de la Municipalidad de La Serena. Antes de pagar, revisa bien tus datos.</p></div>
+        <h2 class="visually-hidden" id="tram-titulo">Listado de trámites</h2>
+        <div class="row g-4">
+            {% for t in tramites %}
+            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono=t.icono titulo=t.titulo texto=t.texto url=t.url externo=True accion="Ir al trámite" revelar_d=forloop.counter0 %}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
