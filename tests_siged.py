@@ -184,13 +184,14 @@ def run_tests() -> None:
         f"Temp: {clima['temperatura']}°C ({clima['estado_conexion']})"
     )
 
-    print("\n5. Probando redirección a login sin sesión...")
+    print("\n5. Probando portada pública y dashboard con login...")
     anon = _cliente()
     response_anon: Any = anon.get("/", follow=False)
-    if response_anon.status_code in (301, 302) and "/login/" in response_anon["Location"]:
-        print("   [OK] / redirige a /login/ sin sesión")
+    response_dash: Any = anon.get("/control/", follow=False)
+    if response_anon.status_code == 200 and response_dash.status_code in (301, 302) and "/login/" in response_dash["Location"]:
+        print("   [OK] / es público y /control/ redirige a /login/ sin sesión")
     else:
-        msg = f"Se esperaba redirect a login, se obtuvo {response_anon.status_code}"
+        msg = f"Portada {response_anon.status_code}, dashboard {response_dash.status_code}"
         errores.append(msg)
         print(f"   [FAIL] {msg}")
 

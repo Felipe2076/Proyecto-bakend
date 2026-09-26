@@ -121,6 +121,7 @@ class PanelOrmTests(TestCase):
         respuesta = cliente.get("/control/")
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "card-calculo")
+        self.assertContains(respuesta, "e3d-tilt")
         self.assertContains(respuesta, "Semáforo diario")
         self.assertContains(respuesta, "Tubo de trabajo")
         self.assertContains(respuesta, "Metas por funcionario")

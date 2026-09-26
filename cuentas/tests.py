@@ -125,6 +125,19 @@ PERFILES_DEMO = (
 )
 
 
+class PortadaPublicaTests(TestCase):
+    def test_portada_publica_y_dashboard_privado(self):
+        anon = Client()
+        portada = anon.get("/")
+        self.assertEqual(portada.status_code, 200)
+        self.assertContains(portada, "Ingresar")
+        creditos = anon.get("/creditos/")
+        self.assertEqual(creditos.status_code, 200)
+        tablero = anon.get("/control/")
+        self.assertEqual(tablero.status_code, 302)
+        self.assertIn("/login/", tablero["Location"])
+
+
 class AutenticacionOrmTests(TestCase):
     """Los cuatro perfiles entran por Usuario.user y el rol sale de Usuario.rol."""
 

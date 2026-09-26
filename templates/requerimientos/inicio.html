@@ -6,7 +6,12 @@
 {% block topbar_sub %}CU-E01 · Vista general de tickets, semáforo e indicadores{% endblock %}
 
 {% block content %}
-<section class="hero-panel mb-4">
+<section class="hero-panel e3d-escena mb-4">
+    <div class="e3d-parallax" aria-hidden="true">
+        <div class="e3d-capa e3d-capa--foto-faro" data-e3d-depth="0.4"></div>
+        <div class="e3d-capa e3d-capa--tinte"></div>
+        <div class="e3d-capa e3d-capa--escudo" data-e3d-depth="0.9"></div>
+    </div>
     <div class="row align-items-center g-4">
         <div class="col-lg-8">
             <p class="hero-kicker">Municipalidad de La Serena · SIGED-SGR / Delegaciones</p>
@@ -23,7 +28,7 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card hero-glass text-white">
+            <div class="card hero-glass text-white" data-tilt-max="8">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <lord-icon src="{% static 'lordicon/27-globe.json' %}" trigger="hover" colors="primary:#f0d7a0,secondary:#fff8ee" style="width:36px;height:36px"></lord-icon>

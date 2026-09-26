@@ -2,6 +2,7 @@ import re
 import secrets
 from datetime import date, datetime, timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
@@ -86,7 +87,8 @@ def login_view(request):
                 )
                 return redirect(_next_seguro(request.POST.get("next") or request.GET.get("next")))
     contexto = {
-        "demos": _demos(),
+        "demos": _demos() if settings.DEBUG else [],
+        "mostrar_demos": settings.DEBUG,
         "errores": errores,
         "valores": valores,
         "next_url": _next_seguro(request.GET.get("next") or request.POST.get("next")),
