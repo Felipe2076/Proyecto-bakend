@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import RedirectView
 
 from publico import views
 
@@ -12,4 +13,6 @@ urlpatterns = [
     path("noticias/", views.noticias_view, name="publico_noticias"),
     path("transparencia/", views.transparencia_view, name="publico_transparencia"),
     path("contacto/", views.contacto_view, name="publico_contacto"),
+    # La antigua página de créditos se eliminó: redirección permanente a la portada.
+    path("creditos/", RedirectView.as_view(url="/", permanent=True)),
 ]
