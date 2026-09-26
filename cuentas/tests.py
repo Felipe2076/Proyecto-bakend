@@ -1,4 +1,7 @@
-"""Pruebas del mantenedor de roles: listado, búsqueda, alta, edición y baja."""
+"""Pruebas de mantenedores y de autenticación contra la base de datos."""
+
+import builtins
+import re
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
@@ -112,3 +115,92 @@ class RolesMantenedorTests(TestCase):
         respuesta = self.client.get("/mantenedores/roles/", follow=True)
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "no tiene acceso")
+
+
+PERFILES_DEMO = (
+    ("admin", "admin123", "administrador", "admin.siged@laserena.cl", "/mantenedores/roles/", True),
+    ("jefatura", "jefatura123", "jefatura", "elizabeth.rojas@laserena.cl", "/mantenedores/roles/", False),
+    ("funcionario", "funcionario123", "funcionario", "camila.oyarzun@laserena.cl", "/administracion/usuarios/", False),
+    ("ventanilla", "ventanilla123", "ventanilla", "marisol.tapia@laserena.cl", "/control/actividades/", False),
+)
+
+
+class AutenticacionOrmTests(TestCase):
+    """Los cuatro perfiles entran por Usuario.user y el rol sale de Usuario.rol."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.users = {}
+        for username, password, rol_codigo, correo, _ruta, _permitido in PERFILES_DEMO:
+            rol = Rol.objects.create(codigo=rol_codigo, nombre=rol_codigo.capitalize(), descripcion=rol_codigo)
+            user = User.objects.create_user(username, correo, password)
+            Usuario.objects.create(
+                codigo=f"USR-{username[:3].upper()}",
+                user=user,
+                username=username,
+                nombre=f"Perfil {username}",
+                correo=correo,
+                rol=rol,
+                estado=EstadoRegistro.ACTIVO,
+            )
+            self.users[username] = user
+
+    def _abrir(self, path, *args, **kwargs):
+        if "usuarios.json" in str(path):
+            raise AssertionError(f"el flujo abrió {path}")
+        return self._open_real(path, *args, **kwargs)
+
+    def test_login_usa_la_base_y_no_el_json(self):
+        self._open_real = builtins.open
+        builtins.open = self._abrir
+        try:
+            for username, password, rol_codigo, _correo, ruta, permitido in PERFILES_DEMO:
+                cliente = Client()
+                respuesta = cliente.post("/login/", {"username": username, "password": password})
+                self.assertEqual(respuesta.status_code, 302, username)
+                self.assertNotIn("/login/", respuesta["Location"])
+                sesion = cliente.session["usuario"]
+                self.assertEqual(sesion["rol"], rol_codigo)
+                self.assertEqual(sesion["username"], username)
+                self.assertEqual(int(cliente.session["_auth_user_id"]), self.users[username].pk)
+                pantalla = cliente.get(ruta, follow=True)
+                self.assertEqual(pantalla.status_code, 200)
+                if permitido:
+                    self.assertNotContains(pantalla, "no tiene acceso")
+                else:
+                    self.assertContains(pantalla, "no tiene acceso")
+                ajeno = Client()
+                clave_mala = ajeno.post("/login/", {"username": username, "password": "no-es-la-clave"})
+                self.assertContains(clave_mala, "incorrectos")
+        finally:
+            builtins.open = self._open_real
+
+    def test_recuperacion_guarda_la_clave_en_user(self):
+        self._open_real = builtins.open
+        builtins.open = self._abrir
+        cliente = Client()
+        try:
+            pedido = cliente.post("/recuperar/", {"correo": "admin.siged@laserena.cl"}, follow=True)
+            self.assertEqual(pedido.status_code, 200)
+            codigo = re.search(r"(\d{6})", pedido.content.decode()).group(1)
+            digitos = {f"d{i}": digito for i, digito in enumerate(codigo, start=1)}
+            validado = cliente.post("/recuperar/codigo/", digitos)
+            self.assertEqual(validado.status_code, 302)
+            nueva = "NuevaClave1!"
+            guardada = cliente.post(
+                "/recuperar/nueva/",
+                {"password": nueva, "confirmacion": nueva},
+                follow=True,
+            )
+            self.assertEqual(guardada.status_code, 200)
+            self.assertContains(guardada, "actualizada")
+        finally:
+            builtins.open = self._open_real
+        user = self.users["admin"]
+        user.refresh_from_db()
+        self.assertTrue(user.check_password(nueva))
+        self.assertFalse(user.check_password("admin123"))
+        ingreso = Client()
+        respuesta = ingreso.post("/login/", {"username": "admin", "password": nueva})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertNotIn("/login/", respuesta["Location"])
