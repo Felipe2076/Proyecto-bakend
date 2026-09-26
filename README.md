@@ -26,6 +26,10 @@ cd Proyecto-bakend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+Copy-Item .env.example .env      # completar SECRET_KEY, DEBUG=True, ALLOWED_HOSTS y DB_* (MySQL local)
+python manage.py migrate
+python manage.py loaddata 01_catalogos 02_datos_sistema
+python manage.py importar_json
 python manage.py runserver
 ```
 
@@ -36,7 +40,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\venv\Scripts\Activate.ps1
 ```
 
-Abrir http://127.0.0.1:8000/
+Requiere MySQL 8.4+ con la base creada (ver *Backend con MySQL* más abajo). Abrir http://127.0.0.1:8000/
 
 ### Linux / macOS
 
@@ -44,6 +48,10 @@ Abrir http://127.0.0.1:8000/
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env             # completar SECRET_KEY, DEBUG=True, ALLOWED_HOSTS y DB_*
+python manage.py migrate
+python manage.py loaddata 01_catalogos 02_datos_sistema
+python manage.py importar_json
 python manage.py runserver
 ```
 
@@ -111,3 +119,110 @@ python manage.py collectstatic                            # solo en el servidor 
 - `fixtures/01_catalogos.json`: roles, delegaciones, tipos de gestión, tipos/sub atención, canales, metas y parámetros.
 - `fixtures/02_datos_sistema.json`: todo lo migrado desde `data/*.json` más vecinos y atenciones de ejemplo del mockup (sin contraseñas).
 - `python manage.py importar_json [--sin-auth]`: comando idempotente que migra los JSON a la base de datos.
+
+## Despliegue en AWS EC2
+
+Servidor: Amazon Linux 2023, IP pública `54.205.69.94`.
+Arquitectura: Apache (puerto 80) sirve phpMyAdmin en `/phpmyadmin` y los estáticos en `/static/`, y reenvía el resto a Gunicorn (`127.0.0.1:8000`), que ejecuta Django. La base es MySQL 8.4 LTS en la misma instancia.
+
+### 1. Conectarse por SSH
+```bash
+ssh -i Gestion_muni_nueva.pem ec2-user@54.205.69.94
+```
+
+### 2. Paquetes del sistema
+```bash
+sudo dnf install -y git gcc python3.14 python3.14-devel
+```
+
+### 3. MySQL 8.4 LTS (Django 6.1 exige MySQL 8.4 o superior)
+```bash
+mysqldump -uroot -p --all-databases > ~/backup_mysql80.sql      # respaldo previo
+sudo systemctl stop mysqld
+sudo dnf install -y https://dev.mysql.com/get/mysql84-community-release-el9-1.noarch.rpm
+sudo dnf config-manager --disable mysql80-community
+sudo dnf config-manager --enable mysql-8.4-lts-community
+sudo dnf upgrade -y 'mysql-community-*'
+sudo systemctl start mysqld
+```
+
+### 4. Base de datos y usuario propio para Django (no se usa root)
+```sql
+CREATE DATABASE gestion_muni CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;  -- motor InnoDB
+CREATE USER 'django_muni'@'localhost' IDENTIFIED BY '<clave>';
+GRANT ALL PRIVILEGES ON gestion_muni.* TO 'django_muni'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 5. Código y entorno virtual
+```bash
+git clone -b backend-mysql https://github.com/Felipe2076/Proyecto-bakend app
+cd app
+python3.14 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt gunicorn
+cp .env.example .env    # completar SECRET_KEY, DEBUG=False, ALLOWED_HOSTS con la IP, CSRF_TRUSTED_ORIGINS y DB_*
+chmod 600 .env
+```
+
+### 6. Migraciones y datos
+```bash
+python manage.py migrate
+python manage.py loaddata 01_catalogos 02_datos_sistema
+python manage.py importar_json
+python manage.py createsuperuser
+python manage.py collectstatic --noinput
+```
+
+### 7. Gunicorn como servicio (`/etc/systemd/system/gunicorn_muni.service`)
+```ini
+[Unit]
+Description=Gunicorn Django gestion_muni (Proyecto-bakend)
+After=network.target mysqld.service
+
+[Service]
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/app
+ExecStart=/home/ec2-user/app/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8000 config.wsgi:application
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now gunicorn_muni
+```
+
+### 8. Apache como proxy inverso (`/etc/httpd/conf.d/django.conf`)
+```apache
+Alias /static/ /home/ec2-user/app/staticfiles/
+<Directory /home/ec2-user/app/staticfiles>
+    Require all granted
+</Directory>
+ProxyPreserveHost On
+ProxyPass /phpmyadmin !
+ProxyPass /static/ !
+ProxyPass / http://127.0.0.1:8000/
+ProxyPassReverse / http://127.0.0.1:8000/
+```
+```bash
+chmod o+x /home/ec2-user /home/ec2-user/app
+chmod -R o+rX /home/ec2-user/app/staticfiles
+sudo apachectl configtest && sudo systemctl reload httpd
+```
+
+### 9. Actualizar después de un cambio en GitHub
+```bash
+cd ~/app && git pull && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+sudo systemctl restart gunicorn_muni
+```
+
+### URLs
+- App: http://54.205.69.94/
+- Django Admin: http://54.205.69.94/admin/
+- phpMyAdmin: http://54.205.69.94/phpmyadmin/
