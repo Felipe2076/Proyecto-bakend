@@ -1,0 +1,44 @@
+{% extends 'cuentas/_auth_layout.html' %}
+
+{% block title %}Nueva contraseña | Sistema Municipal{% endblock %}
+
+{% block auth_contenido %}
+<p class="login-kicker mb-2" style="color:#8b1524;">Sistema Municipal</p>
+<h2 class="fw-bold text-primary-custom mb-1">Crea tu nueva contraseña</h2>
+<p class="mb-2">Tu nueva contraseña debe cumplir con los siguientes requisitos:</p>
+<ul class="small">
+    <li>Mínimo 8 caracteres</li>
+    <li>Al menos una letra mayúscula</li>
+    <li>Al menos una letra minúscula</li>
+    <li>Al menos un número</li>
+    <li>Al menos un carácter especial (ej. ! @ # $ %)</li>
+</ul>
+<form method="post" class="needs-validation card login-glass p-4" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger py-2">{% for error in form.non_field_errors %}{{ error }}{% endfor %}</div>
+    {% endif %}
+    <div class="mb-3">
+        <label class="form-label" for="id_password">Nueva contraseña <span class="text-danger">*</span></label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            {{ form.password }}
+            <button class="btn btn-outline-secondary" type="button" data-toggle-password="id_password" aria-label="Mostrar contraseña"><i class="bi bi-eye"></i></button>
+        </div>
+        {% for error in form.password.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="mb-4">
+        <label class="form-label" for="id_confirmacion">Confirmar nueva contraseña <span class="text-danger">*</span></label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            {{ form.confirmacion }}
+            <button class="btn btn-outline-secondary" type="button" data-toggle-password="id_confirmacion" aria-label="Mostrar confirmación"><i class="bi bi-eye"></i></button>
+        </div>
+        {% for error in form.confirmacion.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary-custom w-100">Guardar contraseña</button>
+    <div class="text-center mt-3">
+        <a href="{% url 'login' %}">Volver al login</a>
+    </div>
+</form>
+{% endblock %}

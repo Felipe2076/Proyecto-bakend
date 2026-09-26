@@ -1,7 +1,7 @@
 from django.shortcuts import redirect
 
 
-RUTAS_PREFIJO_LIBRES = ("/static/", "/admin/")
+RUTAS_PREFIJO_LIBRES = ("/static/", "/admin/", "/recuperar")
 RUTAS_EXACTAS_LIBRES = {"/login/", "/logout/"}
 
 

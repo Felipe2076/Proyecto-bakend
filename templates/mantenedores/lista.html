@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} | Sistema Municipal{% endblock %}
+{% block topbar_title %}{{ titulo }}{% endblock %}
+{% block topbar_sub %}Mantenedor · búsqueda y acciones sobre la base de datos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item active">{{ titulo }}</li>
+        </ol>
+    </nav>
+
+    <div class="row align-items-center g-3 mb-4">
+        <div class="col-lg-3">
+            <h2 class="fw-bold text-primary-custom mb-0">{{ titulo }}</h2>
+            <p class="text-muted small mb-0">{{ total }} registro(s)</p>
+        </div>
+        <div class="col-lg-6">
+            <form method="get" action="{{ url_lista }}" class="input-group" role="search">
+                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                <input type="search" class="form-control" name="q" value="{{ q }}" placeholder="{{ placeholder }}" aria-label="Buscar">
+                <button class="btn btn-primary-custom" type="submit">Buscar</button>
+            </form>
+        </div>
+        <div class="col-lg-3 text-lg-end">
+            <a class="btn btn-primary-custom" href="{{ url_crear }}"><i class="bi bi-plus-lg"></i> Agregar</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-3 px-3">#</th>
+                        {% for encabezado in encabezados %}
+                        <th class="py-3">{{ encabezado }}</th>
+                        {% endfor %}
+                        <th class="py-3 text-end px-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in filas %}
+                    <tr>
+                        <td class="px-3 text-muted">{{ forloop.counter }}</td>
+                        {% for celda in fila.celdas %}
+                        <td>{{ celda|default:"—" }}</td>
+                        {% endfor %}
+                        <td class="text-end px-3 text-nowrap">
+                            <a class="btn btn-sm btn-outline-primary" href="{{ fila.editar }}">Modificar</a>
+                            <a class="btn btn-sm btn-outline-danger" href="{{ fila.eliminar }}">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ encabezados|length|add:2 }}" class="text-center text-muted py-5">
+                            No hay registros{% if q %} para «{{ q }}»{% endif %}.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

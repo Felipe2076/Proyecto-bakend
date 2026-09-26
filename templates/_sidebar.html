@@ -75,6 +75,34 @@
         {% endif %}
 
         {% if puede_administracion %}
+        <p class="siged-nav__group">Mantenedores</p>
+        <a class="siged-nav__link {% if 'mant_delegaciones' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_delegaciones' %}">
+            <i class="bi bi-geo-alt"></i> Delegaciones
+        </a>
+        <a class="siged-nav__link {% if 'mant_usuarios' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_usuarios' %}">
+            <i class="bi bi-people"></i> Usuarios
+        </a>
+        <a class="siged-nav__link {% if 'mant_roles' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_roles' %}">
+            <i class="bi bi-person-badge"></i> Roles
+        </a>
+        <a class="siged-nav__link {% if 'mant_metas' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_metas' %}">
+            <i class="bi bi-bullseye"></i> Metas
+        </a>
+        <a class="siged-nav__link {% if 'mant_tipos_atencion' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_tipos_atencion' %}">
+            <i class="bi bi-heart-pulse"></i> Tipo de Atención
+        </a>
+        <a class="siged-nav__link {% if 'mant_sub_atenciones' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_sub_atenciones' %}">
+            <i class="bi bi-diagram-2"></i> Sub Atención
+        </a>
+        <a class="siged-nav__link {% if 'mant_atenciones' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_atenciones' %}">
+            <i class="bi bi-clipboard2-pulse"></i> Atenciones
+        </a>
+        <a class="siged-nav__link {% if 'mant_tipos_gestion' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_tipos_gestion' %}">
+            <i class="bi bi-signpost-split"></i> Tipo de Gestión
+        </a>
+        <a class="siged-nav__link {% if 'mant_vecinos' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'mant_vecinos' %}">
+            <i class="bi bi-houses"></i> Vecinos
+        </a>
         <p class="siged-nav__group">Administración</p>
         <a class="siged-nav__link {% if request.resolver_match.url_name == 'admin_usuarios' %}is-active{% endif %}" href="{% url 'admin_usuarios' %}">
             <i class="bi bi-people"></i> Usuarios
