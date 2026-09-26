@@ -46,3 +46,8 @@ def portada_view(request):
         "delegaciones": DELEGACIONES_OFICIALES,
     }
     return render(request, "publico/portada.html", contexto)
+
+
+def creditos_view(request):
+    """Página pública con la fuente y licencia de cada imagen (ver static/img/laserena/CREDITOS.md)."""
+    return render(request, "publico/creditos.html")

@@ -2,7 +2,7 @@ from django.shortcuts import redirect
 
 
 RUTAS_PREFIJO_LIBRES = ("/static/", "/admin/")
-RUTAS_EXACTAS_LIBRES = {"/", "/login/", "/logout/"}  # "/" = portada pública
+RUTAS_EXACTAS_LIBRES = {"/", "/login/", "/logout/", "/creditos/"}  # "/" = portada pública
 
 
 class AutenticacionMockMiddleware:
