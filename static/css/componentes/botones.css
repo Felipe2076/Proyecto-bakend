@@ -1,0 +1,41 @@
+/* Botones */
+.btn { border-radius: 999px; }
+.btn-primary-custom {
+    background: var(--ls-rojo) !important;
+    color: #fff !important;
+    border-radius: 999px !important;
+    box-shadow: var(--ls-sombra-roja) !important;
+}
+.btn-primary-custom:hover, .btn-primary-custom:focus { background: var(--ls-rojo-700) !important; }
+.btn-outline-primary { color: var(--ls-rojo); border-color: var(--ls-rojo); }
+.btn-outline-primary:hover { background: var(--ls-rojo); border-color: var(--ls-rojo); color: #fff; }
+
+.v3-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.72rem 1.35rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.98rem;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: background var(--ls-trans), color var(--ls-trans), box-shadow var(--ls-trans), transform var(--ls-trans), border-color var(--ls-trans);
+    cursor: pointer;
+}
+.v3-btn:hover { transform: translateY(-1px); }
+.v3-btn:active { transform: translateY(0); }
+.v3-btn .bi-arrow-right { transition: transform var(--ls-trans); }
+.v3-btn:hover .bi-arrow-right { transform: translateX(3px); }
+.v3-btn--rojo { background: var(--ls-rojo); color: #fff !important; box-shadow: var(--ls-sombra-roja); }
+.v3-btn--rojo:hover { background: var(--ls-rojo-700); }
+.v3-btn--blanco { background: #fff; color: var(--ls-rojo) !important; box-shadow: var(--ls-sombra-sm); }
+.v3-btn--blanco:hover { box-shadow: var(--ls-sombra-md); color: var(--ls-rojo-700) !important; }
+.v3-btn--contorno-claro { color: #fff !important; border-color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.08); }
+.v3-btn--contorno-claro:hover { background: rgba(255, 255, 255, 0.18); border-color: #fff; }
+.v3-btn--lg { padding: 0.9rem 1.7rem; font-size: 1.05rem; }
+.v3-btn--bloque { width: 100%; }
+.v3-btn--sm { padding: 0.5rem 1.05rem; font-size: 0.92rem; }
+.v3-btn--suave { background: var(--ls-rojo-50); color: var(--ls-rojo) !important; }
+.v3-btn--suave:hover { background: var(--ls-rojo-100); }

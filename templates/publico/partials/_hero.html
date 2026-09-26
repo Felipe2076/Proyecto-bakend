@@ -1,0 +1,28 @@
+{% load static %}
+{# Hero de la portada: foto redondeada con velo rojo + accesos directos #}
+<section class="v3-hero" aria-labelledby="hero-titulo">
+    <div class="v3-contenedor">
+        <div class="v3-hero__marco">
+            <img class="v3-hero__img" src="{% static 'img/laserena/faro-monumental.jpg' %}" alt="Faro Monumental de La Serena" title="Foto: Rjcastillo, CC BY-SA 4.0 (Wikimedia Commons)" data-parallax="0.12" fetchpriority="high" width="1600" height="1067">
+            <div class="v3-hero__velo" aria-hidden="true"></div>
+            <div class="v3-hero__contenido">
+                <span class="v3-hero__etiqueta" data-revelar><i class="bi bi-geo-alt-fill"></i> Municipalidad de La Serena</span>
+                <h1 class="v3-hero__titulo" id="hero-titulo" data-revelar style="--d:.06s">Tu municipio, más cerca de tu barrio.</h1>
+                <p class="v3-hero__bajada" data-revelar style="--d:.12s">Trámites, servicios, noticias y transparencia en un solo lugar, junto al sistema con que las seis delegaciones municipales atienden a la comunidad.</p>
+                <div class="d-flex flex-wrap gap-2" data-revelar style="--d:.18s">
+                    <a class="v3-btn v3-btn--blanco v3-btn--lg" href="{% url 'publico_tramites' %}"><i class="bi bi-credit-card"></i> Trámites en línea</a>
+                    <a class="v3-btn v3-btn--contorno-claro v3-btn--lg" href="{% url 'login' %}">Ingresar al sistema <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+        {# Accesos rápidos flotantes bajo el hero #}
+        <nav class="v3-hero__atajos" aria-label="Accesos directos" data-revelar style="--d:.22s">
+            <a href="{% url 'publico_tramites' %}"><i class="bi bi-car-front-fill"></i><span>Permiso de circulación</span></a>
+            <a href="{% url 'publico_servicios' %}"><i class="bi bi-grid-3x3-gap"></i><span>Servicios</span></a>
+            <a href="{% url 'publico_noticias' %}"><i class="bi bi-newspaper"></i><span>Noticias</span></a>
+            <a href="{% url 'publico_delegaciones' %}"><i class="bi bi-geo"></i><span>Delegaciones</span></a>
+            <a href="{% url 'publico_transparencia' %}"><i class="bi bi-eye"></i><span>Transparencia</span></a>
+            <a href="{% url 'publico_contacto' %}"><i class="bi bi-telephone"></i><span>Contacto</span></a>
+        </nav>
+    </div>
+</section>

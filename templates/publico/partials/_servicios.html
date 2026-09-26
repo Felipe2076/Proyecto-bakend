@@ -1,0 +1,12 @@
+{# Servicios municipales destacados. Parámetros: servicios #}
+<section class="v3-seccion" aria-labelledby="servicios-titulo">
+    <div class="v3-contenedor">
+        {% url 'publico_servicios' as url_servicios %}
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Servicios municipales" titulo="Estamos para ayudarte" bajada="Canales de atención, beneficios y programas de la Municipalidad." enlace_url=url_servicios enlace_texto="Ver todos los servicios" id_titulo="servicios-titulo" %}
+        <div class="row g-4">
+            {% for s in servicios %}
+            <div class="col-md-4">{% include 'componentes/_tarjeta.html' with icono=s.icono titulo=s.titulo texto=s.texto url=s.url externo=True revelar_d=forloop.counter0 %}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>

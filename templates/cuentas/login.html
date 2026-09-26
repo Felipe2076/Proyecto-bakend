@@ -1,127 +1,67 @@
+{% extends 'publico/base_publica.html' %}
 {% load static %}
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ingreso | SIGED-SGR Delegaciones</title>
-    <meta name="theme-color" content="#0a0406">
-    <link rel="icon" type="image/svg+xml" href="{% static 'img/laserena/favicon.svg' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/laserena/favicon-32.png' %}">
-    <link rel="apple-touch-icon" href="{% static 'img/laserena/apple-touch-icon.png' %}">
-    <link rel="preload" href="{% static 'fonts/space-grotesk-latin-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'fonts/inter-latin-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'css/tipografia.css' %}">
-    <link rel="stylesheet" href="{% static 'css/efectos3d.css' %}">
-</head>
-<body class="v2-dark">
-<div id="sigedLoader" class="siged-loader" data-lottie="{% static 'lottie/siged-ticket-loader.json' %}" aria-hidden="true" role="status">
-    <div class="siged-loader__box">
-        <div id="sigedLoaderStage" class="siged-loader__stage"></div>
-        <p class="siged-loader__label mb-0">Ingresando a SIGED-SGR…</p>
-    </div>
-</div>
-
-<div class="v2-login e3d-escena">
-    <div class="v2-fondo" aria-hidden="true">
-        <div class="v2-aurora"></div>
-        <div class="v2-foto" style="background-image:url('{% static 'img/laserena/faro-atardecer.jpg' %}');" data-e3d-depth="0.3"></div>
-        <div class="v2-rejilla"></div>
-        <canvas class="v2-canvas" data-v2-onda></canvas>
-        <div class="v2-grano"></div>
-    </div>
-
-    <section class="v2-login__marca">
-        <a href="{% url 'inicio' %}" aria-label="Volver a la portada"><img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="196" height="54"></a>
-        <div class="mt-4" data-reveal><span class="v2-chip"><span class="v2-punto"></span> SIGED-SGR · Acceso institucional</span></div>
-        <h1 class="v2-login__titulo" data-reveal style="--d:.08s">Bienvenido a <span class="v2-grad">SIGED-SGR.</span></h1>
-        <p class="v2-lead" data-reveal style="--d:.14s">Tickets ciudadanos, actividad, evidencia, compromisos, agenda e indicadores de las seis delegaciones territoriales.</p>
-        <ul class="v2-login__puntos" data-reveal style="--d:.2s">
-            <li><i class="bi bi-people"></i> Atención ciudadana · ventanilla, WhatsApp y correo</li>
-            <li><i class="bi bi-clipboard-check"></i> Gestión interna · actividad, evidencia y compromiso</li>
-            <li><i class="bi bi-stoplights"></i> Desempeño · semáforo, indicador y meta</li>
-        </ul>
-        <div class="v2-login__pie d-none d-lg-block">
-            <p class="mb-1"><strong>Los watones PC</strong> — Felipe, Aixa, Gabriel · Proyecto Integrado · Prof. Jorge Cortés</p>
-            <p class="e3d-credito mb-0">{% include 'publico/_creditos.html' %}</p>
-        </div>
-    </section>
-
-    <section class="v2-card v2-borde v2-borde--siempre v2-login__card e3d-tilt" data-tilt-max="4" data-reveal style="--d:.1s">
-        <span class="v2-eyebrow mb-2">// CU-E01 · Ingreso</span>
-        <h2>Ingreso al sistema</h2>
-        <p class="v2-muted mb-4">{% if mostrar_demos %}Use un perfil de demostración (visible sólo en modo desarrollo).{% else %}Ingrese con su usuario municipal.{% endif %}</p>
-        {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} py-2">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-        <form method="post" action="{% url 'login' %}" class="needs-validation" novalidate>
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ next_url }}">
-            <div class="mb-3">
-                <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
-                <input type="text" class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" value="{{ valores.username }}" autocomplete="username" placeholder="ej. admin">
-                <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}Escriba su usuario.{% endif %}</div>
+{# Ingreso (CU-E01). Usa la cabecera y pie públicos; la tabla de perfiles sólo aparece con DEBUG=True (mostrar_demos). #}
+{% block titulo %}Ingreso{% endblock %}
+{% block body_class %}v3-pagina-login{% endblock %}
+{% block contenido %}
+<section class="v3-login">
+    <div class="v3-contenedor">
+        <div class="v3-login__marco" data-revelar>
+            <div class="v3-login__visual">
+                <img src="{% static 'img/laserena/faro-atardecer.jpg' %}" alt="" title="Foto: Jorgemolinaz, CC BY-SA 3.0 (Wikimedia Commons)" data-parallax="0.06">
+                <div class="v3-login__visual-texto">
+                    <img class="v3-login__escudo" src="{% static 'img/laserena/escudo-blanco.svg' %}" alt="" width="54" height="64">
+                    <h1>Sistema de gestión de delegaciones</h1>
+                    <p class="mb-0">SIGED-SGR · uso exclusivo de funcionarias y funcionarios municipales.</p>
+                    <ul class="v3-login__puntos">
+                        <li><i class="bi bi-people"></i> Atención ciudadana</li>
+                        <li><i class="bi bi-clipboard-check"></i> Gestión interna y compromisos</li>
+                        <li><i class="bi bi-speedometer2"></i> Indicadores de desempeño</li>
+                    </ul>
+                </div>
             </div>
-            <div class="mb-4">
-                <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
-                <input type="password" class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" required minlength="4" autocomplete="current-password" placeholder="••••••••">
-                <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Escriba la contraseña.{% endif %}</div>
-            </div>
-            <button type="submit" class="v2-btn v2-btn--rojo v2-btn--lg w-100 justify-content-center" data-magnetic="0.15">Entrar a SIGED-SGR <i class="bi bi-arrow-right"></i></button>
-        </form>
-
-        {% if mostrar_demos %}
-        <div class="e3d-demos mt-4 p-3">
-            <h3 class="h6 mb-2"><i class="bi bi-person-badge"></i> Perfiles de prueba</h3>
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr><th>Usuario</th><th>Clave</th><th>Rol</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for demo in demos %}
-                        <tr>
-                            <td><code>{{ demo.username }}</code></td>
-                            <td><code>{{ demo.password }}</code></td>
-                            <td class="small">{{ demo.rol }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="v3-login__form">
+                <span class="v3-eyebrow">Acceso institucional</span>
+                <h2>Ingresar</h2>
+                <p class="v3-muted mb-4">{% if mostrar_demos %}Use un perfil de prueba (visible sólo en modo desarrollo).{% else %}Ingrese con su usuario municipal.{% endif %}</p>
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} py-2">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                <form method="post" action="{% url 'login' %}" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" value="{{ valores.username }}" autocomplete="username" placeholder="ej. admin">
+                        <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}Escriba su usuario.{% endif %}</div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" required minlength="4" autocomplete="current-password" placeholder="••••••••">
+                        <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Escriba la contraseña.{% endif %}</div>
+                    </div>
+                    <button type="submit" class="v3-btn v3-btn--rojo v3-btn--lg v3-btn--bloque">Entrar <i class="bi bi-arrow-right"></i></button>
+                </form>
+                {% if mostrar_demos %}
+                <div class="v3-demos">
+                    <h3><i class="bi bi-person-badge"></i> Perfiles de prueba</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Usuario</th><th>Clave</th><th>Rol</th></tr></thead>
+                            <tbody>
+                                {% for demo in demos %}
+                                <tr><td><code>{{ demo.username }}</code></td><td><code>{{ demo.password }}</code></td><td class="small">{{ demo.rol }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                <p class="small text-center mt-4 mb-0"><a href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Volver al inicio</a></p>
             </div>
         </div>
-        {% endif %}
-        <p class="small text-center mt-4 mb-0"><a href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Volver a la portada</a></p>
-    </section>
-
-    <div class="v2-login__pie d-lg-none">
-        <p class="mb-1"><strong>Los watones PC</strong> — Felipe, Aixa, Gabriel · Proyecto Integrado · Prof. Jorge Cortés</p>
-        <p class="e3d-credito mb-0">{% include 'publico/_creditos.html' %}</p>
     </div>
-</div>
-
-<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'js/lottie.min.js' %}"></script>
-<script src="{% static 'js/siged-motion.js' %}"></script>
-<script src="{% static 'js/efectos3d.js' %}"></script>
-<script>
-    (() => {
-        const forms = document.querySelectorAll(".needs-validation");
-        Array.from(forms).forEach((form) => {
-            form.addEventListener("submit", (event) => {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add("was-validated");
-            });
-        });
-    })();
-</script>
-</body>
-</html>
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% load publico %}{% sitio_publico as sp %}
+{# Sitios municipales (sección "Sitios" de laserena.cl) #}
+<section class="v3-seccion" aria-labelledby="sitios-titulo">
+    <div class="v3-contenedor">
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Sitios municipales" titulo="Más La Serena en la web" id_titulo="sitios-titulo" %}
+        <ul class="v3-chips" data-revelar>
+            {% for s in sp.sitios %}
+            <li><a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.titulo }} <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a></li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>

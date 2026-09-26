@@ -1,0 +1,20 @@
+/* Pie de página público (institucional) */
+.v3-footer {
+    margin-top: clamp(3rem, 7vw, 5rem);
+    background: var(--ls-carbon);
+    color: #c9ced6;
+    border-top: 4px solid var(--ls-rojo);
+    font-size: 0.94rem;
+}
+.v3-footer__cuerpo { padding: 3rem 0 2rem; }
+.v3-footer img { height: 46px; width: auto; }
+.v3-footer h2 { font-size: 0.78rem; font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: #fff; margin-bottom: 0.9rem; }
+.v3-footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.45rem; }
+.v3-footer a { color: #e9ecf0; text-decoration: none; }
+.v3-footer a:hover { color: #fff; text-decoration: underline; }
+.v3-footer__base { border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 1.1rem 0 1.4rem; font-size: 0.8rem; color: #9aa2ad; }
+.v3-footer__sub { color: #9aa2ad; font-size: 0.86rem; }
+.v3-footer li .bi { color: #ff8f91; margin-right: 0.35rem; }
+.v3-footer__base a { color: #c9ced6; }
+.v3-atribucion { font-size: 0.72rem; color: #8a929c; margin: 0.5rem 0 0; }
+.v3-footer .v3-redes { display: flex; flex-wrap: wrap; gap: 0.45rem; }

@@ -1,0 +1,69 @@
+/* Layout de las pantallas internas (base.html): sidebar, topbar, contenido y footer */
+.siged-sidebar {
+    background: var(--ls-blanco) !important;
+    color: var(--ls-texto) !important;
+    border-right: 1px solid var(--ls-gris-200) !important;
+    box-shadow: none !important;
+    padding-top: 0 !important;
+}
+.siged-brand {
+    background: var(--ls-rojo);
+    margin: 0 -0.95rem 0.9rem;
+    padding: 1.05rem 1.2rem !important;
+    border-bottom: 0 !important;
+    color: #fff !important;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.siged-brand__meta strong { color: #fff; font-family: var(--font-display); }
+.siged-brand__meta small { color: rgba(255, 255, 255, 0.82) !important; font-size: 0.6rem; letter-spacing: 0.04em; }
+.siged-brand .logo-siged__text { color: #fff !important; white-space: nowrap; font-size: 1.02rem; letter-spacing: -0.02em; }
+.logo-siged__mark--escudo {
+    width: auto !important;
+    height: 44px !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+.siged-nav__group { color: var(--ls-gris-500) !important; margin-top: 1.2rem; }
+.siged-nav__link {
+    color: #39414b !important;
+    border-radius: var(--ls-radio-sm) !important;
+    font-weight: 500;
+    transition: background var(--ls-trans), color var(--ls-trans) !important;
+}
+.siged-nav__link i { color: var(--ls-gris-500); transition: color var(--ls-trans); }
+.siged-nav__link:hover { background: var(--ls-gris-50) !important; color: var(--ls-rojo) !important; transform: none !important; }
+.siged-nav__link:hover i { color: var(--ls-rojo); }
+.siged-nav__link.is-active {
+    background: var(--ls-rojo-50) !important;
+    color: var(--ls-rojo) !important;
+    box-shadow: inset 3px 0 0 var(--ls-rojo) !important;
+    font-weight: 600;
+}
+.siged-nav__link.is-active i { color: var(--ls-rojo); }
+
+.siged-topbar {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1px solid var(--ls-gris-200) !important;
+    border-top: 4px solid var(--ls-rojo);
+    backdrop-filter: saturate(160%) blur(10px);
+}
+.siged-topbar__title { color: var(--ls-texto) !important; }
+.e3d-topbar-logo { height: 32px; width: auto; }
+.siged-user__avatar { background: var(--ls-rojo) !important; box-shadow: none !important; }
+.siged-content { padding: 1.8rem 2rem 2.6rem; }
+.siged-footer {
+    background: var(--ls-carbon) !important;
+    color: #c9ced6 !important;
+    border-top: 4px solid var(--ls-rojo) !important;
+}
+.siged-footer strong { color: #fff !important; }
+.siged-footer a { color: #fff !important; }
+.siged-footer .v3-atribucion { font-size: 0.72rem; opacity: 0.8; margin-top: 0.4rem; }
+
+@media (max-width: 991.98px) {
+    .siged-sidebar { box-shadow: var(--ls-sombra-lg) !important; }
+    .e3d-topbar-logo { display: none !important; }
+    .siged-content { padding: 1.2rem 1rem 2rem; }
+}

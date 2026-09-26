@@ -1,0 +1,9 @@
+{# Tarjeta de noticia (título propio breve; enlaza a la nota oficial). Parámetros: n (dict), revelar_d #}
+<a class="v3-noticia" href="{{ n.url }}" target="_blank" rel="noopener" data-revelar{% if revelar_d %} style="--d:calc({{ revelar_d }} * .08s)"{% endif %}>
+    <span class="v3-noticia__portada" aria-hidden="true"><i class="bi {{ n.icono }}"></i></span>
+    <span class="v3-noticia__cuerpo">
+        <span class="v3-noticia__meta"><span class="v3-noticia__tema">{{ n.tema }}</span> · <time datetime="{{ n.fecha }}">{{ n.fecha|slice:"8:10" }}-{{ n.fecha|slice:"5:7" }}-{{ n.fecha|slice:":4" }}</time></span>
+        <span class="v3-noticia__titulo">{{ n.titulo }}</span>
+        <span class="v3-servicio__enlace">Leer en laserena.cl <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></span>
+    </span>
+</a>

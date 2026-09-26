@@ -1,0 +1,26 @@
+{% load static %}
+{# Agenda y panoramas (enlaces a los canales oficiales de eventos). Parámetros: agenda #}
+<section class="v3-seccion" aria-labelledby="agenda-titulo">
+    <div class="v3-contenedor">
+        <div class="v3-agenda">
+            <div class="v3-agenda__foto" aria-hidden="true">
+                <img src="{% static 'img/laserena/faro-atardecer.jpg' %}" alt="" title="Foto: Jorgemolinaz, CC BY-SA 3.0 (Wikimedia Commons)" loading="lazy" data-parallax="0.06">
+            </div>
+            <div class="v3-agenda__texto">
+                <span class="v3-eyebrow v3-eyebrow--claro">Agenda</span>
+                <h2 class="v3-h2" id="agenda-titulo">¿Qué hacer en La Serena?</h2>
+                <ul class="v3-agenda__lista">
+                    {% for a in agenda %}
+                    <li data-revelar style="--d:calc({{ forloop.counter0 }} * .08s)">
+                        <a href="{{ a.url }}" target="_blank" rel="noopener">
+                            <span class="v3-agenda__icono"><i class="bi {{ a.icono }}"></i></span>
+                            <span><strong>{{ a.titulo }}</strong><small>{{ a.texto }}</small></span>
+                            <i class="bi bi-box-arrow-up-right ms-auto" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>

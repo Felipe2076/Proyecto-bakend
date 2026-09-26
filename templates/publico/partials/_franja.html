@@ -1,0 +1,15 @@
+{# Franja superior (utilitaria) — como la barra de emergencias/redes de laserena.cl #}
+<div class="v3-franja">
+    <div class="v3-contenedor">
+        <div class="v3-franja__grupo">
+            <a class="v3-franja__emergencia" href="tel:{{ contacto.emergencias }}"><i class="bi bi-telephone-fill"></i> Emergencias <strong>{{ contacto.emergencias }}</strong></a>
+            <a class="v3-franja__extra" href="{{ contacto.telefono_href }}"><i class="bi bi-headset"></i> {{ contacto.telefono }}</a>
+            <span class="v3-franja__extra"><i class="bi bi-clock"></i> Lun a jue 08:30 – 17:30 · Vie hasta 16:30</span>
+        </div>
+        <div class="v3-franja__grupo">
+            <a class="v3-franja__extra" href="{% url 'publico_transparencia' %}">Transparencia</a>
+            <a class="v3-franja__extra" href="{{ contacto.linea_directa }}" target="_blank" rel="noopener">Línea Directa</a>
+            {% include 'publico/partials/_redes.html' with redes=redes clase="v3-redes--franja" %}
+        </div>
+    </div>
+</div>

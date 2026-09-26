@@ -1,0 +1,13 @@
+/* Formularios */
+.form-control, .form-select {
+    border-radius: 12px;
+    border: 1px solid var(--ls-gris-300);
+    background: var(--ls-blanco);
+    padding: 0.72rem 0.95rem;
+    color: var(--ls-texto);
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--ls-rojo);
+    box-shadow: 0 0 0 4px rgba(184, 0, 3, 0.12);
+}
+.form-label { color: var(--ls-texto); font-weight: 600; font-size: 0.92rem; }

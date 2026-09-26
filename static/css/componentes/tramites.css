@@ -1,0 +1,45 @@
+/* Botones compactos de trámite / acceso rápido (componentes/_tramite.html) */
+.v3-rejilla-tramites { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.v3-rejilla-accesos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; }
+.v3-tramite {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem;
+    background: var(--ls-blanco);
+    border: 1px solid var(--ls-gris-200);
+    border-radius: var(--ls-radio);
+    color: var(--ls-texto);
+    text-decoration: none;
+    font-weight: 600;
+    line-height: 1.25;
+    box-shadow: var(--ls-sombra-sm);
+    transition: border-color var(--ls-trans), box-shadow var(--ls-trans), transform var(--ls-trans), color var(--ls-trans);
+}
+.v3-tramite:hover { color: var(--ls-rojo); border-color: rgba(184, 0, 3, 0.35); box-shadow: var(--ls-sombra-md); transform: translateY(-2px); }
+.v3-tramite__icono {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    background: var(--ls-rojo);
+    color: #fff;
+    box-shadow: var(--ls-sombra-roja);
+}
+.v3-tramite__titulo { flex: 1; font-size: 0.97rem; }
+.v3-tramite__flecha { font-size: 0.8rem; color: var(--ls-gris-500); transition: color var(--ls-trans); }
+.v3-tramite:hover .v3-tramite__flecha { color: var(--ls-rojo); }
+.v3-rejilla-accesos .v3-tramite { flex-direction: column; align-items: flex-start; font-size: 0.92rem; box-shadow: none; }
+.v3-rejilla-accesos .v3-tramite__icono { background: var(--ls-rojo-50); color: var(--ls-rojo); box-shadow: none; }
+.v3-rejilla-accesos .v3-tramite__flecha { display: none; }
+@media (max-width: 991.98px) {
+    .v3-rejilla-tramites { grid-template-columns: repeat(2, 1fr); }
+    .v3-rejilla-accesos { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 575.98px) {
+    .v3-rejilla-tramites { grid-template-columns: 1fr; }
+    .v3-rejilla-accesos { grid-template-columns: repeat(2, 1fr); }
+}

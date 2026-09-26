@@ -1,0 +1,32 @@
+{% extends 'publico/base_publica.html' %}
+{% block titulo %}Servicios municipales{% endblock %}
+{% block contenido %}
+{% include 'publico/partials/_cabecera_pagina.html' with miga="Servicios" titulo="Servicios municipales" bajada="Canales de atención, beneficios, programas y oportunidades laborales." foto="img/laserena/faro-atardecer.jpg" %}
+<section class="v3-seccion v3-seccion--compacta" aria-labelledby="serv-titulo">
+    <div class="v3-contenedor">
+        {% url 'publico_tramites' as url_tramites %}
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Servicios" titulo="¿En qué te podemos ayudar?" enlace_url=url_tramites enlace_texto="Trámites y pagos en línea" id_titulo="serv-titulo" %}
+        <div class="row g-4">
+            {% for s in servicios %}
+            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono=s.icono titulo=s.titulo texto=s.texto url=s.url externo=True revelar_d=forloop.counter0 %}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<section class="v3-seccion" id="admision" aria-labelledby="admision-titulo">
+    <div class="v3-contenedor">
+        <div class="v3-panel" data-revelar>
+            <div class="v3-panel__icono" aria-hidden="true"><i class="bi bi-duffle-fill"></i></div>
+            <div class="flex-grow-1">
+                <span class="v3-eyebrow">Admisión laboral</span>
+                <h2 class="v3-h3" id="admision-titulo">Trabaja en la Municipalidad</h2>
+                <p class="v3-muted mb-3">Concursos públicos y ofertas publicadas por el municipio.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for a in admision %}<a class="v3-btn v3-btn--suave" href="{{ a.url }}" target="_blank" rel="noopener">{{ a.titulo }} <i class="bi bi-box-arrow-up-right"></i></a>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% include 'publico/partials/_accesos.html' with accesos=accesos %}
+{% endblock %}

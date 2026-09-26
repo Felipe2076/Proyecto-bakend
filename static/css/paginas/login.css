@@ -1,0 +1,42 @@
+/* Ingreso (templates/cuentas/login.html) */
+.v3-login { padding: clamp(1.5rem, 4vw, 3rem) 0 0; }
+.v3-login__marco {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--ls-blanco);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: var(--ls-sombra-lg);
+    border: 1px solid var(--ls-gris-200);
+}
+.v3-login__visual { position: relative; min-height: 560px; color: #fff; display: flex; align-items: flex-end; isolation: isolate; }
+.v3-login__visual > img { position: absolute; inset: -6% 0; width: 100%; height: 112%; object-fit: cover; z-index: -2; transform: translate3d(0, var(--parallax-y, 0px), 0); }
+.v3-login__escudo { display: block; height: 64px; width: auto; }
+.v3-login__visual p { color: rgba(255, 255, 255, 0.9); }
+.v3-login__visual::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(146, 0, 0, 0.35) 0%, rgba(92, 0, 2, 0.92) 100%);
+}
+.v3-login__visual-texto { padding: clamp(1.6rem, 4vw, 2.6rem); }
+.v3-login__visual h1 { color: #fff; font-size: clamp(1.9rem, 3.2vw, 2.7rem); line-height: 1.05; letter-spacing: -0.04em; margin: 1rem 0 0.8rem; }
+.v3-login__puntos { list-style: none; padding: 0; margin: 1.2rem 0 0; display: grid; gap: 0.55rem; font-size: 0.95rem; color: rgba(255, 255, 255, 0.92); }
+.v3-login__puntos i { margin-right: 0.5rem; }
+.v3-login__form { padding: clamp(1.6rem, 4vw, 3rem); display: flex; flex-direction: column; justify-content: center; }
+.v3-login__form h2 { font-size: 2rem; letter-spacing: -0.04em; margin-bottom: 0.3rem; }
+.v3-demos {
+    margin-top: 1.6rem;
+    padding: 1rem 1.1rem;
+    border-radius: var(--ls-radio);
+    background: var(--ls-gris-50);
+    border: 1px dashed var(--ls-gris-300);
+}
+.v3-demos h3 { font-size: 0.9rem; margin-bottom: 0.6rem; }
+.v3-demos .table { font-size: 0.85rem; margin: 0; }
+.v3-demos code { color: var(--ls-rojo); background: var(--ls-rojo-50); padding: 0.1rem 0.4rem; border-radius: 6px; }
+@media (max-width: 991.98px) {
+    .v3-login__marco { grid-template-columns: 1fr; }
+    .v3-login__visual { min-height: 260px; }
+}

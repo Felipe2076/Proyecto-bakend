@@ -1,0 +1,28 @@
+{% extends 'publico/base_publica.html' %}
+{% block titulo %}Delegaciones{% endblock %}
+{% block contenido %}
+{% include 'publico/partials/_cabecera_pagina.html' with miga="Delegaciones" titulo="Delegaciones municipales" bajada="La Municipalidad atiende en terreno a través de seis delegaciones territoriales." foto="img/laserena/plaza-de-armas.jpg" %}
+<section class="v3-seccion v3-seccion--compacta" aria-labelledby="deleg-titulo">
+    <div class="v3-contenedor">
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Atención territorial" titulo="Encuentra tu delegación" bajada="Direcciones, horarios y equipos de cada delegación en el sitio oficial." enlace_url=url_delegaciones enlace_texto="Ver en laserena.cl" externo=True id_titulo="deleg-titulo" %}
+        <div class="row g-4">
+            {% for d in delegaciones %}
+            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono="bi-geo-alt" titulo=d texto="Atención de requerimientos vecinales del sector." url=url_delegaciones externo=True accion="Dirección y horario" revelar_d=forloop.counter0 %}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<section class="v3-seccion">
+    <div class="v3-contenedor">
+        <div class="v3-panel" data-revelar>
+            <div class="v3-panel__icono" aria-hidden="true"><i class="bi bi-person-badge"></i></div>
+            <div class="flex-grow-1">
+                <span class="v3-eyebrow">SIGED-SGR</span>
+                <h2 class="v3-h3">¿Trabajas en una delegación?</h2>
+                <p class="v3-muted mb-0">Registra y sigue los requerimientos de tu delegación en el sistema interno.</p>
+            </div>
+            <a class="v3-btn v3-btn--rojo" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Ingresar</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

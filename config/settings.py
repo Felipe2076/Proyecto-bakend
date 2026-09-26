@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "cuentas",
     "requerimientos",
     "control_gestion",
+    "publico",
 ]
 
 MIDDLEWARE = [

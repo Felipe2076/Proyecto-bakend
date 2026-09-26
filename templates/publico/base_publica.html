@@ -1,0 +1,33 @@
+{% load static publico %}{% sitio_publico as sp %}<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}SIGED-SGR{% endblock %} | Municipalidad de La Serena</title>
+    <meta name="description" content="{% block descripcion %}Portal de las delegaciones municipales de La Serena: trámites, servicios, noticias, transparencia y acceso al sistema SIGED-SGR.{% endblock %}">
+    <meta name="theme-color" content="#b80003">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/laserena/favicon.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/laserena/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/laserena/apple-touch-icon.png' %}">
+    <link rel="preload" href="{% static 'fonts/inter-latin-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="v3-publico {% block body_class %}{% endblock %}">
+<a class="v3-saltar" href="#contenido">Saltar al contenido</a>
+{% include 'publico/partials/_franja.html' with contacto=sp.contacto redes=sp.redes %}
+{% include 'publico/partials/_header.html' with menu=sp.menu %}
+
+<main id="contenido">
+    {% block contenido %}{% endblock %}
+</main>
+
+{% include 'publico/partials/_footer.html' with contacto=sp.contacto redes=sp.redes transparencia=sp.transparencia sitios=sp.sitios %}
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script type="module" src="{% static 'js/app.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,50 @@
+{% load static %}
+{# Pie institucional (espejo del pie de laserena.cl: contacto, horarios, transparencia, redes) #}
+<footer class="v3-footer">
+    <div class="v3-contenedor v3-footer__cuerpo">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="168" height="46" loading="lazy">
+                <p class="mt-3 mb-3">Portal de las delegaciones municipales y acceso al sistema SIGED-SGR. Los trámites y pagos se realizan en los canales oficiales del municipio.</p>
+                {% include 'publico/partials/_redes.html' with redes=redes clase="v3-redes--pie" %}
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <h2>Contacto</h2>
+                <ul>
+                    <li><a href="{{ contacto.mapa }}" target="_blank" rel="noopener"><i class="bi bi-geo-alt"></i> {{ contacto.direccion }}</a></li>
+                    <li><a href="{{ contacto.telefono_href }}"><i class="bi bi-telephone"></i> {{ contacto.telefono }}</a></li>
+                    <li class="v3-footer__sub">{{ contacto.telefonos_extra|join:" · " }}</li>
+                    <li><a href="mailto:{{ contacto.correo }}"><i class="bi bi-envelope"></i> {{ contacto.correo }}</a></li>
+                    <li><a href="{{ contacto.linea_directa }}" target="_blank" rel="noopener"><i class="bi bi-chat-dots"></i> Escríbenos (Línea Directa)</a></li>
+                </ul>
+            </div>
+            <div class="col-sm-6 col-lg-2">
+                <h2>Horario de atención</h2>
+                <ul>
+                    {% for dia, horas in contacto.horarios %}
+                    <li><strong>{{ dia }}</strong><br><span class="v3-footer__sub">{{ horas }}</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <h2>Transparencia y participación</h2>
+                <ul>
+                    {% for t in transparencia|slice:":3" %}
+                    <li><a href="{{ t.url }}" target="_blank" rel="noopener">{{ t.titulo }}</a></li>
+                    {% endfor %}
+                    <li><a href="https://laserena.cl/conocenos/politicas-de-privacidad-y-proteccion-de-datos-personales" target="_blank" rel="noopener">Privacidad y datos personales</a></li>
+                    <li><a href="{% url 'publico_transparencia' %}">Ver todo <i class="bi bi-arrow-right"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="v3-footer__base">
+        <div class="v3-contenedor d-flex flex-column flex-md-row justify-content-between gap-2">
+            <span>© {% now "Y" %} Ilustre Municipalidad de La Serena · Sitio oficial: <a href="https://laserena.cl/" target="_blank" rel="noopener">laserena.cl</a></span>
+            <span>SIGED-SGR · Proyecto Integrado</span>
+        </div>
+        <div class="v3-contenedor">
+            {% include 'componentes/_atribucion_fotos.html' %}
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,6 @@
+{# Íconos de redes sociales oficiales. Parámetros: redes, clase #}
+<ul class="v3-redes {{ clase }}" aria-label="Redes sociales de la Municipalidad">
+    {% for red in redes %}
+    <li><a href="{{ red.url }}" target="_blank" rel="noopener" aria-label="{{ red.nombre }} (se abre en otra pestaña)" title="{{ red.nombre }}"><i class="bi {{ red.icono }}"></i></a></li>
+    {% endfor %}
+</ul>

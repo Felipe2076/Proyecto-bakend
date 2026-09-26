@@ -1,0 +1,30 @@
+{% load static %}
+{# Presentación del sistema SIGED-SGR y las seis delegaciones. Parámetros: delegaciones #}
+<section class="v3-seccion" aria-labelledby="sistema-titulo">
+    <div class="v3-contenedor">
+        <div class="v3-sistema">
+            <div class="v3-sistema__texto" data-revelar>
+                <span class="v3-eyebrow">SIGED-SGR</span>
+                <h2 class="v3-h2" id="sistema-titulo">Seis delegaciones, un solo sistema de atención</h2>
+                <p class="v3-lead">Cada requerimiento que llega a una delegación —por ventanilla, correo o WhatsApp— se registra, se asigna y se sigue hasta su respuesta. El sistema es de uso interno de funcionarias y funcionarios municipales.</p>
+                <ul class="v3-delegaciones" aria-label="Delegaciones municipales">
+                    {% for d in delegaciones %}<li><i class="bi bi-geo-alt-fill"></i>{{ d }}</li>{% endfor %}
+                </ul>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <a class="v3-btn v3-btn--rojo" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Ingreso funcionarios</a>
+                    <a class="v3-btn v3-btn--suave" href="{% url 'publico_delegaciones' %}">Conoce las delegaciones <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+            <a class="v3-foto-card v3-sistema__foto" href="{% url 'publico_delegaciones' %}" data-revelar style="--d:.1s">
+                <img src="{% static 'img/laserena/plaza-de-armas.jpg' %}" alt="Plaza de Armas y Catedral de La Serena" title="Foto: Víctor Sáez Barros, CC BY-SA 3.0 (Wikimedia Commons)" loading="lazy">
+                <span class="v3-foto-card__pie"><span>Atención territorial</span><strong>Del centro a las zonas rurales</strong></span>
+            </a>
+        </div>
+        <div class="row g-4 mt-1">
+            {% url 'login' as url_login %}
+            <div class="col-md-4">{% include 'componentes/_tarjeta.html' with icono="bi-people" titulo="Atención ciudadana" texto="Registro de reclamos, solicitudes y consultas con número de seguimiento." url=url_login accion="Ingresar" %}</div>
+            <div class="col-md-4">{% include 'componentes/_tarjeta.html' with icono="bi-clipboard-check" titulo="Gestión interna" texto="Asignación a funcionarios, evidencia de cada actividad y compromisos." url=url_login accion="Ingresar" revelar_d=1 %}</div>
+            <div class="col-md-4">{% include 'componentes/_tarjeta.html' with icono="bi-speedometer2" titulo="Seguimiento de desempeño" texto="Indicadores y metas para mejorar los tiempos de respuesta." url=url_login accion="Ingresar" revelar_d=2 %}</div>
+        </div>
+    </div>
+</section>

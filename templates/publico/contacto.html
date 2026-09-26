@@ -1,0 +1,39 @@
+{% extends 'publico/base_publica.html' %}
+{% load publico %}
+{% block titulo %}Contacto{% endblock %}
+{% block contenido %}
+{% sitio_publico as sp %}
+{% include 'publico/partials/_cabecera_pagina.html' with miga="Contacto" titulo="Contacto" bajada="Escríbenos, llámanos o visítanos en el edificio consistorial." foto="img/laserena/plaza-de-armas.jpg" %}
+<section class="v3-seccion v3-seccion--compacta">
+    <div class="v3-contenedor">
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono="bi-geo-alt" titulo="Cómo llegar" texto=sp.contacto.direccion url=sp.contacto.mapa externo=True accion="Abrir mapa" %}</div>
+            <div class="col-md-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono="bi-telephone" titulo=sp.contacto.telefono texto="Mesa central. También 51 2 206620 y 51 2 206680." url=sp.contacto.telefono_href accion="Llamar" revelar_d=1 %}</div>
+            <div class="col-md-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono="bi-envelope-at" titulo="Escríbenos" texto="Consultas, reclamos y sugerencias por Línea Directa o a oficinadepartes@laserena.cl." url=sp.contacto.linea_directa externo=True accion="Ir a Línea Directa" revelar_d=2 %}</div>
+        </div>
+        <div class="row g-4 mt-1">
+            <div class="col-lg-6">
+                <div class="v3-panel h-100" data-revelar>
+                    <div class="v3-panel__icono" aria-hidden="true"><i class="bi bi-clock"></i></div>
+                    <div>
+                        <h2 class="v3-h3">Horario de atención</h2>
+                        <dl class="v3-horario mb-0">
+                            {% for dia, horas in sp.contacto.horarios %}<dt>{{ dia }}</dt><dd>{{ horas }}</dd>{% endfor %}
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="v3-panel v3-panel--rojo h-100" data-revelar style="--d:.08s">
+                    <div class="v3-panel__icono" aria-hidden="true"><i class="bi bi-telephone-fill"></i></div>
+                    <div>
+                        <h2 class="v3-h3">Emergencias: {{ sp.contacto.emergencias }}</h2>
+                        <p class="mb-3">Número municipal de emergencias. Síguenos también en redes sociales.</p>
+                        {% include 'publico/partials/_redes.html' with redes=sp.redes clase="v3-redes--pie" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

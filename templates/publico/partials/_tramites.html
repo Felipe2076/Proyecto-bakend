@@ -1,0 +1,12 @@
+{# Trámites en línea destacados (enlazan a las pasarelas oficiales). Parámetros: tramites #}
+<section class="v3-seccion" aria-labelledby="tramites-titulo">
+    <div class="v3-contenedor">
+        {% url 'publico_tramites' as url_tramites %}
+        {% include 'componentes/_seccion_cabecera.html' with eyebrow="Trámites en línea" titulo="Paga y tramita sin hacer fila" bajada="Los pagos se realizan en las plataformas oficiales de la Municipalidad." enlace_url=url_tramites enlace_texto="Todos los trámites" id_titulo="tramites-titulo" %}
+        <div class="v3-rejilla-tramites" data-revelar>
+            {% for t in tramites %}
+            {% include 'componentes/_tramite.html' with icono=t.icono titulo=t.titulo url=t.url %}
+            {% endfor %}
+        </div>
+    </div>
+</section>

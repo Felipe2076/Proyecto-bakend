@@ -1,0 +1,48 @@
+/* Tablero interno (requerimientos/inicio.html) — sólo CSS, sin tocar su HTML.
+   Usa las capas .e3d-parallax/.e3d-capa que ya existen en esa plantilla. */
+.hero-panel {
+    background: var(--ls-rojo-900) !important;
+    border-radius: var(--ls-radio-lg) !important;
+    box-shadow: var(--ls-sombra-md) !important;
+    padding: clamp(1.5rem, 3vw, 2.4rem) !important;
+    isolation: isolate;
+}
+.hero-panel::after { display: none !important; }
+.e3d-parallax { position: absolute !important; inset: 0; z-index: 0 !important; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.e3d-capa { position: absolute; inset: -6%; background-size: cover; background-position: center; transform: translate3d(0, var(--parallax-y, 0px), 0); }
+.e3d-capa--foto-faro { background-image: url("../../img/laserena/faro-monumental.jpg"); background-position: 70% 40%; }
+.e3d-capa--tinte {
+    inset: 0;
+    transform: none;
+    background: linear-gradient(90deg, rgba(92, 0, 2, 0.95) 0%, rgba(146, 0, 0, 0.82) 45%, rgba(184, 0, 3, 0.3) 100%);
+}
+.e3d-capa--escudo { display: none; }
+.hero-panel h1 { color: #fff; font-size: clamp(1.8rem, 3.2vw, 2.7rem) !important; line-height: 1.05 !important; letter-spacing: -0.045em; }
+.hero-panel .hero-kicker { color: rgba(255, 255, 255, 0.85) !important; }
+.hero-panel .cu-chip { background: rgba(255, 255, 255, 0.14); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.hero-panel .btn-warning { background: #fff !important; color: var(--ls-rojo) !important; border: 0; box-shadow: var(--ls-sombra-sm); }
+.hero-panel .btn-warning:hover { color: var(--ls-rojo-700) !important; box-shadow: var(--ls-sombra-md); }
+.hero-panel .btn-outline-light { border-color: rgba(255, 255, 255, 0.55); }
+.hero-glass {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    border-radius: var(--ls-radio) !important;
+    backdrop-filter: blur(12px);
+}
+
+.kpi-card {
+    background: var(--ls-blanco) !important;
+    border: 1px solid var(--ls-gris-200) !important;
+    border-radius: var(--ls-radio) !important;
+    padding: 1.2rem 1.25rem !important;
+}
+.kpi-card::before { left: 1.25rem !important; top: 0 !important; bottom: auto !important; width: 36px !important; height: 3px !important; border-radius: 0 0 3px 3px; }
+.kpi-card h3 { font-family: var(--font-display) !important; font-size: clamp(1.9rem, 2.8vw, 2.4rem) !important; letter-spacing: -0.045em; margin-top: 0.35rem; }
+.kpi-card .small { color: var(--ls-texto-suave) !important; }
+
+.flow-card { border-radius: var(--ls-radio) !important; transition: box-shadow var(--ls-trans), border-color var(--ls-trans) !important; }
+.flow-card:hover { border-color: var(--ls-gris-300) !important; }
+.flow-card__icon { background: var(--ls-rojo-50) !important; color: var(--ls-rojo) !important; border-radius: 12px !important; }
+.deleg-chip { border-radius: 999px !important; background: var(--ls-gris-50) !important; border-color: var(--ls-gris-200) !important; color: var(--ls-texto) !important; }
+.deleg-chip:hover { background: var(--ls-rojo-50) !important; color: var(--ls-rojo) !important; }
+.siged-content h2.h4, .siged-content h2.h5 { letter-spacing: -0.03em; }
