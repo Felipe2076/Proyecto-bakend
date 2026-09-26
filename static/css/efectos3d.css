@@ -1,0 +1,354 @@
+/* ==========================================================================
+   efectos3d.css — Capa visual 3D / parallax para SIGED-SGR (La Serena)
+   Se carga DESPUÉS de style.css. No cambia la estructura de las plantillas:
+   actúa sobre clases genéricas (.card, .kpi-card, .flow-card, .table-responsive,
+   .siged-sidebar) y sobre clases opt-in con prefijo .e3d-*.
+   El JS (efectos3d.js) sólo escribe variables CSS (--e3d-*) con rAF.
+   ========================================================================== */
+
+:root {
+    --e3d-rojo-oficial: #b80003;          /* rojo del logo oficial laserena.cl */
+    --siged-rojo: #b80003;                /* alinea la paleta existente al logo */
+    --e3d-sombra-rgb: 58, 8, 16;
+    --e3d-perspectiva: 900px;
+}
+
+/* ---------- Identidad: logo oficial ---------- */
+.logo-siged__mark--escudo {
+    width: auto !important;
+    height: 46px !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+    transition: transform 0.35s cubic-bezier(.2, .8, .2, 1);
+    transform-origin: 50% 60%;
+}
+.siged-brand:hover .logo-siged__mark--escudo {
+    transform: perspective(300px) rotateY(-18deg) translateZ(6px);
+}
+.e3d-topbar-logo {
+    height: 34px;
+    width: auto;
+    opacity: 0.95;
+}
+.e3d-credito {
+    font-size: 0.74rem;
+    opacity: 0.85;
+    margin-top: 0.35rem;
+}
+.e3d-credito a { color: inherit; text-decoration: underline dotted; }
+
+/* ---------- Tilt 3D (tarjetas flotantes) ----------
+   JS agrega .e3d-tilt-on y actualiza:
+   --e3d-tx / --e3d-ty  (-1..1, posición del cursor normalizada)
+   --e3d-lift           (0..1, cuánto "flota" la tarjeta)
+   --e3d-gx / --e3d-gy  (0..100, posición del brillo en %)                  */
+.e3d-tilt-on {
+    --e3d-tx: 0;
+    --e3d-ty: 0;
+    --e3d-lift: 0;
+    --e3d-max: 8;
+    transform-style: preserve-3d;
+    will-change: transform;
+    transform:
+        perspective(var(--e3d-perspectiva))
+        rotateX(calc(var(--e3d-ty) * var(--e3d-max) * -1deg))
+        rotateY(calc(var(--e3d-tx) * var(--e3d-max) * 1deg))
+        translateZ(calc(var(--e3d-lift) * 18px));
+    box-shadow:
+        calc(var(--e3d-tx) * -16px) calc(10px + var(--e3d-ty) * -12px + var(--e3d-lift) * 14px)
+        calc(26px + var(--e3d-lift) * 34px)
+        rgba(var(--e3d-sombra-rgb), calc(0.08 + var(--e3d-lift) * 0.16)) !important;
+}
+/* anula hover previos (translateY) para que no peleen con el tilt */
+.e3d-fine .e3d-tilt-on:hover { transform:
+        perspective(var(--e3d-perspectiva))
+        rotateX(calc(var(--e3d-ty) * var(--e3d-max) * -1deg))
+        rotateY(calc(var(--e3d-tx) * var(--e3d-max) * 1deg))
+        translateZ(calc(var(--e3d-lift) * 18px)); }
+.e3d-tilt-on .e3d-pop { transform: translateZ(calc(var(--e3d-lift) * 28px)); }
+
+/* ---------- Brillo / reflejo que sigue al cursor ---------- */
+.e3d-glare-on { position: relative; }
+.e3d-glare-on::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+    opacity: calc(var(--e3d-glare, 0));
+    background: radial-gradient(
+        circle at calc(var(--e3d-gx, 50) * 1%) calc(var(--e3d-gy, 0) * 1%),
+        rgba(255, 255, 255, 0.34) 0%,
+        rgba(255, 255, 255, 0.10) 28%,
+        transparent 58%);
+    transition: opacity 0.25s ease;
+}
+.hero-glass.e3d-glare-on::after,
+.e3d-oscuro.e3d-glare-on::after {
+    background: radial-gradient(
+        circle at calc(var(--e3d-gx, 50) * 1%) calc(var(--e3d-gy, 0) * 1%),
+        rgba(255, 244, 220, 0.30) 0%, transparent 55%);
+}
+
+/* Tarjetas genéricas con tablas/formularios: sin rotación (evita romper modales
+   y dropdowns), sólo elevación de sombra + brillo. */
+.e3d-fine .siged-content .card.e3d-glare-on:not(.e3d-tilt-on) {
+    transition: box-shadow 0.3s ease;
+}
+.e3d-fine .siged-content .card.e3d-glare-on:not(.e3d-tilt-on):hover {
+    box-shadow:
+        0 18px 44px rgba(var(--e3d-sombra-rgb), 0.14),
+        0 2px 6px rgba(var(--e3d-sombra-rgb), 0.06) !important;
+}
+
+/* ---------- Tablas (listados / mantenedores) ---------- */
+.siged-content .table-responsive {
+    border-radius: inherit;
+    background:
+        linear-gradient(var(--siged-paper, #fffaf3) 30%, rgba(255, 250, 243, 0)) top,
+        linear-gradient(rgba(255, 250, 243, 0), var(--siged-paper, #fffaf3) 70%) bottom,
+        radial-gradient(farthest-side at 50% 0, rgba(var(--e3d-sombra-rgb), 0.12), transparent) top,
+        radial-gradient(farthest-side at 50% 100%, rgba(var(--e3d-sombra-rgb), 0.12), transparent) bottom;
+    background-repeat: no-repeat;
+    background-size: 100% 28px, 100% 28px, 100% 10px, 100% 10px;
+    background-attachment: local, local, scroll, scroll;
+}
+.siged-content .table > tbody > tr { transition: box-shadow 0.18s ease, background-color 0.18s ease; }
+.e3d-fine .siged-content .table > tbody > tr:hover {
+    box-shadow: inset 4px 0 0 var(--e3d-rojo-oficial), 0 6px 14px -8px rgba(var(--e3d-sombra-rgb), 0.35);
+    --bs-table-bg-state: rgba(184, 0, 3, 0.04);
+}
+
+/* ---------- Sidebar con profundidad ---------- */
+.siged-sidebar { perspective: 700px; }
+.siged-nav__link { transform-origin: left center; }
+.e3d-fine .siged-nav__link:hover { transform: translateX(3px) rotateY(-5deg) translateZ(8px); }
+.siged-nav__link.is-active {
+    box-shadow: inset 3px 0 0 var(--siged-gold), 0 8px 18px -6px rgba(0, 0, 0, 0.45);
+}
+.siged-topbar { border-bottom: 3px solid transparent; border-image: linear-gradient(90deg, var(--e3d-rojo-oficial), var(--siged-gold) 60%, transparent) 1; }
+
+/* ---------- Parallax por capas ----------
+   <div class="e3d-parallax"><div class="e3d-capa" data-e3d-depth="0.3"></div>…</div>
+   El JS escribe --e3d-px / --e3d-py (mouse) y --e3d-sy (scroll) en cada capa. */
+.e3d-parallax {
+    position: absolute !important;
+    inset: 0;
+    z-index: 0 !important;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: inherit;
+}
+.e3d-capa {
+    position: absolute;
+    inset: -8%;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
+    transform: translate3d(calc(var(--e3d-px, 0) * 1px), calc((var(--e3d-py, 0) + var(--e3d-sy, 0)) * 1px), 0) scale(1.04);
+}
+.e3d-capa--foto-faro { background-image: url("../img/laserena/faro-monumental.jpg"); background-position: 70% 40%; }
+.e3d-capa--foto-atardecer { background-image: url("../img/laserena/faro-atardecer.jpg"); background-position: 60% 50%; }
+.e3d-capa--foto-plaza { background-image: url("../img/laserena/plaza-de-armas.jpg"); background-position: 50% 45%; }
+.e3d-capa--tinte {
+    inset: 0;
+    transform: none;
+    background:
+        linear-gradient(180deg, rgba(26, 7, 12, 0.10) 0%, rgba(26, 7, 12, 0.55) 100%),
+        linear-gradient(115deg, rgba(58, 8, 16, 0.94) 0%, rgba(111, 12, 24, 0.80) 45%, rgba(184, 0, 3, 0.42) 100%);
+}
+.e3d-capa--crema {
+    inset: 0;
+    transform: none;
+    background: linear-gradient(180deg, rgba(248, 241, 230, 0.90), rgba(248, 241, 230, 0.95));
+}
+.e3d-capa--escudo {
+    inset: auto -4% -10% auto;
+    width: min(46%, 380px);
+    aspect-ratio: 0.92;
+    background: url("../img/laserena/escudo-blanco.svg") center / contain no-repeat;
+    opacity: 0.09;
+}
+
+/* contenedores existentes que reciben capas */
+.login-brand > .e3d-parallax,
+.hero-panel > .e3d-parallax { position: absolute; z-index: 0; }
+.login-panel.e3d-escena { position: relative; overflow: hidden; }
+.login-panel.e3d-escena > .login-card { position: relative; z-index: 1; }
+.hero-panel.e3d-escena { isolation: isolate; }
+
+/* ---------- Login ---------- */
+.e3d-logo-oficial {
+    height: 62px;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35));
+}
+.e3d-chip-siged {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1.1rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #fff4ea;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 244, 234, 0.28);
+    backdrop-filter: blur(6px);
+}
+.login-card.e3d-tilt-on { border-radius: 22px; box-shadow: none; }
+.login-card .login-glass { box-shadow: 0 18px 40px rgba(var(--e3d-sombra-rgb), 0.12); }
+.e3d-demos .table { font-size: 0.86rem; }
+.e3d-demos .table thead th {
+    background: var(--siged-rojo-deep);
+    color: #fff;
+    font-weight: 600;
+    border: 0;
+}
+.e3d-demos .table thead th:first-child { border-top-left-radius: 10px; }
+.e3d-demos .table thead th:last-child { border-top-right-radius: 10px; }
+.e3d-demos code { color: var(--e3d-rojo-oficial); background: rgba(184, 0, 3, 0.06); padding: 0.05rem 0.35rem; border-radius: 6px; }
+
+/* ---------- Portada pública (/) ---------- */
+.e3d-portada { background: var(--siged-cream); }
+.e3d-nav {
+    background: linear-gradient(90deg, #7a0002, var(--e3d-rojo-oficial));
+    box-shadow: 0 8px 24px rgba(var(--e3d-sombra-rgb), 0.25);
+}
+.e3d-nav .navbar-brand img { height: 42px; width: auto; }
+.e3d-nav .nav-link { color: rgba(255, 248, 238, 0.88); font-weight: 600; }
+.e3d-nav .nav-link:hover, .e3d-nav .nav-link:focus { color: #fff; }
+.e3d-nav .navbar-toggler { border-color: rgba(255, 255, 255, 0.5); }
+.e3d-nav .navbar-toggler-icon { filter: invert(1); }
+.e3d-btn-ingresar {
+    background: #fff;
+    color: var(--e3d-rojo-oficial);
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 0.5rem 1.15rem;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.e3d-btn-ingresar:hover { color: var(--siged-rojo-deep); transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28); }
+
+.e3d-hero {
+    position: relative;
+    min-height: min(88vh, 760px);
+    display: flex;
+    align-items: center;
+    color: #fff8ee;
+    overflow: hidden;
+    isolation: isolate;
+}
+.e3d-hero > .container { position: relative; z-index: 1; }
+.e3d-hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.9rem);
+    line-height: 1.02;
+    max-width: 14ch;
+    text-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);
+}
+.e3d-hero .lead { max-width: 36rem; color: rgba(255, 248, 238, 0.92); }
+.e3d-hero-card {
+    background: rgba(255, 250, 243, 0.14);
+    border: 1px solid rgba(255, 248, 238, 0.28) !important;
+    backdrop-filter: blur(12px);
+    color: #fff8ee;
+}
+.e3d-hero-card .e3d-stat { font-family: var(--font-display); font-size: 2.3rem; font-weight: 700; line-height: 1; }
+.e3d-hero-card small { color: rgba(255, 248, 238, 0.82); }
+.e3d-scroll-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 1.2rem;
+    transform: translateX(-50%);
+    z-index: 1;
+    color: rgba(255, 248, 238, 0.8);
+    font-size: 1.4rem;
+    animation: e3dBote 2s ease-in-out infinite;
+}
+@keyframes e3dBote { 50% { transform: translate(-50%, 6px); } }
+
+.e3d-seccion { padding: 4.5rem 0; position: relative; }
+.e3d-seccion__kicker {
+    color: var(--e3d-rojo-oficial);
+    letter-spacing: 0.18em;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.e3d-modulo {
+    height: 100%;
+    padding: 1.6rem;
+    border-radius: 20px !important;
+}
+.e3d-modulo__icono {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    color: #fff;
+    background: linear-gradient(145deg, var(--e3d-rojo-oficial), var(--siged-rojo-deep));
+    box-shadow: 0 10px 20px rgba(184, 0, 3, 0.3);
+    margin-bottom: 1rem;
+}
+.e3d-deleg {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1rem;
+    border-radius: 14px !important;
+    font-weight: 650;
+    color: var(--siged-rojo-deep);
+}
+.e3d-deleg i { color: var(--e3d-rojo-oficial); }
+.e3d-banda {
+    position: relative;
+    overflow: hidden;
+    color: #fff8ee;
+    isolation: isolate;
+}
+.e3d-banda > .container { position: relative; z-index: 1; }
+.e3d-kpi-publico {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border-radius: 20px !important;
+}
+.e3d-kpi-publico .e3d-stat { font-family: var(--font-display); font-size: 2.6rem; font-weight: 700; color: var(--e3d-rojo-oficial); line-height: 1; }
+.e3d-footer {
+    background: var(--siged-vino);
+    color: #ecd9d4;
+    border-top: 4px solid var(--e3d-rojo-oficial);
+    padding: 2.5rem 0 1.5rem;
+    font-size: 0.9rem;
+}
+.e3d-footer img { height: 46px; width: auto; }
+.e3d-footer a { color: #efcf93; }
+.e3d-footer strong { color: #fff6e8; }
+
+/* ---------- Móvil / táctil: sin rotaciones ---------- */
+@media (max-width: 991.98px) {
+    .e3d-capa--escudo { width: 60%; }
+    .e3d-hero { min-height: auto; padding: 4rem 0 5rem; }
+    .e3d-topbar-logo { display: none !important; }
+}
+html:not(.e3d-fine) .e3d-tilt-on,
+html:not(.e3d-fine) .e3d-tilt-on:hover {
+    transform: none;
+}
+
+/* ---------- Accesibilidad: movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .e3d-tilt-on, .e3d-tilt-on:hover, .e3d-capa,
+    .siged-nav__link:hover, .siged-brand:hover .logo-siged__mark--escudo {
+        transform: none !important;
+    }
+    .e3d-glare-on::after { display: none; }
+    .e3d-scroll-hint { animation: none; }
+}

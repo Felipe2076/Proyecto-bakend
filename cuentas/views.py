@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import redirect, render
 
@@ -34,7 +35,7 @@ def login_view(request):
         }
         for item in usuarios
         if item.get("activo", True)
-    ]
+    ] if settings.DEBUG else []
     errores = {}
     valores = {"username": ""}
     if request.method == "POST":
@@ -67,6 +68,7 @@ def login_view(request):
                 return redirect(_next_seguro(request.POST.get("next") or request.GET.get("next")))
     contexto = {
         "demos": demos,
+        "mostrar_demos": settings.DEBUG,
         "errores": errores,
         "valores": valores,
         "next_url": _next_seguro(request.GET.get("next") or request.POST.get("next")),

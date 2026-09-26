@@ -5,6 +5,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ingreso | SIGED-SGR Delegaciones</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/laserena/favicon.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/laserena/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/laserena/apple-touch-icon.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -12,6 +15,7 @@
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/efectos3d.css' %}">
 </head>
 <body>
 <div id="sigedLoader" class="siged-loader" data-lottie="{% static 'lottie/siged-ticket-loader.json' %}" aria-hidden="true" role="status">
@@ -22,9 +26,15 @@
 </div>
 
 <div class="login-shell">
-    <section class="login-brand">
+    <section class="login-brand e3d-escena">
+        <div class="e3d-parallax" aria-hidden="true">
+            <div class="e3d-capa e3d-capa--foto-atardecer" data-e3d-depth="0.35"></div>
+            <div class="e3d-capa e3d-capa--tinte"></div>
+            <div class="e3d-capa e3d-capa--escudo" data-e3d-depth="0.9"></div>
+        </div>
         <div>
-            {% include '_marca.html' %}
+            <a href="{% url 'inicio' %}" aria-label="Volver a la portada"><img class="e3d-logo-oficial" src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="226" height="62"></a>
+            <span class="e3d-chip-siged"><i class="bi bi-shield-check"></i> SIGED-SGR</span>
             <p class="login-kicker">Municipalidad de La Serena</p>
             <h1>SIGED-SGR Delegaciones</h1>
             <p class="lead mt-3">Portal municipal de tickets ciudadanos, actividad, evidencia, compromiso, agenda e indicadores de las seis delegaciones territoriales.</p>
@@ -37,14 +47,19 @@
         <div>
             <p class="mb-1"><strong>Los watones PC</strong> — Felipe, Aixa, Gabriel</p>
             <p class="mb-0 small" style="color:#f0d7a0;">Proyecto Integrado · Prof. Jorge Cortés · CU-E01 Ingreso al sistema</p>
+            <p class="e3d-credito mb-0" style="color:rgba(255,244,234,.8);">Logo e imágenes: Municipalidad de La Serena (<a href="https://www.laserena.cl" target="_blank" rel="noopener">laserena.cl</a>) · Fotos: Wikimedia Commons — Rjcastillo (CC BY-SA 4.0), Jorgemolinaz y Víctor Sáez Barros (CC BY-SA 3.0)</p>
         </div>
     </section>
 
-    <section class="login-panel">
-        <div class="login-card">
+    <section class="login-panel e3d-escena">
+        <div class="e3d-parallax" aria-hidden="true">
+            <div class="e3d-capa e3d-capa--foto-plaza" data-e3d-depth="0.25"></div>
+            <div class="e3d-capa e3d-capa--crema"></div>
+        </div>
+        <div class="login-card e3d-tilt" data-tilt-max="5">
             <p class="login-kicker mb-2" style="color:#8b1524;">Acceso institucional</p>
             <h2 class="fw-bold text-primary-custom mb-1">Ingreso al sistema</h2>
-            <p class="text-muted mb-4">Use un perfil de demostración. Este mockup no usa MySQL ni APIs de negocio.</p>
+            <p class="text-muted mb-4">{% if mostrar_demos %}Use un perfil de demostración (visible sólo en modo desarrollo).{% else %}Ingrese con su usuario municipal.{% endif %}</p>
             {% if messages %}
                 {% for message in messages %}
                 <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} py-2">{{ message }}</div>
@@ -66,7 +81,8 @@
                 <button type="submit" class="btn btn-primary-custom w-100">Entrar a SIGED-SGR</button>
             </form>
 
-            <div class="card login-glass mt-3 p-3">
+            {% if mostrar_demos %}
+            <div class="card login-glass e3d-demos mt-3 p-3">
                 <h3 class="h6 fw-bold text-primary-custom mb-2">Perfiles de prueba</h3>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
@@ -85,6 +101,8 @@
                     </table>
                 </div>
             </div>
+            {% endif %}
+            <p class="small text-center mt-3 mb-0"><a href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Volver a la portada</a></p>
         </div>
     </section>
 </div>
@@ -93,6 +111,7 @@
 <script src="{% static 'js/lordicon.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
 <script src="{% static 'js/siged-motion.js' %}"></script>
+<script src="{% static 'js/efectos3d.js' %}"></script>
 <script>
     (() => {
         const forms = document.querySelectorAll(".needs-validation");

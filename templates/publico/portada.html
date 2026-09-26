@@ -1,0 +1,214 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SIGED-SGR Delegaciones | Ilustre Municipalidad de La Serena</title>
+    <meta name="description" content="SIGED-SGR: sistema de gestión de requerimientos ciudadanos de las seis delegaciones territoriales de la Municipalidad de La Serena.">
+    <meta name="theme-color" content="#b80003">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/laserena/favicon.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/laserena/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/laserena/apple-touch-icon.png' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/efectos3d.css' %}">
+</head>
+<body class="e3d-portada">
+
+<nav class="navbar navbar-expand-lg e3d-nav sticky-top" aria-label="Navegación principal">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'inicio' %}">
+            <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="152" height="42">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navPortada" aria-controls="navPortada" aria-expanded="false" aria-label="Abrir menú">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navPortada">
+            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                <li class="nav-item"><a class="nav-link" href="#que-es">¿Qué es?</a></li>
+                <li class="nav-item"><a class="nav-link" href="#modulos">Módulos</a></li>
+                <li class="nav-item"><a class="nav-link" href="#delegaciones">Delegaciones</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://www.laserena.cl" target="_blank" rel="noopener">laserena.cl <i class="bi bi-box-arrow-up-right small"></i></a></li>
+                <li class="nav-item ms-lg-2 my-2 my-lg-0">
+                    <a class="btn e3d-btn-ingresar" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i> Ingresar</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<header class="e3d-hero e3d-escena">
+    <div class="e3d-parallax" aria-hidden="true">
+        <div class="e3d-capa e3d-capa--foto-atardecer" data-e3d-depth="0.35"></div>
+        <div class="e3d-capa e3d-capa--tinte"></div>
+        <div class="e3d-capa e3d-capa--escudo" data-e3d-depth="0.9"></div>
+    </div>
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <p class="login-kicker mt-0">Ilustre Municipalidad de La Serena · Delegaciones territoriales</p>
+                <h1 class="mb-3">SIGED-SGR: cada requerimiento, con seguimiento.</h1>
+                <p class="lead mb-4">Sistema de gestión de requerimientos ciudadanos, actividad interna y semáforo de desempeño para las seis delegaciones municipales de La Serena.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn e3d-btn-ingresar btn-lg" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i> Ingresar al sistema</a>
+                    <a class="btn btn-outline-light btn-lg" href="#que-es">Conocer SIGED-SGR</a>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card e3d-hero-card e3d-tilt e3d-oscuro p-4" data-tilt-max="8">
+                    <p class="small text-uppercase mb-3 e3d-pop" style="letter-spacing:.14em;color:#f0d7a0;">Gestión en cifras</p>
+                    <div class="row g-3 e3d-pop">
+                        <div class="col-6">
+                            <div class="e3d-stat">{{ stats.delegaciones }}</div>
+                            <small>delegaciones territoriales</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="e3d-stat">{{ stats.total }}</div>
+                            <small>requerimientos registrados</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="e3d-stat">{{ stats.resueltos }}</div>
+                            <small>requerimientos resueltos</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="e3d-stat">{{ stats.porcentaje }}%</div>
+                            <small>tasa de resolución</small>
+                        </div>
+                    </div>
+                    <p class="small mb-0 mt-3" style="color:rgba(255,248,238,.7);"><i class="bi bi-database"></i> Fuente: {{ stats.fuente }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <a class="e3d-scroll-hint" href="#que-es" aria-label="Bajar a la presentación"><i class="bi bi-chevron-double-down"></i></a>
+</header>
+
+<main>
+    <section class="e3d-seccion" id="que-es">
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-6">
+                    <p class="e3d-seccion__kicker mb-2">¿Qué es SIGED-SGR?</p>
+                    <h2 class="text-primary-custom mb-3">Un solo lugar para la atención ciudadana de las delegaciones</h2>
+                    <p class="text-muted">Los vecinos y vecinas de La Serena presentan requerimientos en ventanilla, WhatsApp o correo. SIGED-SGR registra cada ticket, lo asigna al área de soporte correspondiente y controla su plazo de respuesta con un <strong>semáforo</strong> (verde, ámbar y rojo), mientras los equipos registran actividades, evidencias y compromisos.</p>
+                    <ul class="list-unstyled mt-3 mb-0">
+                        <li class="mb-2"><i class="bi bi-check2-circle text-danger me-2"></i>Trazabilidad del ticket desde el ingreso hasta el cierre.</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-danger me-2"></i>Agenda colectiva y evidencia de terreno.</li>
+                        <li><i class="bi bi-check2-circle text-danger me-2"></i>Indicadores y metas por funcionario y delegación.</li>
+                    </ul>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card e3d-tilt overflow-hidden p-0" data-tilt-max="6">
+                        <img src="{% static 'img/laserena/plaza-de-armas.jpg' %}" class="img-fluid" alt="Plaza de Armas de La Serena con la Catedral y los Tribunales" loading="lazy" width="1600" height="1200" style="border-radius:inherit;">
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">Plaza de Armas de La Serena · Foto: Víctor Sáez Barros, CC BY-SA 3.0 (Wikimedia Commons)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="e3d-seccion pt-0" id="modulos">
+        <div class="container">
+            <p class="e3d-seccion__kicker mb-2">Módulos</p>
+            <h2 class="text-primary-custom mb-4">Tres áreas de trabajo</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card e3d-modulo e3d-tilt">
+                        <div class="e3d-modulo__icono e3d-pop"><i class="bi bi-people"></i></div>
+                        <h3 class="h5 text-primary-custom">Atención ciudadana</h3>
+                        <p class="text-muted mb-0">Ingreso de tickets por canal (ventanilla, WhatsApp, correo), tipificación, listado con buscador, tablero Kanban y encuesta de satisfacción de 1 a 5.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card e3d-modulo e3d-tilt">
+                        <div class="e3d-modulo__icono e3d-pop"><i class="bi bi-clipboard-check"></i></div>
+                        <h3 class="h5 text-primary-custom">Gestión interna</h3>
+                        <p class="text-muted mb-0">Actividad diaria con evidencia, compromisos con el vecino y agenda colectiva de terreno y reuniones del equipo.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card e3d-modulo e3d-tilt">
+                        <div class="e3d-modulo__icono e3d-pop"><i class="bi bi-stoplights"></i></div>
+                        <h3 class="h5 text-primary-custom">Desempeño y semáforo</h3>
+                        <p class="text-muted mb-0">Semáforo de plazos (día 1–3 verde, 4–5 ámbar, 6+ rojo), indicadores, metas por funcionario y resumen por delegación.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="e3d-seccion e3d-banda e3d-escena">
+        <div class="e3d-parallax" aria-hidden="true">
+            <div class="e3d-capa e3d-capa--foto-faro" data-e3d-depth="0.45"></div>
+            <div class="e3d-capa e3d-capa--tinte"></div>
+        </div>
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-5">
+                    <p class="login-kicker mt-0">Semáforo del ticket</p>
+                    <h2 class="mb-3" style="color:#fff8ee;">Plazos visibles para responder a tiempo</h2>
+                    <p class="mb-0" style="color:rgba(255,248,238,.88);">Cada ticket cambia de color según los días transcurridos, para que jefaturas y funcionarios prioricen los casos críticos.</p>
+                </div>
+                <div class="col-lg-7">
+                    <div class="row g-3">
+                        <div class="col-sm-4"><div class="card e3d-kpi-publico e3d-tilt"><div class="e3d-stat" style="color:#1e8449;">1–3</div><div class="semaforo semaforo--verde mt-2 justify-content-center"><span class="semaforo__luz"></span> Verde · en plazo</div></div></div>
+                        <div class="col-sm-4"><div class="card e3d-kpi-publico e3d-tilt"><div class="e3d-stat" style="color:#b86e00;">4–5</div><div class="semaforo semaforo--ambar mt-2 justify-content-center"><span class="semaforo__luz"></span> Ámbar · alerta</div></div></div>
+                        <div class="col-sm-4"><div class="card e3d-kpi-publico e3d-tilt"><div class="e3d-stat">6+</div><div class="semaforo semaforo--rojo mt-2 justify-content-center"><span class="semaforo__luz"></span> Rojo · crítico</div></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="e3d-seccion" id="delegaciones">
+        <div class="container">
+            <p class="e3d-seccion__kicker mb-2">Territorio</p>
+            <h2 class="text-primary-custom mb-4">Las {{ delegaciones|length }} delegaciones municipales</h2>
+            <div class="row g-3">
+                {% for del in delegaciones %}
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card e3d-deleg e3d-tilt" data-tilt-max="5"><i class="bi bi-geo-alt-fill"></i> {{ del }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-5">
+                <a class="btn btn-primary-custom btn-lg" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i> Ingresar con mi cuenta municipal</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="e3d-footer">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="168" height="46">
+                <p class="mt-3 mb-0">Ilustre Municipalidad de La Serena · Arturo Prat 451, La Serena, Región de Coquimbo.</p>
+            </div>
+            <div class="col-lg-4">
+                <p class="mb-1"><strong>Los watones PC</strong> — Felipe, Aixa, Gabriel</p>
+                <p class="mb-0">Proyecto Integrado · SIGED-SGR Delegaciones · Prof. Jorge Cortés</p>
+            </div>
+            <div class="col-lg-3">
+                <p class="mb-1"><a href="{% url 'login' %}">Ingresar al sistema</a></p>
+                <p class="mb-0"><a href="https://www.laserena.cl" target="_blank" rel="noopener">www.laserena.cl</a></p>
+            </div>
+        </div>
+        <hr style="border-color:rgba(255,248,238,.18);">
+        <p class="e3d-credito mb-0">
+            Logo e imágenes: Municipalidad de La Serena (<a href="https://www.laserena.cl" target="_blank" rel="noopener">laserena.cl</a>).
+            Fotografías vía Wikimedia Commons: Faro Monumental — Rjcastillo (CC BY-SA 4.0); Faro al atardecer — Jorgemolinaz (CC BY-SA 3.0); Plaza de Armas — Víctor Sáez Barros (CC BY-SA 3.0).
+            Proyecto académico sin fines comerciales.
+        </p>
+    </div>
+</footer>
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/efectos3d.js' %}"></script>
+</body>
+</html>
