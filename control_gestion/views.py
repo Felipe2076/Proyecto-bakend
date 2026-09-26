@@ -13,6 +13,7 @@ from control_gestion.consultas import (
     queryset_funcionarios,
     registrar_actividad_desde_formulario,
 )
+from control_gestion.indicadores import color_semaforo_diario, cumplimiento_item, construir_panel
 from control_gestion.models import Medicion
 from cuentas.servicios import nombres_delegaciones, obtener_parametros
 from requerimientos.consultas import queryset_requerimientos, ticket_a_dict
@@ -75,10 +76,7 @@ def calcular_item_medicion(item):
     meta = float(item.get("meta_trimestre") or 0)
     avance = float(item.get("avance_actual") or 0)
     ponderador = float(item.get("ponderador") or 0)
-    pct = round((avance / meta) * 100, 1) if meta else 0.0
-    if pct > 100:
-        pct = 100.0
-    ponderado = round((ponderador * pct) / 100.0, 2)
+    pct, ponderado = cumplimiento_item(ponderador, meta, avance)
     resultado = dict(item)
     resultado["meta_trimestre"] = meta
     resultado["avance_actual"] = avance
@@ -88,13 +86,15 @@ def calcular_item_medicion(item):
     return resultado
 
 
-def asignar_semaforo_sgr(pct_logrado, pct_esperado):
-    diferencia = pct_logrado - pct_esperado
-    if diferencia >= 0:
-        return {"nivel": "Verde", "clase": "bg-success", "texto": "En línea con la meta diaria"}
-    if diferencia >= -10:
-        return {"nivel": "Amarillo", "clase": "bg-warning text-dark", "texto": "Bajo la línea esperada"}
-    return {"nivel": "Rojo", "clase": "bg-danger", "texto": "Rezagado / requiere acompañamiento"}
+def asignar_semaforo_sgr(pct_logrado, pct_esperado, dias_totales=None):
+    params = obtener_parametros()
+    return color_semaforo_diario(
+        pct_logrado,
+        pct_esperado,
+        dias_totales or 90,
+        params["sla_verde_max_dias"],
+        params["sla_amarillo_max_dias"],
+    )
 
 
 def resumen_tubo_por_funcionario(compromisos):
@@ -115,7 +115,9 @@ def resumen_tubo_por_funcionario(compromisos):
 def enriquecer_funcionario(funcionario, periodo, resumen_tubo):
     items = [calcular_item_medicion(item) for item in funcionario.get("items", [])]
     ponderado_total = round(sum(item["cumplimiento_ponderado"] for item in items), 2)
-    semaforo = asignar_semaforo_sgr(ponderado_total, periodo["pct_esperado"])
+    semaforo = asignar_semaforo_sgr(
+        ponderado_total, periodo["pct_esperado"], periodo.get("dias_totales")
+    )
     clave = funcionario.get("id_funcionario")
     tubo = resumen_tubo.get(clave, {"total": 0, "realizados": 0, "pendientes": 0})
     pct_tubo = round((tubo["realizados"] / tubo["total"]) * 100, 1) if tubo["total"] else 0.0
@@ -223,6 +225,7 @@ def dashboard_cuellos_botella_view(request):
         "delegacion_mayor_demanda": delegacion_mayor_demanda,
         "cuellos_botella": cuellos_botella,
         "stats_delegaciones": stats_delegaciones,
+        "panel": construir_panel(),
     }
     return render(request, "control_gestion/dashboard.html", contexto)
 
