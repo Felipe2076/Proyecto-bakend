@@ -1,5 +1,74 @@
 from django.contrib import admin
 
-admin.site.site_header = "SIGED La Serena (Django Admin)"
+from .models import Cargo, Delegacion, Funcionario, ParametroSistema, Rol, Usuario
+
+admin.site.site_header = "SIGED La Serena - Administración"
 admin.site.site_title = "SIGED"
-admin.site.index_title = "Administración técnica (no usar en la entrega mockup)"
+admin.site.index_title = "Mantenedores del sistema municipal"
+
+
+class UsuarioInline(admin.TabularInline):
+    model = Usuario
+    extra = 0
+    fields = ("username", "nombre", "correo", "estado")
+    show_change_link = True
+
+
+class FuncionarioInline(admin.TabularInline):
+    model = Funcionario
+    extra = 0
+    fields = ("codigo", "nombre", "cargo", "estado")
+    show_change_link = True
+
+
+@admin.register(Rol)
+class RolAdmin(admin.ModelAdmin):
+    list_display = ("id", "nombre", "codigo", "descripcion")
+    search_fields = ("nombre", "codigo", "descripcion")
+    prepopulated_fields = {"codigo": ("nombre",)}
+    inlines = [UsuarioInline]
+
+
+@admin.register(Delegacion)
+class DelegacionAdmin(admin.ModelAdmin):
+    list_display = ("id", "nombre", "direccion", "comuna")
+    search_fields = ("nombre", "direccion", "comuna")
+    list_filter = ("comuna",)
+    inlines = [FuncionarioInline]
+
+
+@admin.register(Cargo)
+class CargoAdmin(admin.ModelAdmin):
+    list_display = ("codigo", "nombre", "modulo_principal", "descripcion")
+    search_fields = ("codigo", "nombre", "descripcion")
+    list_filter = ("modulo_principal",)
+
+
+@admin.register(Funcionario)
+class FuncionarioAdmin(admin.ModelAdmin):
+    list_display = ("codigo", "nombre", "cargo", "delegacion", "fecha_ultimo_ingreso", "estado")
+    search_fields = ("codigo", "nombre", "cargo__nombre", "delegacion__nombre")
+    list_filter = ("estado", "delegacion", "cargo")
+    autocomplete_fields = ("cargo", "delegacion")
+    date_hierarchy = "fecha_ultimo_ingreso"
+
+    def get_inlines(self, request, obj):
+        # Import diferido para evitar dependencia circular entre apps.
+        from control_gestion.admin import ActividadInline, ItemFuncionarioInline
+        return [ItemFuncionarioInline, ActividadInline]
+
+
+@admin.register(Usuario)
+class UsuarioAdmin(admin.ModelAdmin):
+    list_display = ("id", "nombre", "username", "correo", "rol", "delegacion", "estado")
+    search_fields = ("nombre", "username", "correo", "codigo")
+    list_filter = ("estado", "rol", "delegacion")
+    autocomplete_fields = ("rol", "cargo", "delegacion", "funcionario", "user")
+    readonly_fields = ("creado",)
+
+
+@admin.register(ParametroSistema)
+class ParametroSistemaAdmin(admin.ModelAdmin):
+    list_display = ("nombre_sistema", "comuna", "region", "sla_verde_max_dias", "sla_amarillo_max_dias",
+                    "meta_tubo_porcentaje", "encuesta_habilitada")
+    search_fields = ("nombre_sistema", "comuna")
