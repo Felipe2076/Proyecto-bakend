@@ -96,6 +96,7 @@
     }
 
     /* ---------------- Parallax por capas ---------------- */
+    (function parallax() {
     const escenas = Array.from(document.querySelectorAll(".e3d-escena"));
     if (!escenas.length) return;
     const capas = [];
@@ -149,4 +150,130 @@
     window.addEventListener("scroll", pedirFrame, { passive: true });
     window.addEventListener("resize", pedirFrame, { passive: true });
     pedirFrame();
+    })();
+
+    /* ---------------- Scroll reveal + contador ---------------- */
+    const contar = (el) => {
+        const fin = parseFloat(el.dataset.countup || el.textContent) || 0;
+        const suf = el.dataset.sufijo || "";
+        const t0 = performance.now();
+        const dur = 1400;
+        const tick = (t) => {
+            const p = Math.min(1, (t - t0) / dur);
+            const e = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(fin * e) + suf;
+            if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    };
+    const revelables = document.querySelectorAll("[data-reveal]");
+    if ("IntersectionObserver" in window && revelables.length) {
+        const io = new IntersectionObserver((entradas) => {
+            entradas.forEach((en) => {
+                if (!en.isIntersecting) return;
+                en.target.classList.add("is-visible");
+                en.target.querySelectorAll("[data-countup]").forEach(contar);
+                io.unobserve(en.target);
+            });
+        }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+        revelables.forEach((el) => io.observe(el));
+    } else {
+        revelables.forEach((el) => el.classList.add("is-visible"));
+    }
+
+    /* ---------------- Botones magnéticos ---------------- */
+    if (fine) {
+        document.querySelectorAll("[data-magnetic]").forEach((btn) => {
+            const fuerza = parseFloat(btn.dataset.magnetic) || 0.35;
+            let tx = 0, ty = 0, x = 0, y = 0, corriendo = false;
+            const anim = () => {
+                x = lerp(x, tx, 0.2);
+                y = lerp(y, ty, 0.2);
+                btn.style.setProperty("--mx", x.toFixed(2) + "px");
+                btn.style.setProperty("--my", y.toFixed(2) + "px");
+                if (Math.abs(x - tx) > 0.1 || Math.abs(y - ty) > 0.1) requestAnimationFrame(anim);
+                else corriendo = false;
+            };
+            const mover = () => { if (!corriendo) { corriendo = true; requestAnimationFrame(anim); } };
+            btn.addEventListener("pointermove", (ev) => {
+                const r = btn.getBoundingClientRect();
+                tx = (ev.clientX - (r.left + r.width / 2)) * fuerza;
+                ty = (ev.clientY - (r.top + r.height / 2)) * fuerza;
+                mover();
+            });
+            btn.addEventListener("pointerleave", () => { tx = 0; ty = 0; mover(); });
+        });
+    }
+
+    /* ---------------- Campo de puntos 3D (canvas 2D propio) ----------------
+       Una malla de puntos en perspectiva ondula con senos; el mouse inclina la
+       "cámara". Se pausa fuera de pantalla o con la pestaña oculta. */
+    const hero = document.querySelector(".hero-panel");
+    if (hero && !hero.querySelector("canvas")) {
+        const c = document.createElement("canvas");
+        c.className = "v2-canvas";
+        c.setAttribute("aria-hidden", "true");
+        c.dataset.v2Onda = "";
+        const capas = hero.querySelector(".e3d-parallax");
+        if (capas) capas.after(c); else hero.prepend(c);
+    }
+    document.querySelectorAll("canvas[data-v2-onda]").forEach((cv) => {
+        const ctx = cv.getContext("2d");
+        if (!ctx) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        let w = 0, h = 0, visible = true, t = Math.random() * 100, rafId = 0;
+        let camX = 0, camY = 0, objX = 0, objY = 0;
+        const COLS = 56, FILAS = 30, SEP = 34, FOV = 420;
+        const ajustar = () => {
+            const r = cv.getBoundingClientRect();
+            w = r.width; h = r.height;
+            cv.width = Math.max(1, Math.round(w * dpr));
+            cv.height = Math.max(1, Math.round(h * dpr));
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        const dibujar = () => {
+            ctx.clearRect(0, 0, w, h);
+            camX = lerp(camX, objX, 0.05);
+            camY = lerp(camY, objY, 0.05);
+            const horizonte = h * (0.55 + camY * 0.05);
+            const base = h * 0.12 + 50;
+            const cx = w / 2 + camX * 60;
+            for (let f = FILAS - 1; f >= 0; f--) {
+                const z = f * SEP + 40;
+                const esc = FOV / (FOV + z);
+                const prof = 1 - f / FILAS;
+                for (let k = 0; k < COLS; k++) {
+                    const x = (k - COLS / 2) * SEP;
+                    const y = Math.sin(k * 0.28 + t) * 18 + Math.cos(f * 0.35 + t * 0.8) * 22 + Math.sin((k + f) * 0.12 + t * 0.5) * 12;
+                    const sx = cx + x * esc;
+                    const sy = horizonte + (y + base) * esc;
+                    if (sx < -4 || sx > w + 4 || sy > h + 4) continue;
+                    const s = Math.max(0.6, 2.4 * esc);
+                    const a = (0.12 + prof * 0.7) * (0.6 + 0.4 * Math.sin(k * 0.5 + f * 0.3 + t * 2));
+                    ctx.fillStyle = (k + f) % 7 === 0 ? `rgba(240,197,119,${(a * 0.9).toFixed(3)})` : `rgba(255,${Math.round(60 + 80 * (1 - prof))},${Math.round(70 + 60 * (1 - prof))},${a.toFixed(3)})`;
+                    ctx.fillRect(sx, sy, s, s);
+                }
+            }
+        };
+        const loop = () => {
+            t += 0.012;
+            dibujar();
+            rafId = visible && !document.hidden ? requestAnimationFrame(loop) : 0;
+        };
+        const arrancar = () => { if (!rafId && visible && !document.hidden) rafId = requestAnimationFrame(loop); };
+        ajustar();
+        dibujar();
+        window.addEventListener("resize", () => { ajustar(); dibujar(); }, { passive: true });
+        document.addEventListener("visibilitychange", arrancar);
+        if ("IntersectionObserver" in window) {
+            new IntersectionObserver((en) => { visible = en[0].isIntersecting; arrancar(); }).observe(cv);
+        }
+        if (fine) {
+            window.addEventListener("pointermove", (ev) => {
+                objX = (ev.clientX / window.innerWidth - 0.5) * 2;
+                objY = (ev.clientY / window.innerHeight - 0.5) * 2;
+            }, { passive: true });
+        }
+        arrancar();
+    });
 })();

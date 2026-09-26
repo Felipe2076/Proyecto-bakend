@@ -6,188 +6,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SIGED-SGR Delegaciones | Ilustre Municipalidad de La Serena</title>
     <meta name="description" content="SIGED-SGR: sistema de gestión de requerimientos ciudadanos de las seis delegaciones territoriales de la Municipalidad de La Serena.">
-    <meta name="theme-color" content="#b80003">
+    <meta name="theme-color" content="#0a0406">
     <link rel="icon" type="image/svg+xml" href="{% static 'img/laserena/favicon.svg' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/laserena/favicon-32.png' %}">
     <link rel="apple-touch-icon" href="{% static 'img/laserena/apple-touch-icon.png' %}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="preload" href="{% static 'fonts/space-grotesk-latin-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'fonts/inter-latin-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tipografia.css' %}">
     <link rel="stylesheet" href="{% static 'css/efectos3d.css' %}">
 </head>
-<body class="e3d-portada">
+<body class="v2-dark">
 
-<nav class="navbar navbar-expand-lg e3d-nav sticky-top" aria-label="Navegación principal">
+<nav class="navbar navbar-expand-lg v2-nav" aria-label="Navegación principal">
     <div class="container">
         <a class="navbar-brand" href="{% url 'inicio' %}">
-            <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="152" height="42">
+            <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="146" height="40">
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navPortada" aria-controls="navPortada" aria-expanded="false" aria-label="Abrir menú">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navPortada">
-            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
-                <li class="nav-item"><a class="nav-link" href="#que-es">¿Qué es?</a></li>
+            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
                 <li class="nav-item"><a class="nav-link" href="#modulos">Módulos</a></li>
-                <li class="nav-item"><a class="nav-link" href="#delegaciones">Delegaciones</a></li>
-                <li class="nav-item"><a class="nav-link" href="https://www.laserena.cl" target="_blank" rel="noopener">laserena.cl <i class="bi bi-box-arrow-up-right small"></i></a></li>
+                <li class="nav-item"><a class="nav-link" href="#territorio">Territorio</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'creditos' %}">Créditos</a></li>
                 <li class="nav-item ms-lg-2 my-2 my-lg-0">
-                    <a class="btn e3d-btn-ingresar" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i> Ingresar</a>
+                    <a class="v2-btn v2-btn--rojo" href="{% url 'login' %}" data-magnetic="0.4">Ingresar <i class="bi bi-arrow-right"></i></a>
                 </li>
             </ul>
         </div>
     </div>
 </nav>
 
-<header class="e3d-hero e3d-escena">
-    <div class="e3d-parallax" aria-hidden="true">
-        <div class="e3d-capa e3d-capa--foto-atardecer" data-e3d-depth="0.35"></div>
-        <div class="e3d-capa e3d-capa--tinte"></div>
-        <div class="e3d-capa e3d-capa--escudo" data-e3d-depth="0.9"></div>
+<header class="v2-hero e3d-escena">
+    <div class="v2-fondo" aria-hidden="true">
+        <div class="v2-aurora"></div>
+        <div class="v2-foto" style="background-image:url('{% static 'img/laserena/faro-atardecer.jpg' %}');" data-e3d-depth="0.3"></div>
+        <div class="v2-rejilla"></div>
+        <canvas class="v2-canvas" data-v2-onda></canvas>
+        <div class="v2-grano"></div>
     </div>
     <div class="container">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-7">
-                <p class="login-kicker mt-0">Ilustre Municipalidad de La Serena · Delegaciones territoriales</p>
-                <h1 class="mb-3">SIGED-SGR: cada requerimiento, con seguimiento.</h1>
-                <p class="lead mb-4">Sistema de gestión de requerimientos ciudadanos, actividad interna y semáforo de desempeño para las seis delegaciones municipales de La Serena.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn e3d-btn-ingresar btn-lg" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i> Ingresar al sistema</a>
-                    <a class="btn btn-outline-light btn-lg" href="#que-es">Conocer SIGED-SGR</a>
-                </div>
-            </div>
-            <div class="col-lg-5">
-                <div class="card e3d-hero-card e3d-tilt e3d-oscuro p-4" data-tilt-max="8">
-                    <p class="small text-uppercase mb-3 e3d-pop" style="letter-spacing:.14em;color:#f0d7a0;">Gestión en cifras</p>
-                    <div class="row g-3 e3d-pop">
-                        <div class="col-6">
-                            <div class="e3d-stat">{{ stats.delegaciones }}</div>
-                            <small>delegaciones territoriales</small>
-                        </div>
-                        <div class="col-6">
-                            <div class="e3d-stat">{{ stats.total }}</div>
-                            <small>requerimientos registrados</small>
-                        </div>
-                        <div class="col-6">
-                            <div class="e3d-stat">{{ stats.resueltos }}</div>
-                            <small>requerimientos resueltos</small>
-                        </div>
-                        <div class="col-6">
-                            <div class="e3d-stat">{{ stats.porcentaje }}%</div>
-                            <small>tasa de resolución</small>
-                        </div>
-                    </div>
-                    <p class="small mb-0 mt-3" style="color:rgba(255,248,238,.7);"><i class="bi bi-database"></i> Fuente: {{ stats.fuente }}</p>
-                </div>
-            </div>
+        <div data-reveal>
+            <span class="v2-chip"><span class="v2-punto"></span> SIGED-SGR · {{ stats.delegaciones }} delegaciones · La Serena</span>
         </div>
+        <h1 class="v2-titulo mt-4" data-reveal style="--d:.08s">Cada requerimiento, con <span class="v2-grad">seguimiento.</span></h1>
+        <p class="v2-lead" data-reveal style="--d:.16s">Tickets ciudadanos, actividad interna y semáforo de desempeño para las delegaciones territoriales de la Ilustre Municipalidad de La Serena. Todo en un solo lugar.</p>
+        <div class="d-flex flex-wrap gap-3 mt-4" data-reveal style="--d:.24s">
+            <a class="v2-btn v2-btn--rojo v2-btn--lg" href="{% url 'login' %}" data-magnetic="0.35"><i class="bi bi-box-arrow-in-right"></i> Ingresar al sistema</a>
+            <a class="v2-btn v2-btn--vidrio v2-btn--lg" href="#modulos">Ver módulos <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="v2-stats" data-reveal style="--d:.32s">
+            <div class="v2-stat"><div class="v2-stat__num" data-countup="{{ stats.delegaciones }}">{{ stats.delegaciones }}</div><div class="v2-stat__lbl">Delegaciones</div></div>
+            <div class="v2-stat"><div class="v2-stat__num" data-countup="{{ stats.total }}">{{ stats.total }}</div><div class="v2-stat__lbl">Requerimientos</div></div>
+            <div class="v2-stat"><div class="v2-stat__num" data-countup="{{ stats.resueltos }}">{{ stats.resueltos }}</div><div class="v2-stat__lbl">Resueltos</div></div>
+            <div class="v2-stat"><div class="v2-stat__num" data-countup="{{ stats.porcentaje }}" data-sufijo="%">{{ stats.porcentaje }}%</div><div class="v2-stat__lbl">Tasa de resolución</div></div>
+        </div>
+        <p class="v2-mono small mt-3 mb-0 v2-muted"><i class="bi bi-database"></i> fuente: {{ stats.fuente }}</p>
     </div>
-    <a class="e3d-scroll-hint" href="#que-es" aria-label="Bajar a la presentación"><i class="bi bi-chevron-double-down"></i></a>
+    <a class="v2-scroll" href="#modulos" aria-label="Bajar a los módulos">SCROLL<span></span></a>
 </header>
 
+<div class="v2-marquesina" aria-hidden="true">
+    <div class="v2-marquesina__pista">
+        {% for i in "12" %}
+        {% for del in delegaciones %}<span>{{ del }}</span>{% endfor %}
+        <span>Reclamo</span><span>Solicitud</span><span>Consulta</span><span>Sugerencia</span><span>Felicitación</span>
+        {% endfor %}
+    </div>
+</div>
+
 <main>
-    <section class="e3d-seccion" id="que-es">
+    <section class="v2-seccion" id="modulos">
         <div class="container">
-            <div class="row g-4 align-items-center">
-                <div class="col-lg-6">
-                    <p class="e3d-seccion__kicker mb-2">¿Qué es SIGED-SGR?</p>
-                    <h2 class="text-primary-custom mb-3">Un solo lugar para la atención ciudadana de las delegaciones</h2>
-                    <p class="text-muted">Los vecinos y vecinas de La Serena presentan requerimientos en ventanilla, WhatsApp o correo. SIGED-SGR registra cada ticket, lo asigna al área de soporte correspondiente y controla su plazo de respuesta con un <strong>semáforo</strong> (verde, ámbar y rojo), mientras los equipos registran actividades, evidencias y compromisos.</p>
-                    <ul class="list-unstyled mt-3 mb-0">
-                        <li class="mb-2"><i class="bi bi-check2-circle text-danger me-2"></i>Trazabilidad del ticket desde el ingreso hasta el cierre.</li>
-                        <li class="mb-2"><i class="bi bi-check2-circle text-danger me-2"></i>Agenda colectiva y evidencia de terreno.</li>
-                        <li><i class="bi bi-check2-circle text-danger me-2"></i>Indicadores y metas por funcionario y delegación.</li>
-                    </ul>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card e3d-tilt overflow-hidden p-0" data-tilt-max="6">
-                        <img src="{% static 'img/laserena/plaza-de-armas.jpg' %}" class="img-fluid" alt="Plaza de Armas de La Serena con la Catedral y los Tribunales" loading="lazy" width="1600" height="1200" style="border-radius:inherit;">
+            <span class="v2-eyebrow" data-reveal>// Módulos</span>
+            <h2 class="v2-h2" data-reveal style="--d:.06s">Tres áreas de trabajo.<br><span class="v2-muted">Una sola plataforma.</span></h2>
+            <p class="v2-sub" data-reveal style="--d:.12s">Desde la ventanilla hasta el indicador de desempeño: cada paso queda registrado y visible para el equipo.</p>
+
+            <div class="v2-bento">
+                <article class="v2-card v2-borde e3d-tilt v2-b-7 v2-r-2" data-tilt-max="4" data-reveal>
+                    <div class="v2-card__icono e3d-pop"><i class="bi bi-people"></i></div>
+                    <h3>Atención ciudadana</h3>
+                    <p>Ingreso por canal, tipificación, asignación al área de soporte, listado con buscador, Kanban y encuesta 1–5.</p>
+                    <div class="v2-tickets" aria-label="Vista de ejemplo de tickets">
+                        <div class="v2-ticket"><code>TK-1015</code><div>Luminaria apagada<br><small>Reclamo · Delegación Centro</small></div><span class="v2-luz v2-luz--verde" title="En plazo"></span></div>
+                        <div class="v2-ticket"><code>TK-1012</code><div>Poda de árbol en pasaje<br><small>Solicitud · Delegación La Pampa</small></div><span class="v2-luz v2-luz--ambar" title="Alerta"></span></div>
+                        <div class="v2-ticket"><code>TK-1008</code><div>Microbasural en sitio eriazo<br><small>Reclamo · Delegación Las Compañías</small></div><span class="v2-luz v2-luz--rojo" title="Crítico"></span></div>
                     </div>
-                    <p class="small text-muted mt-2 mb-0">Plaza de Armas de La Serena · Foto: Víctor Sáez Barros, CC BY-SA 3.0 (Wikimedia Commons)</p>
-                </div>
+                    <p class="v2-mono small mt-3" style="font-size:.68rem;">* vista de ejemplo</p>
+                </article>
+
+                <article class="v2-card v2-borde e3d-tilt v2-b-5" data-reveal style="--d:.08s">
+                    <div class="v2-card__icono e3d-pop"><i class="bi bi-stoplights"></i></div>
+                    <h3>Semáforo del ticket</h3>
+                    <div class="v2-semaforo">
+                        <div><span class="v2-luz v2-luz--verde"></span> DÍA 1–3 · EN PLAZO</div>
+                        <div><span class="v2-luz v2-luz--ambar"></span> DÍA 4–5 · ALERTA</div>
+                        <div><span class="v2-luz v2-luz--rojo"></span> DÍA 6+ · CRÍTICO</div>
+                    </div>
+                </article>
+
+                <article class="v2-card v2-borde e3d-tilt v2-b-5" data-reveal style="--d:.14s">
+                    <div class="v2-card__icono e3d-pop"><i class="bi bi-graph-up-arrow"></i></div>
+                    <h3>Desempeño</h3>
+                    <p>Indicadores, metas por funcionario y resumen por delegación.</p>
+                    <div class="v2-barras" data-reveal aria-hidden="true">
+                        <span style="--h:38%"></span><span style="--h:56%"></span><span style="--h:44%"></span><span style="--h:72%"></span><span style="--h:61%"></span><span style="--h:88%"></span><span style="--h:79%"></span>
+                    </div>
+                </article>
+
+                <article class="v2-card v2-borde e3d-tilt v2-b-4" data-reveal>
+                    <div class="v2-card__icono e3d-pop"><i class="bi bi-clipboard-check"></i></div>
+                    <h3>Gestión interna</h3>
+                    <p>Actividad diaria con evidencia, compromisos con el vecino y agenda colectiva del equipo.</p>
+                </article>
+
+                <article class="v2-card v2-borde e3d-tilt v2-b-4" data-reveal style="--d:.08s">
+                    <div class="v2-card__icono e3d-pop"><i class="bi bi-chat-dots"></i></div>
+                    <h3>Todos los canales</h3>
+                    <p>El vecino llega por donde le acomoda; el ticket es uno solo.</p>
+                    <div class="v2-canales"><span><i class="bi bi-shop"></i> Ventanilla</span><span><i class="bi bi-whatsapp"></i> WhatsApp</span><span><i class="bi bi-envelope"></i> Correo</span></div>
+                </article>
+
+                <article class="v2-card v2-card--foto v2-borde e3d-tilt v2-b-4" data-tilt-max="5" data-reveal style="--d:.16s">
+                    <img src="{% static 'img/laserena/faro-monumental.jpg' %}" alt="Faro Monumental de La Serena" loading="lazy" width="1600" height="1178">
+                    <div class="v2-card__pie">
+                        <div class="v2-mono small" style="color:#ffd0d3;">AV. DEL MAR · LA SERENA</div>
+                        <strong style="font-family:var(--font-display);font-size:1.2rem;">Faro Monumental</strong>
+                    </div>
+                </article>
             </div>
         </div>
     </section>
 
-    <section class="e3d-seccion pt-0" id="modulos">
+    <section class="v2-seccion pt-0" id="territorio">
         <div class="container">
-            <p class="e3d-seccion__kicker mb-2">Módulos</p>
-            <h2 class="text-primary-custom mb-4">Tres áreas de trabajo</h2>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="card e3d-modulo e3d-tilt">
-                        <div class="e3d-modulo__icono e3d-pop"><i class="bi bi-people"></i></div>
-                        <h3 class="h5 text-primary-custom">Atención ciudadana</h3>
-                        <p class="text-muted mb-0">Ingreso de tickets por canal (ventanilla, WhatsApp, correo), tipificación, listado con buscador, tablero Kanban y encuesta de satisfacción de 1 a 5.</p>
-                    </div>
+            <div class="v2-banda e3d-escena" data-reveal>
+                <div class="e3d-parallax" aria-hidden="true">
+                    <div class="e3d-capa e3d-capa--foto-plaza" data-e3d-depth="0.45"></div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card e3d-modulo e3d-tilt">
-                        <div class="e3d-modulo__icono e3d-pop"><i class="bi bi-clipboard-check"></i></div>
-                        <h3 class="h5 text-primary-custom">Gestión interna</h3>
-                        <p class="text-muted mb-0">Actividad diaria con evidencia, compromisos con el vecino y agenda colectiva de terreno y reuniones del equipo.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card e3d-modulo e3d-tilt">
-                        <div class="e3d-modulo__icono e3d-pop"><i class="bi bi-stoplights"></i></div>
-                        <h3 class="h5 text-primary-custom">Desempeño y semáforo</h3>
-                        <p class="text-muted mb-0">Semáforo de plazos (día 1–3 verde, 4–5 ámbar, 6+ rojo), indicadores, metas por funcionario y resumen por delegación.</p>
+                <div class="v2-banda__velo" aria-hidden="true"></div>
+                <div class="v2-banda__texto">
+                    <span class="v2-eyebrow">// Territorio</span>
+                    <h2 class="v2-h2">Hecho para las {{ delegaciones|length }} delegaciones de La Serena.</h2>
+                    <div class="v2-deleg">
+                        {% for del in delegaciones %}<span><i class="bi bi-geo-alt-fill"></i>{{ del }}</span>{% endfor %}
                     </div>
                 </div>
             </div>
+            <p class="v2-mono small mt-2 v2-muted" style="font-size:.68rem;">Plaza de Armas de La Serena · Foto: Víctor Sáez Barros, CC BY-SA 3.0 (Wikimedia Commons)</p>
         </div>
     </section>
 
-    <section class="e3d-seccion e3d-banda e3d-escena">
-        <div class="e3d-parallax" aria-hidden="true">
-            <div class="e3d-capa e3d-capa--foto-faro" data-e3d-depth="0.45"></div>
-            <div class="e3d-capa e3d-capa--tinte"></div>
-        </div>
+    <section class="v2-seccion pt-0">
         <div class="container">
-            <div class="row g-4 align-items-center">
-                <div class="col-lg-5">
-                    <p class="login-kicker mt-0">Semáforo del ticket</p>
-                    <h2 class="mb-3" style="color:#fff8ee;">Plazos visibles para responder a tiempo</h2>
-                    <p class="mb-0" style="color:rgba(255,248,238,.88);">Cada ticket cambia de color según los días transcurridos, para que jefaturas y funcionarios prioricen los casos críticos.</p>
+            <div class="v2-cta" data-reveal>
+                <div class="v2-fondo" aria-hidden="true"><div class="v2-rejilla"></div><div class="v2-grano"></div></div>
+                <div style="position:relative;z-index:1;">
+                    <span class="v2-eyebrow">// Acceso municipal</span>
+                    <h2 class="v2-h2 mx-auto" style="max-width:16ch;">¿Eres parte del equipo de delegaciones?</h2>
+                    <p class="v2-sub mx-auto mb-4">Ingresa con tu cuenta municipal para gestionar tickets, agenda e indicadores.</p>
+                    <a class="v2-btn v2-btn--rojo v2-btn--lg" href="{% url 'login' %}" data-magnetic="0.45"><i class="bi bi-box-arrow-in-right"></i> Ingresar</a>
                 </div>
-                <div class="col-lg-7">
-                    <div class="row g-3">
-                        <div class="col-sm-4"><div class="card e3d-kpi-publico e3d-tilt"><div class="e3d-stat" style="color:#1e8449;">1–3</div><div class="semaforo semaforo--verde mt-2 justify-content-center"><span class="semaforo__luz"></span> Verde · en plazo</div></div></div>
-                        <div class="col-sm-4"><div class="card e3d-kpi-publico e3d-tilt"><div class="e3d-stat" style="color:#b86e00;">4–5</div><div class="semaforo semaforo--ambar mt-2 justify-content-center"><span class="semaforo__luz"></span> Ámbar · alerta</div></div></div>
-                        <div class="col-sm-4"><div class="card e3d-kpi-publico e3d-tilt"><div class="e3d-stat">6+</div><div class="semaforo semaforo--rojo mt-2 justify-content-center"><span class="semaforo__luz"></span> Rojo · crítico</div></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="e3d-seccion" id="delegaciones">
-        <div class="container">
-            <p class="e3d-seccion__kicker mb-2">Territorio</p>
-            <h2 class="text-primary-custom mb-4">Las {{ delegaciones|length }} delegaciones municipales</h2>
-            <div class="row g-3">
-                {% for del in delegaciones %}
-                <div class="col-sm-6 col-lg-4">
-                    <div class="card e3d-deleg e3d-tilt" data-tilt-max="5"><i class="bi bi-geo-alt-fill"></i> {{ del }}</div>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="text-center mt-5">
-                <a class="btn btn-primary-custom btn-lg" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i> Ingresar con mi cuenta municipal</a>
             </div>
         </div>
     </section>
 </main>
 
-<footer class="e3d-footer">
+<footer class="v2-footer">
     <div class="container">
-        <div class="row g-4">
+        <div class="row g-4 align-items-start">
             <div class="col-lg-5">
-                <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="168" height="46">
+                <img src="{% static 'img/laserena/logo-horizontal-blanco.svg' %}" alt="Ilustre Municipalidad de La Serena" width="160" height="44">
                 <p class="mt-3 mb-0">Ilustre Municipalidad de La Serena · Arturo Prat 451, La Serena, Región de Coquimbo.</p>
             </div>
             <div class="col-lg-4">
@@ -199,7 +192,7 @@
                 <p class="mb-0"><a href="https://www.laserena.cl" target="_blank" rel="noopener">www.laserena.cl</a></p>
             </div>
         </div>
-        <hr style="border-color:rgba(255,248,238,.18);">
+        <hr style="border-color:var(--v2-line);opacity:1;">
         <p class="e3d-credito mb-0">
             {% include 'publico/_creditos.html' %}
             · Proyecto académico sin fines comerciales.
