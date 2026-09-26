@@ -1,0 +1,270 @@
+[
+  {
+    "model": "cuentas.rol",
+    "pk": 1,
+    "fields": {
+      "codigo": "administrador",
+      "nombre": "Administrador",
+      "descripcion": "Acceso total al sistema"
+    }
+  },
+  {
+    "model": "cuentas.rol",
+    "pk": 2,
+    "fields": {
+      "codigo": "jefatura",
+      "nombre": "Jefatura",
+      "descripcion": "Jefatura / Control de gestión: supervisa delegación y metas"
+    }
+  },
+  {
+    "model": "cuentas.rol",
+    "pk": 3,
+    "fields": {
+      "codigo": "funcionario",
+      "nombre": "Funcionario",
+      "descripcion": "Funcionario territorial: gestiona atenciones y actividades"
+    }
+  },
+  {
+    "model": "cuentas.rol",
+    "pk": 4,
+    "fields": {
+      "codigo": "ventanilla",
+      "nombre": "Ventanilla",
+      "descripcion": "Ventanilla ciudadana: ingreso de requerimientos (operador)"
+    }
+  },
+  {
+    "model": "cuentas.delegacion",
+    "pk": 1,
+    "fields": {
+      "nombre": "Delegación Centro",
+      "direccion": "",
+      "comuna": "La Serena"
+    }
+  },
+  {
+    "model": "cuentas.delegacion",
+    "pk": 2,
+    "fields": {
+      "nombre": "Delegación Rural",
+      "direccion": "",
+      "comuna": "La Serena"
+    }
+  },
+  {
+    "model": "cuentas.delegacion",
+    "pk": 3,
+    "fields": {
+      "nombre": "Delegación La Antena",
+      "direccion": "",
+      "comuna": "La Serena"
+    }
+  },
+  {
+    "model": "cuentas.delegacion",
+    "pk": 4,
+    "fields": {
+      "nombre": "Delegación La Pampa",
+      "direccion": "",
+      "comuna": "La Serena"
+    }
+  },
+  {
+    "model": "cuentas.delegacion",
+    "pk": 5,
+    "fields": {
+      "nombre": "Delegación Av. del Mar",
+      "direccion": "",
+      "comuna": "La Serena"
+    }
+  },
+  {
+    "model": "cuentas.delegacion",
+    "pk": 6,
+    "fields": {
+      "nombre": "Delegación Las Compañías",
+      "direccion": "",
+      "comuna": "La Serena"
+    }
+  },
+  {
+    "model": "requerimientos.tipogestion",
+    "pk": 1,
+    "fields": {
+      "nombre": "Solicitud",
+      "descripcion": "Solicitud de ayuda o servicio"
+    }
+  },
+  {
+    "model": "requerimientos.tipogestion",
+    "pk": 2,
+    "fields": {
+      "nombre": "Reclamo",
+      "descripcion": "Reclamo por un servicio municipal"
+    }
+  },
+  {
+    "model": "requerimientos.tipogestion",
+    "pk": 3,
+    "fields": {
+      "nombre": "Consulta",
+      "descripcion": "Consulta de información"
+    }
+  },
+  {
+    "model": "requerimientos.tipogestion",
+    "pk": 4,
+    "fields": {
+      "nombre": "Orientación",
+      "descripcion": "Orientación sobre trámites y beneficios"
+    }
+  },
+  {
+    "model": "requerimientos.tipogestion",
+    "pk": 5,
+    "fields": {
+      "nombre": "Sugerencia",
+      "descripcion": "Sugerencia de mejora"
+    }
+  },
+  {
+    "model": "requerimientos.tipogestion",
+    "pk": 6,
+    "fields": {
+      "nombre": "Felicitación",
+      "descripcion": "Felicitación a equipos municipales"
+    }
+  },
+  {
+    "model": "requerimientos.tipoatencion",
+    "pk": 1,
+    "fields": {
+      "nombre": "Social",
+      "descripcion": "Atención de carácter social"
+    }
+  },
+  {
+    "model": "requerimientos.tipoatencion",
+    "pk": 2,
+    "fields": {
+      "nombre": "Salud",
+      "descripcion": "Atención en salud"
+    }
+  },
+  {
+    "model": "requerimientos.tipoatencion",
+    "pk": 3,
+    "fields": {
+      "nombre": "Educación",
+      "descripcion": "Atención en educación"
+    }
+  },
+  {
+    "model": "requerimientos.tipoatencion",
+    "pk": 4,
+    "fields": {
+      "nombre": "Vivienda",
+      "descripcion": "Atención en vivienda"
+    }
+  },
+  {
+    "model": "requerimientos.subatencion",
+    "pk": 1,
+    "fields": {
+      "nombre": "Ayuda social",
+      "tipo_atencion": 1,
+      "descripcion": ""
+    }
+  },
+  {
+    "model": "requerimientos.subatencion",
+    "pk": 2,
+    "fields": {
+      "nombre": "Consulta médica",
+      "tipo_atencion": 2,
+      "descripcion": ""
+    }
+  },
+  {
+    "model": "requerimientos.subatencion",
+    "pk": 3,
+    "fields": {
+      "nombre": "Beca municipal",
+      "tipo_atencion": 3,
+      "descripcion": ""
+    }
+  },
+  {
+    "model": "requerimientos.subatencion",
+    "pk": 4,
+    "fields": {
+      "nombre": "Subsidio habitacional",
+      "tipo_atencion": 4,
+      "descripcion": ""
+    }
+  },
+  {
+    "model": "requerimientos.canalingreso",
+    "pk": 1,
+    "fields": {
+      "nombre": "ventanilla",
+      "activo": true
+    }
+  },
+  {
+    "model": "requerimientos.canalingreso",
+    "pk": 2,
+    "fields": {
+      "nombre": "WhatsApp",
+      "activo": true
+    }
+  },
+  {
+    "model": "requerimientos.canalingreso",
+    "pk": 3,
+    "fields": {
+      "nombre": "correo",
+      "activo": true
+    }
+  },
+  {
+    "model": "control_gestion.meta",
+    "pk": 1,
+    "fields": {
+      "nombre": "Cobertura",
+      "descripcion": "Aumentar cobertura de atenciones"
+    }
+  },
+  {
+    "model": "control_gestion.meta",
+    "pk": 2,
+    "fields": {
+      "nombre": "Satisfacción",
+      "descripcion": "Mejor satisfacción ciudadana"
+    }
+  },
+  {
+    "model": "control_gestion.meta",
+    "pk": 3,
+    "fields": {
+      "nombre": "Tiempos",
+      "descripcion": "Reducir tiempos de respuesta"
+    }
+  },
+  {
+    "model": "cuentas.parametrosistema",
+    "pk": 1,
+    "fields": {
+      "nombre_sistema": "SIGED-SGR Delegaciones La Serena",
+      "comuna": "La Serena",
+      "region": "Región de Coquimbo",
+      "sla_verde_max_dias": 3,
+      "sla_amarillo_max_dias": 5,
+      "meta_tubo_porcentaje": 80,
+      "encuesta_habilitada": true,
+      "max_atenciones_mismo_usuario": 3
+    }
+  }
+]

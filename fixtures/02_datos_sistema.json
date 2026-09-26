@@ -1,0 +1,2353 @@
+[
+{
+  "model": "cuentas.rol",
+  "pk": 1,
+  "fields": {
+    "codigo": "administrador",
+    "nombre": "Administrador",
+    "descripcion": "Acceso total al sistema"
+  }
+},
+{
+  "model": "cuentas.rol",
+  "pk": 2,
+  "fields": {
+    "codigo": "jefatura",
+    "nombre": "Jefatura",
+    "descripcion": "Jefatura / Control de gestión: supervisa delegación y metas"
+  }
+},
+{
+  "model": "cuentas.rol",
+  "pk": 3,
+  "fields": {
+    "codigo": "funcionario",
+    "nombre": "Funcionario",
+    "descripcion": "Funcionario territorial: gestiona atenciones y actividades"
+  }
+},
+{
+  "model": "cuentas.rol",
+  "pk": 4,
+  "fields": {
+    "codigo": "ventanilla",
+    "nombre": "Ventanilla",
+    "descripcion": "Ventanilla ciudadana: ingreso de requerimientos (operador)"
+  }
+},
+{
+  "model": "cuentas.delegacion",
+  "pk": 1,
+  "fields": {
+    "nombre": "Delegación Centro",
+    "direccion": "",
+    "comuna": "La Serena"
+  }
+},
+{
+  "model": "cuentas.delegacion",
+  "pk": 2,
+  "fields": {
+    "nombre": "Delegación Rural",
+    "direccion": "",
+    "comuna": "La Serena"
+  }
+},
+{
+  "model": "cuentas.delegacion",
+  "pk": 3,
+  "fields": {
+    "nombre": "Delegación La Antena",
+    "direccion": "",
+    "comuna": "La Serena"
+  }
+},
+{
+  "model": "cuentas.delegacion",
+  "pk": 4,
+  "fields": {
+    "nombre": "Delegación La Pampa",
+    "direccion": "",
+    "comuna": "La Serena"
+  }
+},
+{
+  "model": "cuentas.delegacion",
+  "pk": 5,
+  "fields": {
+    "nombre": "Delegación Av. del Mar",
+    "direccion": "",
+    "comuna": "La Serena"
+  }
+},
+{
+  "model": "cuentas.delegacion",
+  "pk": 6,
+  "fields": {
+    "nombre": "Delegación Las Compañías",
+    "direccion": "",
+    "comuna": "La Serena"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 1,
+  "fields": {
+    "codigo": "CARGO-01",
+    "nombre": "Administrador del sistema",
+    "descripcion": "Configura usuarios, cargos y parámetros del mockup SIGED-SGR.",
+    "modulo_principal": "Administración"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 2,
+  "fields": {
+    "codigo": "CARGO-02",
+    "nombre": "Delegada Territorial",
+    "descripcion": "Jefatura de delegación: semáforo SGR, tubo de trabajo y resumen de equipo.",
+    "modulo_principal": "Matriz SGR"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 3,
+  "fields": {
+    "codigo": "CARGO-03",
+    "nombre": "Gestor Social",
+    "descripcion": "Atenciones sociales, actividades diarias y evidencias en terreno.",
+    "modulo_principal": "Actividades"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 4,
+  "fields": {
+    "codigo": "CARGO-04",
+    "nombre": "Apoyo Administrativo",
+    "descripcion": "Captura multicanal en ventanilla, WhatsApp y correo.",
+    "modulo_principal": "Requerimientos"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 5,
+  "fields": {
+    "codigo": "CARGO-05",
+    "nombre": "Gestor de Seguridad",
+    "descripcion": "Patrullajes, alertas barriales y coordinación con Carabineros.",
+    "modulo_principal": "Requerimientos"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 6,
+  "fields": {
+    "codigo": "CARGO-06",
+    "nombre": "Supervisor DISERCO",
+    "descripcion": "Aseo, alumbrado, áreas verdes y cierre de compromisos operativos.",
+    "modulo_principal": "Compromisos"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 7,
+  "fields": {
+    "codigo": "CARGO-07",
+    "nombre": "Planificación y Control",
+    "descripcion": "Tablero Kanban, KPIs y cuellos de botella territoriales.",
+    "modulo_principal": "Control de gestión"
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 8,
+  "fields": {
+    "codigo": null,
+    "nombre": "Territorial Organizaciones Comunitarias",
+    "descripcion": "",
+    "modulo_principal": ""
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 9,
+  "fields": {
+    "codigo": null,
+    "nombre": "Coordinadora DISERCO",
+    "descripcion": "",
+    "modulo_principal": ""
+  }
+},
+{
+  "model": "cuentas.cargo",
+  "pk": 10,
+  "fields": {
+    "codigo": null,
+    "nombre": "Proyectos y Compras",
+    "descripcion": "",
+    "modulo_principal": ""
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 1,
+  "fields": {
+    "codigo": "FUN-001",
+    "nombre": "Elizabeth Rojas Campos",
+    "cargo": 2,
+    "delegacion": 2,
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 2,
+  "fields": {
+    "codigo": "FUN-002",
+    "nombre": "Camila Oyarzún Santander",
+    "cargo": 3,
+    "delegacion": 2,
+    "fecha_ultimo_ingreso": "2026-09-11",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 3,
+  "fields": {
+    "codigo": "FUN-003",
+    "nombre": "Pedro Palma Godoy",
+    "cargo": 8,
+    "delegacion": 2,
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 4,
+  "fields": {
+    "codigo": "FUN-004",
+    "nombre": "Marisol Tapia Henríquez",
+    "cargo": 4,
+    "delegacion": 2,
+    "fecha_ultimo_ingreso": "2026-08-29",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 5,
+  "fields": {
+    "codigo": "FUN-005",
+    "nombre": "Rodrigo Santander Díaz",
+    "cargo": 6,
+    "delegacion": 2,
+    "fecha_ultimo_ingreso": "2026-08-25",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 6,
+  "fields": {
+    "codigo": "FUN-006",
+    "nombre": "Valeria Moraga Henríquez",
+    "cargo": 9,
+    "delegacion": 5,
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 7,
+  "fields": {
+    "codigo": "FUN-007",
+    "nombre": "Esteban Barraza Villalobos",
+    "cargo": 10,
+    "delegacion": 1,
+    "fecha_ultimo_ingreso": "2026-08-28",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 8,
+  "fields": {
+    "codigo": "FUN-008",
+    "nombre": "Marcela Cárdenas López",
+    "cargo": 7,
+    "delegacion": 3,
+    "fecha_ultimo_ingreso": "2026-09-01",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 9,
+  "fields": {
+    "codigo": "FUN-009",
+    "nombre": "Gonzalo Pizarro Tapia",
+    "cargo": 5,
+    "delegacion": 6,
+    "fecha_ultimo_ingreso": "2026-08-31",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.funcionario",
+  "pk": 10,
+  "fields": {
+    "codigo": "FUN-010",
+    "nombre": "Juan Carlos Pérez Muñoz",
+    "cargo": 6,
+    "delegacion": 4,
+    "fecha_ultimo_ingreso": "2026-08-20",
+    "estado": "activo"
+  }
+},
+{
+  "model": "cuentas.usuario",
+  "pk": 1,
+  "fields": {
+    "codigo": "USR-001",
+    "user": null,
+    "username": "admin",
+    "nombre": "Administrador SIGED",
+    "correo": "admin.siged@laserena.cl",
+    "rol": 1,
+    "cargo": 1,
+    "delegacion": 1,
+    "funcionario": null,
+    "estado": "activo",
+    "creado": "2026-09-26T01:18:47.348Z"
+  }
+},
+{
+  "model": "cuentas.usuario",
+  "pk": 2,
+  "fields": {
+    "codigo": "USR-002",
+    "user": null,
+    "username": "jefatura",
+    "nombre": "Elizabeth Rojas Campos",
+    "correo": "elizabeth.rojas@laserena.cl",
+    "rol": 2,
+    "cargo": 2,
+    "delegacion": 2,
+    "funcionario": 1,
+    "estado": "activo",
+    "creado": "2026-09-26T01:18:47.352Z"
+  }
+},
+{
+  "model": "cuentas.usuario",
+  "pk": 3,
+  "fields": {
+    "codigo": "USR-003",
+    "user": null,
+    "username": "funcionario",
+    "nombre": "Camila Oyarzún Santander",
+    "correo": "camila.oyarzun@laserena.cl",
+    "rol": 3,
+    "cargo": 3,
+    "delegacion": 2,
+    "funcionario": 2,
+    "estado": "activo",
+    "creado": "2026-09-26T01:18:47.356Z"
+  }
+},
+{
+  "model": "cuentas.usuario",
+  "pk": 4,
+  "fields": {
+    "codigo": "USR-004",
+    "user": null,
+    "username": "ventanilla",
+    "nombre": "Marisol Tapia Henríquez",
+    "correo": "marisol.tapia@laserena.cl",
+    "rol": 4,
+    "cargo": 4,
+    "delegacion": 2,
+    "funcionario": 4,
+    "estado": "activo",
+    "creado": "2026-09-26T01:18:47.360Z"
+  }
+},
+{
+  "model": "cuentas.parametrosistema",
+  "pk": 1,
+  "fields": {
+    "nombre_sistema": "SIGED-SGR Delegaciones La Serena",
+    "comuna": "La Serena",
+    "region": "Región de Coquimbo",
+    "sla_verde_max_dias": 3,
+    "sla_amarillo_max_dias": 5,
+    "meta_tubo_porcentaje": 80,
+    "encuesta_habilitada": true,
+    "max_atenciones_mismo_usuario": 3
+  }
+},
+{
+  "model": "requerimientos.tipogestion",
+  "pk": 1,
+  "fields": {
+    "nombre": "Solicitud",
+    "descripcion": "Solicitud de ayuda o servicio"
+  }
+},
+{
+  "model": "requerimientos.tipogestion",
+  "pk": 2,
+  "fields": {
+    "nombre": "Reclamo",
+    "descripcion": "Reclamo por un servicio municipal"
+  }
+},
+{
+  "model": "requerimientos.tipogestion",
+  "pk": 3,
+  "fields": {
+    "nombre": "Consulta",
+    "descripcion": "Consulta de información"
+  }
+},
+{
+  "model": "requerimientos.tipogestion",
+  "pk": 4,
+  "fields": {
+    "nombre": "Orientación",
+    "descripcion": "Orientación sobre trámites y beneficios"
+  }
+},
+{
+  "model": "requerimientos.tipogestion",
+  "pk": 5,
+  "fields": {
+    "nombre": "Sugerencia",
+    "descripcion": "Sugerencia de mejora"
+  }
+},
+{
+  "model": "requerimientos.tipogestion",
+  "pk": 6,
+  "fields": {
+    "nombre": "Felicitación",
+    "descripcion": "Felicitación a equipos municipales"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 1,
+  "fields": {
+    "nombre": "Prueba Automática Valenzuela",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 1234 5678",
+    "correo": "prueba.auto@serena.cl",
+    "territorio": "",
+    "delegacion": 1,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 2,
+  "fields": {
+    "nombre": "Pedro Soto Albornoz",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 8765 4321",
+    "correo": "pedro.soto@correo.cl",
+    "territorio": "",
+    "delegacion": 3,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 3,
+  "fields": {
+    "nombre": "Carmen Luz Aguilera",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 9123 4567",
+    "correo": "carmen.luz@gmail.com",
+    "territorio": "",
+    "delegacion": 6,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 4,
+  "fields": {
+    "nombre": "Roberto Vera Campillay",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 7654 3210",
+    "correo": "rvera.quebrada@hotmail.com",
+    "territorio": "",
+    "delegacion": 2,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 5,
+  "fields": {
+    "nombre": "María González Pérez",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 8456 1234",
+    "correo": "maria.gonzalez@live.cl",
+    "territorio": "",
+    "delegacion": 5,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 6,
+  "fields": {
+    "nombre": "Patricia Araya Munizaga",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 6543 2198",
+    "correo": "paraya.munizaga@gmail.com",
+    "territorio": "",
+    "delegacion": 4,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 7,
+  "fields": {
+    "nombre": "Carlos Valenzuela Rojas",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 5432 1098",
+    "correo": "carlos.valenzuela@entelchile.net",
+    "territorio": "",
+    "delegacion": 1,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 8,
+  "fields": {
+    "nombre": "Jorge Cortés Carvajal",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 4321 8765",
+    "correo": "jcortes.c@yahoo.es",
+    "territorio": "",
+    "delegacion": 1,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 9,
+  "fields": {
+    "nombre": "Hernán Alcayaga Tapia",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 3210 9876",
+    "correo": "hernan.alcayaga@rural.cl",
+    "territorio": "",
+    "delegacion": 2,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 10,
+  "fields": {
+    "nombre": "Elena Sepúlveda Vega",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 2109 8765",
+    "correo": "elena.sepulveda@gmail.com",
+    "territorio": "",
+    "delegacion": 4,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 11,
+  "fields": {
+    "nombre": "Lucía Morales Miranda",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 1098 7654",
+    "correo": "lucia.morales@salud.cl",
+    "territorio": "",
+    "delegacion": 6,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 12,
+  "fields": {
+    "nombre": "Andrés Campusano Silva",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 9988 7766",
+    "correo": "andres.campusano@uach.cl",
+    "territorio": "",
+    "delegacion": 5,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 13,
+  "fields": {
+    "nombre": "Camila Vergara Pinto",
+    "rut": null,
+    "direccion": "",
+    "telefono": "+56 9 8877 6655",
+    "correo": "camila.vergara@gmail.com",
+    "territorio": "",
+    "delegacion": 3,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 14,
+  "fields": {
+    "nombre": "JJVV El Faro",
+    "rut": null,
+    "direccion": "",
+    "telefono": "",
+    "correo": "",
+    "territorio": "",
+    "delegacion": 5,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 15,
+  "fields": {
+    "nombre": "JJVV Algarrobito",
+    "rut": null,
+    "direccion": "",
+    "telefono": "",
+    "correo": "",
+    "territorio": "",
+    "delegacion": 2,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 16,
+  "fields": {
+    "nombre": "JJVV Quebrada de Talca",
+    "rut": null,
+    "direccion": "",
+    "telefono": "",
+    "correo": "",
+    "territorio": "",
+    "delegacion": 2,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 17,
+  "fields": {
+    "nombre": "Mesa de partes Delegación Rural",
+    "rut": null,
+    "direccion": "",
+    "telefono": "",
+    "correo": "",
+    "territorio": "",
+    "delegacion": 2,
+    "tipo_gestion": null,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 18,
+  "fields": {
+    "nombre": "Ana González",
+    "rut": "12.345.678-9",
+    "direccion": "Av. Balmaceda 123",
+    "telefono": "+56 9 8765 4321",
+    "correo": "",
+    "territorio": "Centro",
+    "delegacion": 1,
+    "tipo_gestion": 1,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 19,
+  "fields": {
+    "nombre": "Pedro Rojas",
+    "rut": "9.876.543-2",
+    "direccion": "Calle O'Higgins 456",
+    "telefono": "+56 9 7654 3210",
+    "correo": "",
+    "territorio": "Norte",
+    "delegacion": 6,
+    "tipo_gestion": 2,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 20,
+  "fields": {
+    "nombre": "María Castillo",
+    "rut": "15.234.567-1",
+    "direccion": "Pasaje Los Pinos 89",
+    "telefono": "+56 9 6543 2109",
+    "correo": "",
+    "territorio": "Sur",
+    "delegacion": 4,
+    "tipo_gestion": 3,
+    "estado": "inactivo"
+  }
+},
+{
+  "model": "requerimientos.vecino",
+  "pk": 21,
+  "fields": {
+    "nombre": "Luis Herrera",
+    "rut": "17.456.789-0",
+    "direccion": "Av. El Faro 230",
+    "telefono": "+56 9 5432 1098",
+    "correo": "",
+    "territorio": "Oriente",
+    "delegacion": 3,
+    "tipo_gestion": 4,
+    "estado": "activo"
+  }
+},
+{
+  "model": "requerimientos.tipoatencion",
+  "pk": 1,
+  "fields": {
+    "nombre": "Social",
+    "descripcion": "Atención de carácter social"
+  }
+},
+{
+  "model": "requerimientos.tipoatencion",
+  "pk": 2,
+  "fields": {
+    "nombre": "Salud",
+    "descripcion": "Atención en salud"
+  }
+},
+{
+  "model": "requerimientos.tipoatencion",
+  "pk": 3,
+  "fields": {
+    "nombre": "Educación",
+    "descripcion": "Atención en educación"
+  }
+},
+{
+  "model": "requerimientos.tipoatencion",
+  "pk": 4,
+  "fields": {
+    "nombre": "Vivienda",
+    "descripcion": "Atención en vivienda"
+  }
+},
+{
+  "model": "requerimientos.subatencion",
+  "pk": 1,
+  "fields": {
+    "nombre": "Ayuda social",
+    "tipo_atencion": 1,
+    "descripcion": ""
+  }
+},
+{
+  "model": "requerimientos.subatencion",
+  "pk": 2,
+  "fields": {
+    "nombre": "Consulta médica",
+    "tipo_atencion": 2,
+    "descripcion": ""
+  }
+},
+{
+  "model": "requerimientos.subatencion",
+  "pk": 3,
+  "fields": {
+    "nombre": "Beca municipal",
+    "tipo_atencion": 3,
+    "descripcion": ""
+  }
+},
+{
+  "model": "requerimientos.subatencion",
+  "pk": 4,
+  "fields": {
+    "nombre": "Subsidio habitacional",
+    "tipo_atencion": 4,
+    "descripcion": ""
+  }
+},
+{
+  "model": "requerimientos.canalingreso",
+  "pk": 1,
+  "fields": {
+    "nombre": "ventanilla",
+    "activo": true
+  }
+},
+{
+  "model": "requerimientos.canalingreso",
+  "pk": 2,
+  "fields": {
+    "nombre": "WhatsApp",
+    "activo": true
+  }
+},
+{
+  "model": "requerimientos.canalingreso",
+  "pk": 3,
+  "fields": {
+    "nombre": "correo",
+    "activo": true
+  }
+},
+{
+  "model": "requerimientos.areasoporte",
+  "pk": 1,
+  "fields": {
+    "codigo": "AREA-001",
+    "nombre": "Seguridad Ciudadana",
+    "encargado": 9,
+    "encargado_nombre": "Gonzalo Pizarro Tapia",
+    "tiempo_promedio_dias": "2.4",
+    "total_casos_mes": 142,
+    "porcentaje_cumplimiento": 88,
+    "satisfaccion_promedio": "4.6",
+    "icono": "bi-shield-shaded",
+    "descripcion": "Patrullajes preventivos, monitoreo de cámaras de televigilancia comunitaria, coordinación con Carabineros y recepción de alertas barriales en los 6 sectores territoriales."
+  }
+},
+{
+  "model": "requerimientos.areasoporte",
+  "pk": 2,
+  "fields": {
+    "codigo": "AREA-002",
+    "nombre": "Servicio a la Comunidad",
+    "encargado": 6,
+    "encargado_nombre": "Valeria Moraga Henríquez",
+    "tiempo_promedio_dias": "3.8",
+    "total_casos_mes": 215,
+    "porcentaje_cumplimiento": 82,
+    "satisfaccion_promedio": "4.2",
+    "icono": "bi-trash3-fill",
+    "descripcion": "Aseo comunal, recolección de microbasurales, mantención y riego de áreas verdes, plazas públicas, podas de emergencia y vialidad en distritos urbanos y rurales."
+  }
+},
+{
+  "model": "requerimientos.areasoporte",
+  "pk": 3,
+  "fields": {
+    "codigo": "AREA-003",
+    "nombre": "Gestión Social y Comunitaria",
+    "encargado": 2,
+    "encargado_nombre": "Camila Oyarzún Santander",
+    "tiempo_promedio_dias": "4.5",
+    "total_casos_mes": 180,
+    "porcentaje_cumplimiento": 75,
+    "satisfaccion_promedio": "4.1",
+    "icono": "bi-people-fill",
+    "descripcion": "Becas universitarias, subsidios, ayudas sociales directas por emergencia, asistencia a adultos mayores y apoyo continuo a Juntas de Vecinos."
+  }
+},
+{
+  "model": "requerimientos.areasoporte",
+  "pk": 4,
+  "fields": {
+    "codigo": "AREA-004",
+    "nombre": "Instituciones Municipales y Participación",
+    "encargado": 7,
+    "encargado_nombre": "Esteban Barraza Villalobos",
+    "tiempo_promedio_dias": "6.2",
+    "total_casos_mes": 165,
+    "porcentaje_cumplimiento": 58,
+    "satisfaccion_promedio": "3.4",
+    "icono": "bi-building-gear",
+    "descripcion": "Coordinación de eventos y ferias barriales, infraestructura local, uso de espacios comunitarios y canalización de proyectos vecinales con financiamiento municipal."
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 1,
+  "fields": {
+    "codigo": "TK-1017",
+    "vecino": 1,
+    "delegacion": 1,
+    "canal_ingreso": 2,
+    "tipo_gestion": 3,
+    "area": 1,
+    "descripcion": "Ticket de validación automática del sistema de persistencia JSON.",
+    "fecha_ingreso": "2026-09-11",
+    "funcionario": null,
+    "asignado_a": "Patrulla Sector 3 (Seguridad)",
+    "estado": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 2,
+  "fields": {
+    "codigo": "TK-1016",
+    "vecino": 1,
+    "delegacion": 1,
+    "canal_ingreso": 2,
+    "tipo_gestion": 3,
+    "area": 1,
+    "descripcion": "Ticket de validación automática del sistema de persistencia JSON.",
+    "fecha_ingreso": "2026-09-11",
+    "funcionario": null,
+    "asignado_a": "Patrulla Sector 3 (Seguridad)",
+    "estado": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 3,
+  "fields": {
+    "codigo": "TK-1015",
+    "vecino": 8,
+    "delegacion": 1,
+    "canal_ingreso": 3,
+    "tipo_gestion": 2,
+    "area": 2,
+    "descripcion": "Bacheo de calzada y reposición de adoquines patrimoniales sueltos en Calle Cordovez con O'Higgins.",
+    "fecha_ingreso": "2026-08-23",
+    "funcionario": 7,
+    "asignado_a": "Esteban Barraza (Obras Viales)",
+    "estado": "En Proceso",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 4,
+  "fields": {
+    "codigo": "TK-1014",
+    "vecino": 1,
+    "delegacion": 1,
+    "canal_ingreso": 2,
+    "tipo_gestion": 3,
+    "area": 1,
+    "descripcion": "Ticket de validación automática del sistema de persistencia JSON.",
+    "fecha_ingreso": "2026-09-01",
+    "funcionario": null,
+    "asignado_a": "Patrulla Sector 3 (Seguridad)",
+    "estado": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 5,
+  "fields": {
+    "codigo": "TK-1013",
+    "vecino": 1,
+    "delegacion": 1,
+    "canal_ingreso": 2,
+    "tipo_gestion": 3,
+    "area": 1,
+    "descripcion": "Ticket de validación automática del sistema de persistencia JSON.",
+    "fecha_ingreso": "2026-08-27",
+    "funcionario": null,
+    "asignado_a": "Patrulla Sector 3 (Seguridad)",
+    "estado": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 6,
+  "fields": {
+    "codigo": "TK-1042",
+    "vecino": 2,
+    "delegacion": 3,
+    "canal_ingreso": 2,
+    "tipo_gestion": 2,
+    "area": 1,
+    "descripcion": "Solicitud de patrullaje preventivo y coordinación comunitaria por carreras clandestinas nocturnas en Av. 18 de Septiembre.",
+    "fecha_ingreso": "2026-08-25",
+    "funcionario": null,
+    "asignado_a": "Patrulla Sector 3 (Seguridad)",
+    "estado": "En Proceso",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 7,
+  "fields": {
+    "codigo": "TK-1038",
+    "vecino": 3,
+    "delegacion": 6,
+    "canal_ingreso": 1,
+    "tipo_gestion": 1,
+    "area": 2,
+    "descripcion": "Reparación urgente de luminaria pública y retiro de escombros en pasaje Los Naranjos frente a multicancha.",
+    "fecha_ingreso": "2026-08-22",
+    "funcionario": null,
+    "asignado_a": "Cuadrilla Verde (Aseo y Alumbrado)",
+    "estado": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 8,
+  "fields": {
+    "codigo": "TK-0995",
+    "vecino": 4,
+    "delegacion": 2,
+    "canal_ingreso": 1,
+    "tipo_gestion": 1,
+    "area": 3,
+    "descripcion": "Ayuda social de emergencia y canasta de alimentos para familia vulnerable en Quebrada de Talca por afectación climática.",
+    "fecha_ingreso": "2026-08-16",
+    "funcionario": null,
+    "asignado_a": "DIDECO Soporte Social",
+    "estado": "Cuello Botella Central",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 9,
+  "fields": {
+    "codigo": "TK-1050",
+    "vecino": 5,
+    "delegacion": 5,
+    "canal_ingreso": 2,
+    "tipo_gestion": 2,
+    "area": 2,
+    "descripcion": "Vecina solicita retiro urgente de escombros y basura acumulada en Av. Cuatro Esquinas con Av. del Mar.",
+    "fecha_ingreso": "2026-08-26",
+    "funcionario": 10,
+    "asignado_a": "Juan Carlos Pérez (Cuadrilla Aseo)",
+    "estado": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 10,
+  "fields": {
+    "codigo": "TK-1048",
+    "vecino": 6,
+    "delegacion": 4,
+    "canal_ingreso": 3,
+    "tipo_gestion": 1,
+    "area": 2,
+    "descripcion": "Poda de árbol de gran envergadura con ramas enredadas en cables de baja tensión en calle Las Higueras.",
+    "fecha_ingreso": "2026-08-26",
+    "funcionario": 6,
+    "asignado_a": "Valeria Moraga (Áreas Verdes)",
+    "estado": "Pendiente",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 11,
+  "fields": {
+    "codigo": "TK-1020",
+    "vecino": 7,
+    "delegacion": 1,
+    "canal_ingreso": 1,
+    "tipo_gestion": 3,
+    "area": 4,
+    "descripcion": "Emisión de Certificado Social de Residencia y ficha para postulación a fondos vecinales Fondeve 2026.",
+    "fecha_ingreso": "2026-08-18",
+    "funcionario": 8,
+    "asignado_a": "Marcela Cárdenas (Atención Vecinal)",
+    "estado": "Resuelto",
+    "evaluacion_satisfaccion": 5,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 12,
+  "fields": {
+    "codigo": "TK-0980",
+    "vecino": 9,
+    "delegacion": 2,
+    "canal_ingreso": 1,
+    "tipo_gestion": 2,
+    "area": 2,
+    "descripcion": "Falla de 4 postes de alumbrado solar en sector Algarrobito, camino vecinal sin visibilidad.",
+    "fecha_ingreso": "2026-08-19",
+    "funcionario": 5,
+    "asignado_a": "Rodrigo Santander (Operaciones)",
+    "estado": "Cuello Botella Central",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 13,
+  "fields": {
+    "codigo": "TK-1033",
+    "vecino": 10,
+    "delegacion": 4,
+    "canal_ingreso": 2,
+    "tipo_gestion": 6,
+    "area": 2,
+    "descripcion": "Felicitación a la cuadrilla municipal por rápido desmalezado y recuperación de plaza en Cuatro Esquinas.",
+    "fecha_ingreso": "2026-08-24",
+    "funcionario": 6,
+    "asignado_a": "Valeria Moraga (Servicios Comunitarios)",
+    "estado": "Resuelto",
+    "evaluacion_satisfaccion": 5,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 14,
+  "fields": {
+    "codigo": "TK-1025",
+    "vecino": 11,
+    "delegacion": 6,
+    "canal_ingreso": 2,
+    "tipo_gestion": 5,
+    "area": 1,
+    "descripcion": "Sugerencia de instalación de botón de pánico y cámara conectada a central municipal en paradero CESFAM.",
+    "fecha_ingreso": "2026-08-20",
+    "funcionario": 9,
+    "asignado_a": "Gonzalo Pizarro (Seguridad)",
+    "estado": "Cuello Botella Central",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 15,
+  "fields": {
+    "codigo": "TK-1011",
+    "vecino": 12,
+    "delegacion": 5,
+    "canal_ingreso": 3,
+    "tipo_gestion": 1,
+    "area": 2,
+    "descripcion": "Reparación de pasarela de madera de acceso a playa frente a faro por rotura de tablones.",
+    "fecha_ingreso": "2026-08-21",
+    "funcionario": 7,
+    "asignado_a": "Esteban Barraza (Obras Menores)",
+    "estado": "Cuello Botella Central",
+    "evaluacion_satisfaccion": null,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.requerimiento",
+  "pk": 16,
+  "fields": {
+    "codigo": "TK-1002",
+    "vecino": 13,
+    "delegacion": 3,
+    "canal_ingreso": 1,
+    "tipo_gestion": 1,
+    "area": 4,
+    "descripcion": "Coordinación de permisos y préstamo de amplificación para actividad vecinal comunitaria 'Día de la Niñez'.",
+    "fecha_ingreso": "2026-08-24",
+    "funcionario": 8,
+    "asignado_a": "Marcela Cárdenas (Participación Ciudadana)",
+    "estado": "Resuelto",
+    "evaluacion_satisfaccion": 4,
+    "comentario_satisfaccion": ""
+  }
+},
+{
+  "model": "requerimientos.atencion",
+  "pk": 1,
+  "fields": {
+    "vecino": 18,
+    "tipo_atencion": 1,
+    "sub_atencion": 1,
+    "delegacion": 1,
+    "usuario": 4,
+    "fecha": "2026-09-14T13:30:00Z",
+    "estado": "cerrada",
+    "observacion": "Entrega de ayuda social de emergencia."
+  }
+},
+{
+  "model": "requerimientos.atencion",
+  "pk": 2,
+  "fields": {
+    "vecino": 19,
+    "tipo_atencion": 4,
+    "sub_atencion": 4,
+    "delegacion": 6,
+    "usuario": 3,
+    "fecha": "2026-09-15T14:00:00Z",
+    "estado": "en_proceso",
+    "observacion": "Orientación para postular a subsidio habitacional."
+  }
+},
+{
+  "model": "requerimientos.atencion",
+  "pk": 3,
+  "fields": {
+    "vecino": 20,
+    "tipo_atencion": 2,
+    "sub_atencion": 2,
+    "delegacion": 4,
+    "usuario": 4,
+    "fecha": "2026-09-16T12:15:00Z",
+    "estado": "pendiente",
+    "observacion": "Derivación a CESFAM por consulta médica."
+  }
+},
+{
+  "model": "requerimientos.atencion",
+  "pk": 4,
+  "fields": {
+    "vecino": 21,
+    "tipo_atencion": 3,
+    "sub_atencion": 3,
+    "delegacion": 3,
+    "usuario": 3,
+    "fecha": "2026-09-17T19:45:00Z",
+    "estado": "pendiente",
+    "observacion": "Consulta por requisitos de beca municipal."
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 1,
+  "fields": {
+    "nombre": "Cobertura",
+    "descripcion": "Aumentar cobertura de atenciones"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 2,
+  "fields": {
+    "nombre": "Satisfacción",
+    "descripcion": "Mejor satisfacción ciudadana"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 3,
+  "fields": {
+    "nombre": "Tiempos",
+    "descripcion": "Reducir tiempos de respuesta"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 4,
+  "fields": {
+    "nombre": "Supervisión de compromisos vecinales",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 5,
+  "fields": {
+    "nombre": "Reuniones con organizaciones comunitarias",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 6,
+  "fields": {
+    "nombre": "Informes de gestión semanales",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 7,
+  "fields": {
+    "nombre": "Acompañamiento a funcionarios rezagados",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 8,
+  "fields": {
+    "nombre": "Atenciones sociales (hasta 3 por usuario)",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 9,
+  "fields": {
+    "nombre": "Fichas y ayudas de emergencia",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 10,
+  "fields": {
+    "nombre": "Seguimiento a adultos mayores",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 11,
+  "fields": {
+    "nombre": "Visitas a juntas de vecinos",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 12,
+  "fields": {
+    "nombre": "Apoyo a proyectos Fondeve",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 13,
+  "fields": {
+    "nombre": "Actas y registro de organizaciones",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 14,
+  "fields": {
+    "nombre": "Digitación de requerimientos",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 15,
+  "fields": {
+    "nombre": "Archivo y verificadores fotográficos",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 16,
+  "fields": {
+    "nombre": "Atención de mesa de partes",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 17,
+  "fields": {
+    "nombre": "Cuadrillas de aseo y alumbrado",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 18,
+  "fields": {
+    "nombre": "Inspección de áreas verdes",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 19,
+  "fields": {
+    "nombre": "Cierre de compromisos DISERCO",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 20,
+  "fields": {
+    "nombre": "Coordinación de cuadrillas comunales",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 21,
+  "fields": {
+    "nombre": "Mantención de plazas y borde costero",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 22,
+  "fields": {
+    "nombre": "Respuesta a reclamos de ornato",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 23,
+  "fields": {
+    "nombre": "Órdenes de compra territoriales",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 24,
+  "fields": {
+    "nombre": "Seguimiento de proyectos vecinales",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 25,
+  "fields": {
+    "nombre": "Informes de ejecución presupuestaria",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 26,
+  "fields": {
+    "nombre": "Actualización de la matriz SGR",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 27,
+  "fields": {
+    "nombre": "Reportes de semáforo diario",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 28,
+  "fields": {
+    "nombre": "Levantamiento de cuellos de botella",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 29,
+  "fields": {
+    "nombre": "Patrullajes preventivos",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 30,
+  "fields": {
+    "nombre": "Rondas con juntas de vecinos",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 31,
+  "fields": {
+    "nombre": "Alertas y coordinación con Carabineros",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 32,
+  "fields": {
+    "nombre": "Retiro de microbasurales",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 33,
+  "fields": {
+    "nombre": "Poda y riego de áreas verdes",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.meta",
+  "pk": 34,
+  "fields": {
+    "nombre": "Cierre de tickets de ornato",
+    "descripcion": "Ítem de la Matriz SGR"
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 1,
+  "fields": {
+    "funcionario": 1,
+    "meta": 4,
+    "ponderador": 30,
+    "meta_trimestre": 90,
+    "avance_actual": 68
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 2,
+  "fields": {
+    "funcionario": 1,
+    "meta": 5,
+    "ponderador": 25,
+    "meta_trimestre": 24,
+    "avance_actual": 18
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 3,
+  "fields": {
+    "funcionario": 1,
+    "meta": 6,
+    "ponderador": 25,
+    "meta_trimestre": 12,
+    "avance_actual": 9
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 4,
+  "fields": {
+    "funcionario": 1,
+    "meta": 7,
+    "ponderador": 20,
+    "meta_trimestre": 18,
+    "avance_actual": 12
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 5,
+  "fields": {
+    "funcionario": 2,
+    "meta": 8,
+    "ponderador": 40,
+    "meta_trimestre": 120,
+    "avance_actual": 75
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 6,
+  "fields": {
+    "funcionario": 2,
+    "meta": 9,
+    "ponderador": 30,
+    "meta_trimestre": 60,
+    "avance_actual": 38
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 7,
+  "fields": {
+    "funcionario": 2,
+    "meta": 10,
+    "ponderador": 30,
+    "meta_trimestre": 45,
+    "avance_actual": 22
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 8,
+  "fields": {
+    "funcionario": 3,
+    "meta": 11,
+    "ponderador": 35,
+    "meta_trimestre": 36,
+    "avance_actual": 31
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 9,
+  "fields": {
+    "funcionario": 3,
+    "meta": 12,
+    "ponderador": 35,
+    "meta_trimestre": 18,
+    "avance_actual": 15
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 10,
+  "fields": {
+    "funcionario": 3,
+    "meta": 13,
+    "ponderador": 30,
+    "meta_trimestre": 40,
+    "avance_actual": 28
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 11,
+  "fields": {
+    "funcionario": 4,
+    "meta": 14,
+    "ponderador": 40,
+    "meta_trimestre": 200,
+    "avance_actual": 148
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 12,
+  "fields": {
+    "funcionario": 4,
+    "meta": 15,
+    "ponderador": 30,
+    "meta_trimestre": 90,
+    "avance_actual": 61
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 13,
+  "fields": {
+    "funcionario": 4,
+    "meta": 16,
+    "ponderador": 30,
+    "meta_trimestre": 150,
+    "avance_actual": 96
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 14,
+  "fields": {
+    "funcionario": 5,
+    "meta": 17,
+    "ponderador": 40,
+    "meta_trimestre": 80,
+    "avance_actual": 41
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 15,
+  "fields": {
+    "funcionario": 5,
+    "meta": 18,
+    "ponderador": 30,
+    "meta_trimestre": 40,
+    "avance_actual": 18
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 16,
+  "fields": {
+    "funcionario": 5,
+    "meta": 19,
+    "ponderador": 30,
+    "meta_trimestre": 50,
+    "avance_actual": 21
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 17,
+  "fields": {
+    "funcionario": 6,
+    "meta": 20,
+    "ponderador": 35,
+    "meta_trimestre": 60,
+    "avance_actual": 48
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 18,
+  "fields": {
+    "funcionario": 6,
+    "meta": 21,
+    "ponderador": 35,
+    "meta_trimestre": 45,
+    "avance_actual": 34
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 19,
+  "fields": {
+    "funcionario": 6,
+    "meta": 22,
+    "ponderador": 30,
+    "meta_trimestre": 90,
+    "avance_actual": 71
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 20,
+  "fields": {
+    "funcionario": 7,
+    "meta": 23,
+    "ponderador": 40,
+    "meta_trimestre": 30,
+    "avance_actual": 19
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 21,
+  "fields": {
+    "funcionario": 7,
+    "meta": 24,
+    "ponderador": 35,
+    "meta_trimestre": 12,
+    "avance_actual": 8
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 22,
+  "fields": {
+    "funcionario": 7,
+    "meta": 25,
+    "ponderador": 25,
+    "meta_trimestre": 9,
+    "avance_actual": 6
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 23,
+  "fields": {
+    "funcionario": 8,
+    "meta": 26,
+    "ponderador": 40,
+    "meta_trimestre": 90,
+    "avance_actual": 70
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 24,
+  "fields": {
+    "funcionario": 8,
+    "meta": 27,
+    "ponderador": 30,
+    "meta_trimestre": 60,
+    "avance_actual": 46
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 25,
+  "fields": {
+    "funcionario": 8,
+    "meta": 28,
+    "ponderador": 30,
+    "meta_trimestre": 24,
+    "avance_actual": 19
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 26,
+  "fields": {
+    "funcionario": 9,
+    "meta": 29,
+    "ponderador": 40,
+    "meta_trimestre": 90,
+    "avance_actual": 58
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 27,
+  "fields": {
+    "funcionario": 9,
+    "meta": 30,
+    "ponderador": 30,
+    "meta_trimestre": 24,
+    "avance_actual": 16
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 28,
+  "fields": {
+    "funcionario": 9,
+    "meta": 31,
+    "ponderador": 30,
+    "meta_trimestre": 40,
+    "avance_actual": 27
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 29,
+  "fields": {
+    "funcionario": 10,
+    "meta": 32,
+    "ponderador": 40,
+    "meta_trimestre": 70,
+    "avance_actual": 32
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 30,
+  "fields": {
+    "funcionario": 10,
+    "meta": 33,
+    "ponderador": 35,
+    "meta_trimestre": 40,
+    "avance_actual": 17
+  }
+},
+{
+  "model": "control_gestion.itemfuncionario",
+  "pk": 31,
+  "fields": {
+    "funcionario": 10,
+    "meta": 34,
+    "ponderador": 25,
+    "meta_trimestre": 55,
+    "avance_actual": 21
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 1,
+  "fields": {
+    "codigo": "ACT-013",
+    "funcionario": 2,
+    "delegacion": 2,
+    "meta": 8,
+    "fecha_actividad": "2026-09-11",
+    "contacto": "Rosa Gallardo Vega",
+    "servicio": "Seguimiento de canasta de alimentos",
+    "codigo_verificador": "VER-20260911-FUN-002-013",
+    "imagen_verificadora": "foto_terreno.jpg",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 2,
+  "fields": {
+    "codigo": "ACT-001",
+    "funcionario": 2,
+    "delegacion": 2,
+    "meta": 8,
+    "fecha_actividad": "2026-08-28",
+    "contacto": "Rosa Gallardo Vega",
+    "servicio": "Canasta de alimentos de emergencia",
+    "codigo_verificador": "VER-20260828-FUN002-001",
+    "imagen_verificadora": "Fotografía de entrega en terreno",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 3,
+  "fields": {
+    "codigo": "ACT-002",
+    "funcionario": 2,
+    "delegacion": 2,
+    "meta": 8,
+    "fecha_actividad": "2026-08-29",
+    "contacto": "Rosa Gallardo Vega",
+    "servicio": "Gestión de ficha social y subsidio",
+    "codigo_verificador": "VER-20260829-FUN002-002",
+    "imagen_verificadora": "Captura de ficha firmada",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 4,
+  "fields": {
+    "codigo": "ACT-003",
+    "funcionario": 2,
+    "delegacion": 2,
+    "meta": 8,
+    "fecha_actividad": "2026-08-30",
+    "contacto": "Rosa Gallardo Vega",
+    "servicio": "Derivación a programa de adulto mayor",
+    "codigo_verificador": "VER-20260830-FUN002-003",
+    "imagen_verificadora": "Acta de derivación",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 5,
+  "fields": {
+    "codigo": "ACT-004",
+    "funcionario": 1,
+    "delegacion": 2,
+    "meta": 5,
+    "fecha_actividad": "2026-09-01",
+    "contacto": "Junta de Vecinos Algarrobito",
+    "servicio": "Reunión de seguimiento de compromisos",
+    "codigo_verificador": "VER-20260901-FUN001-001",
+    "imagen_verificadora": "Fotografía de reunión en sede vecinal",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 6,
+  "fields": {
+    "codigo": "ACT-005",
+    "funcionario": 3,
+    "delegacion": 2,
+    "meta": 11,
+    "fecha_actividad": "2026-09-01",
+    "contacto": "JJVV Quebrada de Talca",
+    "servicio": "Terreno con dirigente vecinal",
+    "codigo_verificador": "VER-20260901-FUN003-001",
+    "imagen_verificadora": "Imagen georreferenciada de visita",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 7,
+  "fields": {
+    "codigo": "ACT-006",
+    "funcionario": 4,
+    "delegacion": 2,
+    "meta": 14,
+    "fecha_actividad": "2026-08-29",
+    "contacto": "Hernán Alcayaga Tapia",
+    "servicio": "Ingreso de reclamo de alumbrado solar",
+    "codigo_verificador": "VER-20260829-FUN004-001",
+    "imagen_verificadora": "Comprobante de ticket TK-0980",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 8,
+  "fields": {
+    "codigo": "ACT-007",
+    "funcionario": 5,
+    "delegacion": 2,
+    "meta": 17,
+    "fecha_actividad": "2026-08-25",
+    "contacto": "Cuadrilla Rural Norte",
+    "servicio": "Inspección de postes en Algarrobito",
+    "codigo_verificador": "VER-20260825-FUN005-001",
+    "imagen_verificadora": "Fotografía de poste fallido",
+    "punto_validado": false
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 9,
+  "fields": {
+    "codigo": "ACT-008",
+    "funcionario": 6,
+    "delegacion": 5,
+    "meta": 22,
+    "fecha_actividad": "2026-09-01",
+    "contacto": "María González Pérez",
+    "servicio": "Retiro de escombros en Av. del Mar",
+    "codigo_verificador": "VER-20260901-FUN006-001",
+    "imagen_verificadora": "Foto antes y después del retiro",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 10,
+  "fields": {
+    "codigo": "ACT-009",
+    "funcionario": 7,
+    "delegacion": 1,
+    "meta": 23,
+    "fecha_actividad": "2026-08-28",
+    "contacto": "Dirección de Administración y Finanzas",
+    "servicio": "OC de materiales para bacheo patrimonial",
+    "codigo_verificador": "VER-20260828-FUN007-001",
+    "imagen_verificadora": "PDF de orden de compra",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 11,
+  "fields": {
+    "codigo": "ACT-010",
+    "funcionario": 8,
+    "delegacion": 3,
+    "meta": 27,
+    "fecha_actividad": "2026-09-01",
+    "contacto": "Coordinación Matriz SGR",
+    "servicio": "Informe de avance al día",
+    "codigo_verificador": "VER-20260901-FUN008-001",
+    "imagen_verificadora": "Captura del tablero de semáforo",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 12,
+  "fields": {
+    "codigo": "ACT-011",
+    "funcionario": 9,
+    "delegacion": 6,
+    "meta": 30,
+    "fecha_actividad": "2026-08-31",
+    "contacto": "JJVV Las Compañías Alto",
+    "servicio": "Ronda preventiva nocturna",
+    "codigo_verificador": "VER-20260831-FUN009-001",
+    "imagen_verificadora": "Registro fotográfico de ronda",
+    "punto_validado": true
+  }
+},
+{
+  "model": "control_gestion.actividad",
+  "pk": 13,
+  "fields": {
+    "codigo": "ACT-012",
+    "funcionario": 10,
+    "delegacion": 4,
+    "meta": 33,
+    "fecha_actividad": "2026-08-20",
+    "contacto": "Patricia Araya Munizaga",
+    "servicio": "Inspección de árbol en Las Higueras",
+    "codigo_verificador": "VER-20260820-FUN010-001",
+    "imagen_verificadora": "Fotografía de ramas en cables",
+    "punto_validado": false
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 1,
+  "fields": {
+    "codigo": "TUB-011",
+    "descripcion": "Poda de emergencia en plaza El Faro para el mockup",
+    "vecino": 14,
+    "funcionario": 6,
+    "delegacion": 5,
+    "fecha_ingreso": "2026-09-11",
+    "fecha_compromiso": "2026-09-20",
+    "estado": "INGRESADO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 2,
+  "fields": {
+    "codigo": "TUB-001",
+    "descripcion": "Retiro de escombros en Av. Cuatro Esquinas con Av. del Mar",
+    "vecino": 5,
+    "funcionario": 6,
+    "delegacion": 5,
+    "fecha_ingreso": "2026-08-26",
+    "fecha_compromiso": "2026-09-03",
+    "estado": "EN PROCESO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 3,
+  "fields": {
+    "codigo": "TUB-002",
+    "descripcion": "Ayuda social de emergencia en Quebrada de Talca",
+    "vecino": 4,
+    "funcionario": 2,
+    "delegacion": 2,
+    "fecha_ingreso": "2026-08-16",
+    "fecha_compromiso": "2026-08-20",
+    "estado": "PENDIENTE"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 4,
+  "fields": {
+    "codigo": "TUB-003",
+    "descripcion": "Reparación de 4 postes de alumbrado solar en Algarrobito",
+    "vecino": 9,
+    "funcionario": 5,
+    "delegacion": 2,
+    "fecha_ingreso": "2026-08-19",
+    "fecha_compromiso": "2026-08-25",
+    "estado": "PENDIENTE"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 5,
+  "fields": {
+    "codigo": "TUB-004",
+    "descripcion": "Reunión con junta de vecinos de Algarrobito",
+    "vecino": 15,
+    "funcionario": 1,
+    "delegacion": 2,
+    "fecha_ingreso": "2026-08-27",
+    "fecha_compromiso": "2026-09-01",
+    "estado": "REALIZADO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 6,
+  "fields": {
+    "codigo": "TUB-005",
+    "descripcion": "Poda de árbol de gran envergadura en calle Las Higueras",
+    "vecino": 6,
+    "funcionario": 10,
+    "delegacion": 4,
+    "fecha_ingreso": "2026-08-26",
+    "fecha_compromiso": "2026-09-04",
+    "estado": "INGRESADO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 7,
+  "fields": {
+    "codigo": "TUB-006",
+    "descripcion": "Ronda preventiva y cámara en paradero CESFAM",
+    "vecino": 11,
+    "funcionario": 9,
+    "delegacion": 6,
+    "fecha_ingreso": "2026-08-20",
+    "fecha_compromiso": "2026-09-06",
+    "estado": "EN PROCESO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 8,
+  "fields": {
+    "codigo": "TUB-007",
+    "descripcion": "Bacheo patrimonial en Calle Cordovez con O'Higgins",
+    "vecino": 8,
+    "funcionario": 7,
+    "delegacion": 1,
+    "fecha_ingreso": "2026-08-23",
+    "fecha_compromiso": "2026-09-08",
+    "estado": "EN PROCESO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 9,
+  "fields": {
+    "codigo": "TUB-008",
+    "descripcion": "Coordinación Día de la Niñez en La Antena",
+    "vecino": 12,
+    "funcionario": 8,
+    "delegacion": 3,
+    "fecha_ingreso": "2026-08-21",
+    "fecha_compromiso": "2026-08-24",
+    "estado": "REALIZADO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 10,
+  "fields": {
+    "codigo": "TUB-009",
+    "descripcion": "Visita a JJVV Quebrada de Talca y registro de acta",
+    "vecino": 16,
+    "funcionario": 3,
+    "delegacion": 2,
+    "fecha_ingreso": "2026-08-28",
+    "fecha_compromiso": "2026-09-01",
+    "estado": "REALIZADO"
+  }
+},
+{
+  "model": "control_gestion.compromiso",
+  "pk": 11,
+  "fields": {
+    "codigo": "TUB-010",
+    "descripcion": "Digitación masiva de mesa de partes de la semana",
+    "vecino": 17,
+    "funcionario": 4,
+    "delegacion": 2,
+    "fecha_ingreso": "2026-08-29",
+    "fecha_compromiso": "2026-09-02",
+    "estado": "INGRESADO"
+  }
+},
+{
+  "model": "control_gestion.eventoagenda",
+  "pk": 1,
+  "fields": {
+    "codigo": "AG-001",
+    "titulo": "Reunión semanal de jefatura Rural",
+    "tipo": "Reunión interna",
+    "fecha": "2026-09-11",
+    "hora": "09:00:00",
+    "delegacion": 2,
+    "responsable": 1,
+    "lugar": "Oficina Delegación Rural"
+  }
+},
+{
+  "model": "control_gestion.eventoagenda",
+  "pk": 2,
+  "fields": {
+    "codigo": "AG-002",
+    "titulo": "Terreno alumbrado sector Algarrobito",
+    "tipo": "Terreno",
+    "fecha": "2026-09-12",
+    "hora": "11:30:00",
+    "delegacion": 2,
+    "responsable": 5,
+    "lugar": "Algarrobito"
+  }
+},
+{
+  "model": "control_gestion.eventoagenda",
+  "pk": 3,
+  "fields": {
+    "codigo": "AG-003",
+    "titulo": "Mesa de seguridad Las Compañías",
+    "tipo": "Reunión vecinal",
+    "fecha": "2026-09-15",
+    "hora": "18:00:00",
+    "delegacion": 6,
+    "responsable": 9,
+    "lugar": "Sede JJVV Las Compañías"
+  }
+},
+{
+  "model": "control_gestion.eventoagenda",
+  "pk": 4,
+  "fields": {
+    "codigo": "AG-004",
+    "titulo": "Operativo de aseo Avenida del Mar",
+    "tipo": "Operativo",
+    "fecha": "2026-09-16",
+    "hora": "08:00:00",
+    "delegacion": 5,
+    "responsable": 6,
+    "lugar": "Av. del Mar / Cuatro Esquinas"
+  }
+},
+{
+  "model": "control_gestion.medicion",
+  "pk": 1,
+  "fields": {
+    "periodo": "Tercer Trimestre 2026",
+    "delegacion_piloto": 2,
+    "fecha_inicio": "2026-07-01",
+    "fecha_termino": "2026-09-28",
+    "dias_totales": 90,
+    "meta_cumplimiento_tubo": 80,
+    "descripcion": "Medición trimestral de la Matriz SGR: 90 días equivalen al 100% de las metas. El semáforo compara el avance logrado contra el porcentaje diario esperado."
+  }
+},
+{
+  "model": "control_gestion.notificacion",
+  "pk": 1,
+  "fields": {
+    "codigo": "NTF-001",
+    "titulo": "Bienvenida al mockup SIGED-SGR",
+    "mensaje": "Este entorno usa persistencia JSON local. No hay base de datos ni APIs de negocio conectadas.",
+    "tipo": "info",
+    "fecha": "2026-09-01",
+    "enlace": "/"
+  }
+},
+{
+  "model": "control_gestion.notificacion",
+  "pk": 2,
+  "fields": {
+    "codigo": "NTF-002",
+    "titulo": "Encuesta de satisfacción pendiente",
+    "mensaje": "Recuerde aplicar la encuesta 1 a 5 al cerrar tickets resueltos con el vecino.",
+    "tipo": "aviso",
+    "fecha": "2026-09-08",
+    "enlace": "/encuestas/"
+  }
+},
+{
+  "model": "control_gestion.notificacion",
+  "pk": 3,
+  "fields": {
+    "codigo": "NTF-003",
+    "titulo": "Agenda colectiva de la semana",
+    "mensaje": "Revise compromisos con fecha de terreno y reuniones vecinales en la agenda.",
+    "tipo": "agenda",
+    "fecha": "2026-09-10",
+    "enlace": "/control/agenda/"
+  }
+}
+]
