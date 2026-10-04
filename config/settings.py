@@ -29,10 +29,10 @@ DEBUG = os.getenv("DEBUG", "False").strip().lower() in ("1", "true", "yes", "si"
 # cuando no hay un servidor MySQL (no es el motor de la demostración ni de EC2).
 _USAR_SQLITE = os.getenv("SIGED_DB", "").strip().lower() == "sqlite"
 
-if _USAR_SQLITE:
-    SECRET_KEY = os.getenv("SECRET_KEY") or "clave-de-prueba-no-usar-en-produccion"
-else:
-    SECRET_KEY = env_obligatoria("SECRET_KEY")
+# Siempre desde el entorno. No hay clave de respaldo en el código.
+SECRET_KEY = env_obligatoria("SECRET_KEY")
+# HMAC de codigo_un_uso. Vacío: se usa SECRET_KEY al calcular el hash.
+SIGED_CODE_HMAC_KEY = os.getenv("SIGED_CODE_HMAC_KEY", "").strip()
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")

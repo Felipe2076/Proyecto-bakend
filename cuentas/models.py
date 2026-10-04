@@ -226,29 +226,52 @@ class ParametroSistema(models.Model):
         return self.nombre_sistema
 
 
-class CodigoRecuperacion(models.Model):
-    """Código de un solo uso para recuperar la clave. Solo se guarda el hash."""
+class CodigoUnUso(models.Model):
+    """Código de un solo uso. En la base solo está el HMAC-SHA256, nunca el valor."""
 
+    PROPOSITO_RECUPERAR = "RECUPERAR_CLAVE"
+    CANAL_CORREO = "CORREO"
     MAX_INTENTOS = 5
     VIGENCIA_MINUTOS = 10
 
+    proposito = models.CharField(max_length=20)
     usuario = models.ForeignKey(
-        Usuario, on_delete=models.CASCADE, related_name="codigos_recuperacion", db_index=False,
+        Usuario,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="codigos_un_uso",
+        db_index=False,
     )
-    codigo_hash = models.CharField("hash del código", max_length=128)
-    expira = models.DateTimeField()
+    cuenta_vecino_id = models.PositiveBigIntegerField(null=True, blank=True)
+    codigo_hash = models.CharField(max_length=64)
+    canal = models.CharField(max_length=10, default=CANAL_CORREO)
+    destino_mascara = models.CharField(max_length=80, null=True, blank=True)
+    expira_en = models.DateTimeField()
     intentos = models.PositiveSmallIntegerField(default=0)
-    usado = models.BooleanField(default=False)
-    creado = models.DateTimeField(auto_now_add=True)
+    usado_en = models.DateTimeField(null=True, blank=True)
+    anulado_en = models.DateTimeField(null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    ip_origen = models.CharField(max_length=45, null=True, blank=True)
 
     class Meta:
-        verbose_name = "código de recuperación"
-        verbose_name_plural = "códigos de recuperación"
-        ordering = ["-creado"]
+        db_table = "codigo_un_uso"
+        verbose_name = "código de un solo uso"
+        verbose_name_plural = "códigos de un solo uso"
+        ordering = ["-creado_en"]
         indexes = [
-            models.Index(fields=["usuario", "usado"], name="idx_recup_usuario_usado"),
+            models.Index(fields=["usuario", "proposito", "creado_en"], name="idx_codigo_dueno"),
+            models.Index(fields=["cuenta_vecino_id", "proposito", "creado_en"], name="idx_codigo_vecino"),
+            models.Index(fields=["expira_en"], name="idx_codigo_expira"),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(intentos__lte=5), name="ck_codigo_intentos"),
+            models.CheckConstraint(
+                condition=models.Q(proposito__in=["RECUPERAR_CLAVE", "MFA_EMAIL", "LOGIN_VECINO", "VERIFICAR_CORREO"]),
+                name="ck_codigo_proposito",
+            ),
+            models.CheckConstraint(condition=models.Q(canal__in=["CORREO", "SMS"]), name="ck_codigo_canal"),
         ]
 
     def __str__(self):
-        estado = "usado" if self.usado else "vigente"
-        return f"recuperación {self.usuario_id} ({estado})"
+        return f"{self.proposito} usuario {self.usuario_id}"

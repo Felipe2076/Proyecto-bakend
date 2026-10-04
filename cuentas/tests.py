@@ -3,7 +3,6 @@
 import builtins
 import re
 
-from django.contrib.auth.hashers import check_password
 from django.core import mail
 from django.test import Client, TestCase, override_settings
 
@@ -194,7 +193,8 @@ class AutenticacionOrmTests(TestCase):
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_recuperacion_guarda_la_clave_en_user(self):
-        from cuentas.models import CodigoRecuperacion
+        from cuentas.models import CodigoUnUso
+        from cuentas.recuperacion import hash_codigo
 
         self._open_real = builtins.open
         builtins.open = self._abrir
@@ -205,10 +205,12 @@ class AutenticacionOrmTests(TestCase):
             self.assertEqual(pedido.status_code, 200)
             codigo = self._codigo_del_correo()
             self.assertNotIn(codigo, pedido.content.decode())
-            fila = CodigoRecuperacion.objects.get()
+            fila = CodigoUnUso.objects.get()
+            self.assertEqual(fila.proposito, "RECUPERAR_CLAVE")
+            self.assertEqual(fila.codigo_hash, hash_codigo(codigo))
+            self.assertEqual(len(fila.codigo_hash), 64)
             self.assertNotEqual(fila.codigo_hash, codigo)
-            self.assertTrue(check_password(codigo, fila.codigo_hash))
-            self.assertTrue(fila.codigo_hash.startswith("pbkdf2_"))
+            self.assertIsNone(fila.usado_en)
             sesion = cliente.session["recuperacion"]
             self.assertNotIn("codigo", sesion)
             self.assertNotIn(codigo, str(sesion))
@@ -216,7 +218,7 @@ class AutenticacionOrmTests(TestCase):
             validado = cliente.post("/recuperar/codigo/", digitos)
             self.assertEqual(validado.status_code, 302)
             fila.refresh_from_db()
-            self.assertTrue(fila.usado)
+            self.assertIsNotNone(fila.usado_en)
             sesion = cliente.session
             sesion["recuperacion"] = {"usuario_id": fila.usuario_id, "verificado": False}
             sesion.save()
@@ -251,11 +253,16 @@ class AutenticacionOrmTests(TestCase):
         builtins.open = self._abrir
         cliente = Client()
         try:
+            from cuentas.models import CodigoUnUso
+
             mail.outbox.clear()
             cliente.post("/recuperar/", {"correo": "admin.prueba@siged.test"})
             primero = self._codigo_del_correo()
             mail.outbox.clear()
             cliente.post("/recuperar/codigo/", {"accion": "reenviar"})
+            anterior = CodigoUnUso.objects.order_by("pk").first()
+            self.assertIsNotNone(anterior.anulado_en)
+            self.assertIsNone(anterior.usado_en)
             segundo = self._codigo_del_correo()
             self.assertNotEqual(primero, segundo)
             viejo = {f"d{i}": digito for i, digito in enumerate(primero, start=1)}

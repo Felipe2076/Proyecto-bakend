@@ -1,30 +1,75 @@
-"""Código de recuperación: hash de un solo uso, enviado por correo.
+"""Código de recuperación en ``codigo_un_uso``.
 
-El valor en claro existe solo en la memoria del proceso que arma el mensaje.
-No se guarda en la sesión, no se cifra de forma reversible y no se muestra
-en la página. Al emitir uno nuevo, los anteriores quedan inutilizados. Al
-acertar, el código se marca usado antes de permitir cambiar la clave.
+El valor en claro existe solo para armar el correo. En la tabla queda el
+HMAC-SHA256 (hex, 64 caracteres). La clave se lee de ``SIGED_CODE_HMAC_KEY``
+y, si no está, de ``SECRET_KEY``. Las dos vienen del entorno. No es reversible
+y no viaja en la sesión. Un acierto escribe ``usado_en``. Emitir otro escribe
+``anulado_en`` en los anteriores que seguían vigentes.
 """
 
+import hashlib
+import hmac
+import os
 import secrets
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth.hashers import check_password, make_password
 from django.core.mail import send_mail
 from django.utils import timezone
 
-from cuentas.models import CodigoRecuperacion
+from cuentas.models import CodigoUnUso
 
 
-def emitir_codigo(usuario) -> str:
-    """Invalida los códigos previos y devuelve el nuevo, solo para el correo."""
-    CodigoRecuperacion.objects.filter(usuario=usuario, usado=False).update(usado=True)
-    codigo = f"{secrets.randbelow(1_000_000):06d}"
-    CodigoRecuperacion.objects.create(
+def _clave_hmac() -> bytes:
+    """``SIGED_CODE_HMAC_KEY`` del entorno (o de ``.env``), o ``SECRET_KEY`` si falta."""
+    valor = os.environ.get("SIGED_CODE_HMAC_KEY", "").strip() or settings.SECRET_KEY
+    return valor.encode("utf-8")
+
+
+def hash_codigo(codigo: str) -> str:
+    """HMAC-SHA256 en hexadecimal. Cabe en ``codigo_hash CHAR(64)``."""
+    return hmac.new(
+        _clave_hmac(),
+        (codigo or "").encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def hash_coincide(ingresado: str, almacenado: str) -> bool:
+    if not almacenado or len(almacenado) != 64:
+        return False
+    return hmac.compare_digest(hash_codigo(ingresado), almacenado)
+
+
+def _mascara_correo(correo: str) -> str:
+    local, _, dominio = (correo or "").partition("@")
+    if not dominio:
+        return (correo or "")[:80]
+    return f"{local[:1]}***@{dominio}"[:80]
+
+
+def _vigentes(usuario):
+    return CodigoUnUso.objects.filter(
         usuario=usuario,
-        codigo_hash=make_password(codigo),
-        expira=timezone.now() + timedelta(minutes=CodigoRecuperacion.VIGENCIA_MINUTOS),
+        proposito=CodigoUnUso.PROPOSITO_RECUPERAR,
+        usado_en__isnull=True,
+        anulado_en__isnull=True,
+    )
+
+
+def emitir_codigo(usuario, ip: str | None = None) -> str:
+    """Anula los códigos previos y devuelve el nuevo, solo para el correo."""
+    ahora = timezone.now()
+    _vigentes(usuario).update(anulado_en=ahora)
+    codigo = f"{secrets.randbelow(1_000_000):06d}"
+    CodigoUnUso.objects.create(
+        proposito=CodigoUnUso.PROPOSITO_RECUPERAR,
+        usuario=usuario,
+        codigo_hash=hash_codigo(codigo),
+        canal=CodigoUnUso.CANAL_CORREO,
+        destino_mascara=_mascara_correo(usuario.correo),
+        expira_en=ahora + timedelta(minutes=CodigoUnUso.VIGENCIA_MINUTOS),
+        ip_origen=(ip or "")[:45] or None,
     )
     return codigo
 
@@ -35,7 +80,7 @@ def enviar_codigo(usuario, codigo) -> None:
         subject="Código de recuperación SIGED-SGR",
         message=(
             f"Su código de recuperación es {codigo}. "
-            f"Vence en {CodigoRecuperacion.VIGENCIA_MINUTOS} minutos y solo puede usarse una vez."
+            f"Vence en {CodigoUnUso.VIGENCIA_MINUTOS} minutos y solo puede usarse una vez."
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[usuario.correo],
@@ -44,30 +89,27 @@ def enviar_codigo(usuario, codigo) -> None:
 
 
 def verificar_codigo(usuario, ingresado) -> str:
-    """Comprueba el hash del código vigente.
+    """Comprueba el HMAC del código vigente.
 
     Devuelve ``ok``, ``invalido``, ``agotado``, ``expirado`` o ``ausente``.
-    Un acierto marca la fila como usada de inmediato.
+    Un acierto escribe ``usado_en`` de inmediato.
     """
-    fila = (
-        CodigoRecuperacion.objects.filter(usuario=usuario, usado=False)
-        .order_by("-creado")
-        .first()
-    )
+    fila = _vigentes(usuario).order_by("-creado_en").first()
     if fila is None:
         return "ausente"
-    if timezone.now() > fila.expira:
-        fila.usado = True
-        fila.save(update_fields=["usado"])
+    ahora = timezone.now()
+    if ahora > fila.expira_en:
+        fila.anulado_en = ahora
+        fila.save(update_fields=["anulado_en"])
         return "expirado"
-    if not check_password(ingresado, fila.codigo_hash):
+    if not hash_coincide(ingresado, fila.codigo_hash):
         fila.intentos += 1
-        if fila.intentos >= CodigoRecuperacion.MAX_INTENTOS:
-            fila.usado = True
-            fila.save(update_fields=["intentos", "usado"])
+        if fila.intentos >= CodigoUnUso.MAX_INTENTOS:
+            fila.anulado_en = ahora
+            fila.save(update_fields=["intentos", "anulado_en"])
             return "agotado"
         fila.save(update_fields=["intentos"])
         return "invalido"
-    fila.usado = True
-    fila.save(update_fields=["usado"])
+    fila.usado_en = ahora
+    fila.save(update_fields=["usado_en"])
     return "ok"

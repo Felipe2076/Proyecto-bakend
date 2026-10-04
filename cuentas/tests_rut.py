@@ -1,6 +1,7 @@
 """RUT, ingreso por rol y datos de simulación de la prioridad 1."""
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from core.validaciones import (
 )
 from cuentas.fabrica_pruebas import crear_cuenta
 from cuentas.models import Delegacion
+from cuentas.recuperacion import hash_codigo
 from cuentas.simulacion import con_marca
 
 RAIZ = Path(settings.BASE_DIR)
@@ -217,6 +219,54 @@ class DatosSimulacionTests(SimpleTestCase):
         for fila in auth:
             clave = fila["fields"]["password"]
             self.assertEqual(clave, "!")
+
+    def test_v019_conserva_el_esquema_acordado(self):
+        texto = (RAIZ / "sql" / "migraciones" / "V019__codigo_un_uso.sql").read_text(encoding="utf-8")
+        create = texto[texto.index("CREATE TABLE") :].strip()
+        esperado = """
+CREATE TABLE codigo_un_uso (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  proposito VARCHAR(20) NOT NULL,
+  usuario_id BIGINT NULL,
+  cuenta_vecino_id BIGINT UNSIGNED NULL,
+  codigo_hash CHAR(64) NOT NULL,
+  canal VARCHAR(10) NOT NULL DEFAULT 'CORREO',
+  destino_mascara VARCHAR(80) NULL,
+  expira_en DATETIME NOT NULL,
+  intentos TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  usado_en DATETIME NULL,
+  anulado_en DATETIME NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ip_origen VARCHAR(45) NULL,
+  INDEX idx_codigo_dueno (usuario_id, proposito, creado_en),
+  INDEX idx_codigo_vecino (cuenta_vecino_id, proposito, creado_en),
+  INDEX idx_codigo_expira (expira_en),
+  CONSTRAINT fk_codigo_usuario FOREIGN KEY (usuario_id) REFERENCES cuentas_usuario(id) ON DELETE CASCADE,
+  CONSTRAINT ck_codigo_intentos CHECK (intentos <= 5),
+  CONSTRAINT ck_codigo_proposito CHECK (proposito IN ('RECUPERAR_CLAVE','MFA_EMAIL','LOGIN_VECINO','VERIFICAR_CORREO')),
+  CONSTRAINT ck_codigo_canal CHECK (canal IN ('CORREO','SMS'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+""".strip()
+        self.assertEqual(create, esperado)
+        rollback = (RAIZ / "sql" / "rollback" / "R019__codigo_un_uso.sql").read_text(encoding="utf-8")
+        self.assertIn("DROP TABLE codigo_un_uso;", rollback)
+        self.assertNotIn("V023", texto)
+
+    def test_hmac_usa_siged_code_hmac_key_o_secret_key(self):
+        anterior = os.environ.pop("SIGED_CODE_HMAC_KEY", None)
+        try:
+            con_secret = hash_codigo("123456")
+            os.environ["SIGED_CODE_HMAC_KEY"] = "hmac-de-prueba"
+            con_entorno = hash_codigo("123456")
+        finally:
+            if anterior is None:
+                os.environ.pop("SIGED_CODE_HMAC_KEY", None)
+            else:
+                os.environ["SIGED_CODE_HMAC_KEY"] = anterior
+        self.assertEqual(len(con_secret), 64)
+        self.assertEqual(len(con_entorno), 64)
+        self.assertNotEqual(con_secret, con_entorno)
+        self.assertNotEqual(con_entorno, "123456")
 
     def test_la_marca_se_muestra_y_el_patron_rechaza_parentesis(self):
         self.assertFalse(validar_nombre("Ana (ficticio)"))

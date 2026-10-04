@@ -12,7 +12,7 @@ El sistema cubre la navegación por módulos, los formularios con validación y 
 
 - Python 3.12+ y Django 6.1
 - MySQL 8.4 (utf8mb4, InnoDB). La suite puede usar `SIGED_DB=sqlite` si no hay servidor MySQL
-- `DEBUG` sale del entorno y queda **apagado** si no se define. Secretos (`SECRET_KEY`, `DB_*`) van en `.env`, que no se versiona
+- `DEBUG` sale del entorno y queda **apagado** si no se define. Secretos (`SECRET_KEY`, `SIGED_CODE_HMAC_KEY`, `DB_*`) van en `.env`, que no se versiona. `SIGED_CODE_HMAC_KEY` es la clave del HMAC de los códigos de un solo uso; si no está, se usa `SECRET_KEY`
 - Bootstrap 5.3 + íconos locales (layout; la identidad visual no es una plantilla genérica)
 - Paleta municipal **roja**, tipografía display Fraunces (OFL) + Source Sans 3 (OFL)
 - Motion gratis: Lottie original self-hosted, Lordicon *wired/outline* FREE, Lenis (jsDelivr)
@@ -158,7 +158,7 @@ python manage.py loaddata 01_catalogos 02_datos_sistema
 python manage.py importar_json
 ```
 
-`importar_json` reemplaza la clave de cada cuenta de simulación y reescribe `.demo_credentials.local`. Hay que ejecutarlo después de `loaddata` o de `D003`: sin ese paso las cuentas quedan con clave inutilizable. El código de recuperación se envía por correo (consola del proceso si `DEBUG=True`) y en la base solo queda un hash de un solo uso.
+`importar_json` reemplaza la clave de cada cuenta de simulación y reescribe `.demo_credentials.local`. Hay que ejecutarlo después de `loaddata` o de `D003`: sin ese paso las cuentas quedan con clave inutilizable. El código de recuperación se envía por correo (consola del proceso si `DEBUG=True`). En `codigo_un_uso` (`V019`) solo queda el HMAC-SHA256, de un solo uso. La clave de ese HMAC es `SIGED_CODE_HMAC_KEY` (si falta, `SECRET_KEY`).
 
 3. Camino manual, equivalente, sobre un esquema que ya tiene las tablas de `0001`:
 
@@ -166,7 +166,7 @@ python manage.py importar_json
 mysql gestion_muni < sql/migraciones/V017__funcionario_rut_nombres.sql
 mysql gestion_muni < sql/datos/D003__datos_simulacion.sql
 mysql gestion_muni < sql/migraciones/V018__rut_obligatorio.sql
-mysql gestion_muni < sql/migraciones/V023__codigo_recuperacion.sql
+mysql gestion_muni < sql/migraciones/V019__codigo_un_uso.sql
 python manage.py importar_json
 python manage.py migrate --fake
 ```

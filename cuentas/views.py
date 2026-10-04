@@ -123,8 +123,9 @@ def _usuario_en_recuperacion(request):
     return usuario, datos
 
 
-def _emitir_y_enviar(usuario):
-    codigo = emitir_codigo(usuario)
+def _emitir_y_enviar(request, usuario):
+    ip = (request.META.get("REMOTE_ADDR") or "")[:45]
+    codigo = emitir_codigo(usuario, ip=ip)
     enviar_codigo(usuario, codigo)
 
 
@@ -144,7 +145,7 @@ def recuperar_contrasena_view(request):
             if usuario is None or usuario.user_id is None:
                 errores["correo"] = "No encontramos un usuario activo con ese correo."
             else:
-                _emitir_y_enviar(usuario)
+                _emitir_y_enviar(request, usuario)
                 _sesion_recuperacion(request, usuario, verificado=False)
                 messages.success(
                     request,
@@ -163,7 +164,7 @@ def validar_codigo_view(request):
     errores = {}
     if request.method == "POST":
         if (request.POST.get("accion") or "") == "reenviar":
-            _emitir_y_enviar(usuario)
+            _emitir_y_enviar(request, usuario)
             _sesion_recuperacion(request, usuario, verificado=False)
             messages.success(
                 request,
