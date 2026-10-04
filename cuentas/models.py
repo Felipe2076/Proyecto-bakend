@@ -60,10 +60,23 @@ class Cargo(models.Model):
 
 
 class Funcionario(models.Model):
-    """Funcionario municipal medido en la Matriz SGR."""
+    """Persona trabajadora: RUT, nombre y delegación viven en esta fila.
+
+    ``nombre`` se conserva como texto compuesto para las pantallas actuales.
+    El identificador de acceso es ``rut`` (normalizado, sin puntos).
+    """
 
     codigo = models.CharField("código", max_length=20, unique=True, help_text="Ej: FUN-001")
+    rut = models.CharField(
+        "RUT",
+        max_length=10,
+        help_text="Normalizado, sin puntos. Ejemplo visible: 33.100.001-9.",
+    )
+    nombres = models.CharField(max_length=60)
+    apellido_paterno = models.CharField("apellido paterno", max_length=60)
+    apellido_materno = models.CharField("apellido materno", max_length=60, null=True, blank=True)
     nombre = models.CharField(max_length=120)
+    es_simulacion = models.BooleanField("dato de simulación", default=False)
     cargo = models.ForeignKey(Cargo, on_delete=models.PROTECT, related_name="funcionarios")
     delegacion = models.ForeignKey(Delegacion, on_delete=models.PROTECT, related_name="funcionarios",
                                    verbose_name="delegación")
@@ -74,9 +87,49 @@ class Funcionario(models.Model):
         verbose_name = "funcionario"
         verbose_name_plural = "funcionarios"
         ordering = ["codigo"]
+        constraints = [
+            models.UniqueConstraint(fields=["rut"], name="uq_funcionario_rut"),
+        ]
+        indexes = [
+            models.Index(
+                fields=["delegacion", "apellido_paterno", "nombres"],
+                name="idx_fun_deleg_apellido",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.nombre} ({self.codigo})"
+
+    @property
+    def nombre_completo(self):
+        from cuentas.simulacion import nombre_visible
+
+        return nombre_visible(self.nombres, self.apellido_paterno, self.apellido_materno or "", self.es_simulacion)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_RUT, normalizar_rut, validar_rut
+
+        self.rut = normalizar_rut(self.rut or "")
+        if not validar_rut(self.rut):
+            raise ValidationError({"rut": MENSAJE_RUT})
+        self.nombres = " ".join((self.nombres or "").split())
+        self.apellido_paterno = " ".join((self.apellido_paterno or "").split())
+        if self.apellido_materno:
+            self.apellido_materno = " ".join(self.apellido_materno.split()) or None
+
+    def save(self, *args, **kwargs):
+        if not (self.nombres or "").strip() and self.nombre:
+            limpio = self.nombre.replace("(ficticio)", "").strip()
+            partes = limpio.split()
+            self.nombres = (partes[0] if partes else "Sin")[:60]
+            self.apellido_paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
+            if len(partes) > 2 and not self.apellido_materno:
+                self.apellido_materno = " ".join(partes[2:])[:60]
+        if (self.nombres or "").strip() and (self.apellido_paterno or "").strip():
+            self.nombre = self.nombre_completo[:120]
+        super().save(*args, **kwargs)
 
 
 class Usuario(models.Model):
@@ -93,8 +146,7 @@ class Usuario(models.Model):
     cargo = models.ForeignKey(Cargo, on_delete=models.SET_NULL, null=True, blank=True, related_name="usuarios")
     delegacion = models.ForeignKey(Delegacion, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name="usuarios", verbose_name="delegación")
-    funcionario = models.OneToOneField(Funcionario, on_delete=models.SET_NULL, null=True, blank=True,
-                                       related_name="usuario")
+    funcionario = models.OneToOneField(Funcionario, on_delete=models.PROTECT, related_name="usuario")
     estado = models.CharField(max_length=10, choices=EstadoRegistro.choices, default=EstadoRegistro.ACTIVO)
     creado = models.DateTimeField(auto_now_add=True)
 

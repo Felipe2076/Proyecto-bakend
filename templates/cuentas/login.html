@@ -23,19 +23,19 @@
             <div class="v3-login__form">
                 <span class="v3-eyebrow">Acceso institucional</span>
                 <h2>Ingresar</h2>
-                <p class="v3-muted mb-4">{% if mostrar_demos %}Use un perfil de prueba (visible sólo en modo desarrollo).{% else %}Ingrese con su usuario municipal.{% endif %}</p>
+                <p class="v3-muted mb-4">{% if mostrar_demos %}Cuentas de simulación (solo en desarrollo, sin claves).{% else %}Ingrese con su RUT y su clave.{% endif %}</p>
                 {% if messages %}
                     {% for message in messages %}
                     <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} py-2">{{ message }}</div>
                     {% endfor %}
                 {% endif %}
-                <form method="post" action="{% url 'login' %}" class="needs-validation" novalidate>
+                <form method="post" action="{% url 'login' %}" class="needs-validation" data-validar novalidate>
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ next_url }}">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" value="{{ valores.username }}" autocomplete="username" placeholder="ej. admin">
-                        <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}Escriba su usuario.{% endif %}</div>
+                        <label for="rut" class="form-label">RUT <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control {% if errores.rut %}is-invalid{% endif %}" id="rut" name="rut" required inputmode="text" autocomplete="username" placeholder="33.100.001-9" data-regla="rut" data-mensaje="Ingrese un RUT válido, por ejemplo 33.100.001-9." value="{{ valores.rut }}">
+                        <div class="invalid-feedback">{% if errores.rut %}{{ errores.rut }}{% else %}Ingrese un RUT válido, por ejemplo 33.100.001-9.{% endif %}</div>
                     </div>
                     <div class="mb-4">
                         <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
@@ -50,10 +50,10 @@
                     <h3><i class="bi bi-person-badge"></i> Perfiles de prueba</h3>
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
-                            <thead><tr><th>Usuario</th><th>Clave</th><th>Rol</th></tr></thead>
+                            <thead><tr><th>RUT</th><th>Rol</th><th>Delegación</th></tr></thead>
                             <tbody>
                                 {% for demo in demos %}
-                                <tr><td><code>{{ demo.username }}</code></td><td><code>{{ demo.password }}</code></td><td class="small">{{ demo.rol }}</td></tr>
+                                <tr><td><code>{{ demo.rut }}</code></td><td class="small">{{ demo.rol }}{% if demo.global %} (global){% endif %}</td><td class="small">{{ demo.delegacion }}</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -65,4 +65,7 @@
         </div>
     </div>
 </section>
+{% endblock %}
+{% block extra_js %}
+<script type="module" src="{% static 'js/modulos/validaciones.js' %}"></script>
 {% endblock %}

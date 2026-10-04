@@ -12,6 +12,8 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 
 from control_gestion.models import Medicion
+from core.validaciones import validar_rut
+from cuentas.fabrica_pruebas import crear_cuenta
 from cuentas.models import Cargo, Delegacion, EstadoRegistro, ParametroSistema, Rol, Usuario
 from cuentas.servicios import siguiente_codigo
 from cuentas.store import cargar_json_seguro
@@ -29,41 +31,50 @@ def _cliente() -> Client:
     return Client(HTTP_HOST="localhost")
 
 
-def _login(client: Client, username: str = "admin", password: str = "admin123") -> None:
-    response = client.post("/login/", {"username": username, "password": password}, follow=True)
-    assert response.status_code == 200, f"Login falló para {username}: {response.status_code}"
-    assert client.session.get("usuario"), f"No quedó sesión mock para {username}"
+def _login(client: Client, rut: str = "33100901-6", password: str = "ClaveIntegracion1!") -> None:
+    response = client.post("/login/", {"rut": rut, "password": password}, follow=True)
+    assert response.status_code == 200, f"Login falló para {rut}: {response.status_code}"
+    assert client.session.get("usuario"), f"No quedó sesión para {rut}"
 
 
-def _asegurar_acceso(username: str, password: str, rol_codigo: str, nombre: str, email: str) -> None:
-    """Deja usable el perfil de demostración en la base (sin leer usuarios.json en la vista)."""
+def _asegurar_acceso(rut: str, password: str, rol_codigo: str, nombre: str, email: str) -> None:
+    """Deja usable un perfil de prueba en la base (el ingreso es por RUT, no por alias)."""
     User = get_user_model()
     rol, _ = Rol.objects.get_or_create(
         codigo=rol_codigo, defaults={"nombre": rol_codigo.capitalize(), "descripcion": "Perfil de prueba"}
     )
-    usuario = Usuario.objects.filter(username=username).select_related("user").first()
-    user = usuario.user if usuario and usuario.user_id else User.objects.filter(username=username).first()
+    usuario = (
+        Usuario.objects.filter(funcionario__rut=rut).select_related("user", "funcionario").first()
+        or Usuario.objects.filter(username=rut).select_related("user", "funcionario").first()
+    )
+    if usuario is None:
+        delegacion, _ = Delegacion.objects.get_or_create(
+            nombre="Delegación Centro", defaults={"comuna": "La Serena"}
+        )
+        cargo, _ = Cargo.objects.get_or_create(nombre="Cargo de integración")
+        crear_cuenta(
+            codigo=siguiente_codigo(Usuario, "codigo", "USR-", 3),
+            rut=rut,
+            password=password,
+            rol_codigo=rol.codigo,
+            correo=email,
+            nombre=nombre,
+            delegacion=delegacion,
+            cargo=cargo,
+        )
+        return
+    user = usuario.user if usuario.user_id else User.objects.filter(username=rut).first()
     if user is None:
-        user = User.objects.create_user(username=username, email=email, password=password)
-    elif not user.has_usable_password():
+        user = User.objects.create_user(rut, email, password)
+    elif not user.check_password(password):
         user.set_password(password)
         user.is_active = True
         user.save()
-    if usuario is None:
-        Usuario.objects.create(
-            codigo=siguiente_codigo(Usuario, "codigo", "USR-", 3),
-            user=user,
-            username=username,
-            nombre=nombre,
-            correo=email,
-            rol=rol,
-            estado=EstadoRegistro.ACTIVO,
-        )
-    else:
-        usuario.user = user
-        usuario.estado = EstadoRegistro.ACTIVO
-        usuario.rol = rol
-        usuario.save()
+    usuario.user = user
+    usuario.estado = EstadoRegistro.ACTIVO
+    usuario.rol = rol
+    usuario.username = rut
+    usuario.save()
 
 
 def _asegurar_ticket() -> str:
@@ -110,8 +121,8 @@ def _preparar_bd() -> str:
             dias_totales=90,
             meta_cumplimiento_tubo=80,
         )
-    _asegurar_acceso("admin", "admin123", "administrador", "Administrador SIGED", "admin.siged@laserena.cl")
-    _asegurar_acceso("ventanilla", "ventanilla123", "ventanilla", "Marisol Tapia", "marisol.tapia@laserena.cl")
+    _asegurar_acceso("33100901-6", "ClaveIntegracion1!", "administrador", "Admin Integracion", "integracion-admin@siged.test")
+    _asegurar_acceso("33100902-4", "ClaveIntegracion1!", "ventanilla", "Ventanilla Integracion", "integracion-ventanilla@siged.test")
     Cargo.objects.get_or_create(nombre="Administrador del sistema", defaults={"codigo": "CARGO-01"})
     return _asegurar_ticket()
 
@@ -138,8 +149,11 @@ def run_tests() -> None:
     print(f"   [OK] funcionarios.json: {len(funcionarios)} fichas")
 
     usuarios = cargar_json_seguro("usuarios.json", [])
-    assert len(usuarios) >= 4, "Faltan usuarios de demostración"
-    print(f"   [OK] usuarios.json: {len(usuarios)} perfiles mock")
+    assert len(usuarios) >= 24, "Faltan usuarios de simulación (rol × delegación)"
+    assert all("password" not in item and "clave" not in item for item in usuarios)
+    assert all(validar_rut(item.get("rut", "")) for item in usuarios)
+    assert all("(ficticio)" in item.get("nombre", "") for item in usuarios)
+    print(f"   [OK] usuarios.json: {len(usuarios)} perfiles de simulación, sin clave en claro")
 
     assert "Delegación Centro" in DELEGACIONES_OFICIALES
     assert len(DELEGACIONES_OFICIALES) == 6
@@ -196,7 +210,7 @@ def run_tests() -> None:
         print(f"   [FAIL] {msg}")
 
     print("\n6. Probando login mock...")
-    bad = client.post("/login/", {"username": "admin", "password": "no-vale"})
+    bad = client.post("/login/", {"rut": "33100901-6", "password": "no-vale"})
     assert bad.status_code == 200
     assert not client.session.get("usuario")
     print("   [OK] Credencial inválida no inicia sesión")
@@ -237,7 +251,7 @@ def run_tests() -> None:
 
     print("\n8. Probando denegación de administración por rol ventanilla...")
     ventanilla = _cliente()
-    _login(ventanilla, "ventanilla", "ventanilla123")
+    _login(ventanilla, "33100902-4", "ClaveIntegracion1!")
     resp_admin: Any = ventanilla.get("/administracion/usuarios/", follow=True)
     if resp_admin.status_code == 200:
         print("   [OK] Ventanilla no entra a administración (redirige al inicio)")
@@ -261,8 +275,8 @@ def run_tests() -> None:
     print("\n10. Probando creación de nuevo ticket (POST, ORM)...")
     data_post = {
         "vecino_nombre": "Prueba Automática Valenzuela",
-        "telefono_whatsapp": "+56 9 1234 5678",
-        "email": "prueba.auto@serena.cl",
+        "telefono_whatsapp": "+56900009999",
+        "email": "prueba.auto@siged.test",
         "delegacion": "Delegación Centro",
         "canal_ingreso": "WhatsApp",
         "tipo_entrada": "CONSULTA",

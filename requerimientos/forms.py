@@ -75,12 +75,14 @@ class VecinoForm(NombreMinimoMixin, FormularioBootstrap):
         }
 
     def clean_rut(self):
-        rut = (self.cleaned_data.get("rut") or "").strip().upper()
+        from core.validaciones import MENSAJE_RUT, normalizar_rut, validar_rut
+
+        rut = (self.cleaned_data.get("rut") or "").strip()
         if not rut:
             return None
-        if not re.fullmatch(r"\d{1,2}\.?\d{3}\.?\d{3}-[\dK]", rut):
-            raise forms.ValidationError("Ingrese un RUT válido, por ejemplo 12.345.678-9.")
-        return rut
+        if not validar_rut(rut):
+            raise forms.ValidationError(MENSAJE_RUT)
+        return normalizar_rut(rut)
 
     def clean_telefono(self):
         telefono = (self.cleaned_data.get("telefono") or "").strip()

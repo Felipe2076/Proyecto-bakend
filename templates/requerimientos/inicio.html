@@ -18,7 +18,8 @@
             {% include '_cu.html' with cu_id='CU-E01' cu_nombre='Sesión iniciada' %}
             <h1 class="mt-2 mb-2">Atención ciudadana en las seis delegaciones</h1>
             <p class="mb-3" style="max-width:40rem;color:rgba(255,248,238,.88);">
-                {% if usuario_actual %}Hola, <strong>{{ usuario_actual.nombre }}</strong>.{% endif %}
+                {% if usuario_actual %}Hola, <strong>{{ usuario_actual.nombre }}</strong>.
+                <span id="panel-perfil">{{ usuario_actual.rol_etiqueta }}{% if usuario_actual.delegacion %} · {{ usuario_actual.delegacion }}{% endif %}{% if panel.delegacion_nombre and not usuario_actual.delegacion %} · {{ panel.delegacion_nombre }}{% endif %}{% if usuario_actual.rut_enmascarado %} · RUT {{ usuario_actual.rut_enmascarado }}{% endif %}</span>{% endif %}
                 Registre el ticket del ciudadano, dé seguimiento con semáforo y deje actividad, evidencia y compromiso en la agenda del equipo.
             </p>
             <div class="d-flex flex-wrap gap-2">

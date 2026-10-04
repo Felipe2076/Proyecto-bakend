@@ -25,7 +25,14 @@ def env_obligatoria(nombre):
 # Único valor con respaldo seguro: si no se define, DEBUG queda apagado.
 DEBUG = os.getenv("DEBUG", "False").strip().lower() in ("1", "true", "yes", "si", "sí")
 
-SECRET_KEY = env_obligatoria("SECRET_KEY")
+# La aplicación usa MySQL. SIGED_DB=sqlite existe solo para la suite de pruebas
+# cuando no hay un servidor MySQL (no es el motor de la demostración ni de EC2).
+_USAR_SQLITE = os.getenv("SIGED_DB", "").strip().lower() == "sqlite"
+
+if _USAR_SQLITE:
+    SECRET_KEY = os.getenv("SECRET_KEY") or "clave-de-prueba-no-usar-en-produccion"
+else:
+    SECRET_KEY = env_obligatoria("SECRET_KEY")
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
@@ -76,22 +83,30 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# MySQL 8.x (WAMP en local, MySQL/MariaDB en EC2). Driver: PyMySQL (ver config/__init__.py).
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": env_obligatoria("DB_NAME"),
-        "USER": env_obligatoria("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "3306"),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            # InnoDB obligatorio: WAMP trae MyISAM por defecto (sin llaves foráneas).
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB",
-        },
+if _USAR_SQLITE:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.getenv("SIGED_SQLITE_PATH", str(BASE_DIR / "db.sqlite3")),
+        }
     }
-}
+else:
+    # MySQL 8.x (WAMP en local, MySQL en el servidor). Driver: PyMySQL (ver config/__init__.py).
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": env_obligatoria("DB_NAME"),
+            "USER": env_obligatoria("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+            "PORT": os.getenv("DB_PORT", "3306"),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                # InnoDB obligatorio: WAMP trae MyISAM por defecto (sin llaves foráneas).
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB",
+            },
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

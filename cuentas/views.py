@@ -9,18 +9,20 @@ from django.contrib.auth import logout as auth_logout
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from core.validaciones import MENSAJE_RUT, formatear_rut, rut_normalizado_valido
 from cuentas.auth import requerir_modulo, usuario_sesion
 from cuentas.forms import NuevaContrasenaForm
 from cuentas.models import Cargo, Delegacion, EstadoRegistro, Funcionario, ParametroSistema, Rol, Usuario
-from cuentas.servicios import autenticar, nombres_delegaciones, obtener_parametros, sesion_desde_usuario, siguiente_codigo
+from cuentas.servicios import (
+    autenticar,
+    errores_clave,
+    nombres_delegaciones,
+    obtener_parametros,
+    sesion_desde_usuario,
+    siguiente_codigo,
+)
+from cuentas.simulacion import CODIGO_ADMIN_GLOBAL, identidad, nombre_visible
 from control_gestion.models import Medicion
-
-CLAVES_DEMOSTRACION = {
-    "admin": "admin123",
-    "jefatura": "jefatura123",
-    "funcionario": "funcionario123",
-    "ventanilla": "ventanilla123",
-}
 
 ROLES_DISPONIBLES = [
     ("administrador", "Administrador"),
@@ -37,23 +39,22 @@ def _next_seguro(valor):
 
 
 def _demos():
+    """RUT y rol de las cuentas de simulación. Nunca incluye la clave."""
     demos = []
-    usuarios = Usuario.objects.filter(estado=EstadoRegistro.ACTIVO).select_related("rol", "cargo", "user")
+    usuarios = (
+        Usuario.objects.filter(estado=EstadoRegistro.ACTIVO, funcionario__es_simulacion=True)
+        .select_related("rol", "funcionario", "funcionario__delegacion")
+        .order_by("funcionario__delegacion__nombre", "rol__codigo", "funcionario__rut")
+    )
     for usuario in usuarios:
-        clave = CLAVES_DEMOSTRACION.get(usuario.username)
-        if clave and usuario.user_id and usuario.user.check_password(clave):
-            visible = clave
-        elif usuario.user_id:
-            visible = "actualizada"
-        else:
-            visible = "sin clave"
+        fun = usuario.funcionario
         demos.append(
             {
-                "username": usuario.username,
-                "password": visible,
-                "nombre": usuario.nombre,
+                "rut": formatear_rut(fun.rut) if fun else "",
+                "nombre": fun.nombre if fun else usuario.nombre,
                 "rol": usuario.rol.codigo if usuario.rol_id else "",
-                "cargo": usuario.cargo.nombre if usuario.cargo_id else "",
+                "delegacion": fun.delegacion.nombre if fun and fun.delegacion_id else "",
+                "global": usuario.codigo == CODIGO_ADMIN_GLOBAL,
             }
         )
     return demos
@@ -63,27 +64,30 @@ def login_view(request):
     if request.user.is_authenticated and usuario_sesion(request):
         return redirect("inicio")
     errores = {}
-    valores = {"username": ""}
+    valores = {"rut": ""}
     if request.method == "POST":
-        username = (request.POST.get("username") or "").strip()
+        rut = (request.POST.get("rut") or "").strip()
         password = request.POST.get("password") or ""
-        valores["username"] = username
-        if not username:
-            errores["username"] = "Ingrese el usuario."
+        valores["rut"] = rut
+        if not rut:
+            errores["rut"] = "Ingrese el RUT."
         if not password:
             errores["password"] = "Ingrese la contraseña."
         if not errores:
-            encontrado = autenticar(username, password)
+            encontrado = autenticar(rut, password)
             if encontrado is None:
-                errores["password"] = "Usuario o contraseña incorrectos."
-                messages.error(request, "No fue posible iniciar sesión. Revise sus credenciales.")
+                errores["password"] = "RUT o clave incorrectos."
+                messages.error(request, "RUT o clave incorrectos.")
             else:
                 auth_login(request, encontrado.user)
                 request.session["usuario"] = sesion_desde_usuario(encontrado)
                 request.session["notificaciones_leidas"] = []
+                perfil = sesion_desde_usuario(encontrado)
                 messages.success(
                     request,
-                    f"Bienvenido/a, {encontrado.nombre}. Perfil: {encontrado.cargo.nombre if encontrado.cargo_id else encontrado.rol.nombre}.",
+                    f"Bienvenido/a, {perfil['nombre']}. {perfil['rol_etiqueta']}"
+                    + (f" · {perfil['delegacion']}" if perfil["delegacion"] else "")
+                    + ".",
                 )
                 return redirect(_next_seguro(request.POST.get("next") or request.GET.get("next")))
     contexto = {
@@ -212,10 +216,11 @@ def nueva_contrasena_view(request):
 
 
 def _usuario_a_fila(usuario):
+    fun = usuario.funcionario if usuario.funcionario_id else None
     return {
         "id_usuario": usuario.codigo or str(usuario.pk),
-        "username": usuario.username,
-        "nombre": usuario.nombre,
+        "username": formatear_rut(fun.rut) if fun else usuario.username,
+        "nombre": fun.nombre if fun else usuario.nombre,
         "email": usuario.correo,
         "rol": usuario.rol.nombre if usuario.rol_id else "",
         "cargo": usuario.cargo.nombre if usuario.cargo_id else "",
@@ -236,8 +241,8 @@ def administracion_usuarios_view(request):
             usuario = Usuario.objects.select_related("user").filter(codigo=user_id).first()
             if usuario is None:
                 messages.error(request, "No fue posible actualizar el usuario.")
-            elif usuario.username == "admin":
-                messages.error(request, "El usuario administrador de demostración no puede desactivarse.")
+            elif usuario.codigo == CODIGO_ADMIN_GLOBAL:
+                messages.error(request, "El administrador global de simulación no puede desactivarse.")
             else:
                 usuario.estado = (
                     EstadoRegistro.INACTIVO if usuario.estado == EstadoRegistro.ACTIVO else EstadoRegistro.ACTIVO
@@ -249,7 +254,7 @@ def administracion_usuarios_view(request):
                 messages.success(request, "Estado del usuario actualizado.")
             return redirect("admin_usuarios")
 
-        username = (request.POST.get("username") or "").strip().lower()
+        rut_ingresado = (request.POST.get("rut") or "").strip()
         password = (request.POST.get("password") or "").strip()
         nombre = (request.POST.get("nombre") or "").strip()
         email = (request.POST.get("email") or "").strip()
@@ -258,7 +263,7 @@ def administracion_usuarios_view(request):
         delegacion_nombre = (request.POST.get("delegacion") or "").strip()
         id_funcionario = (request.POST.get("id_funcionario") or "").strip()
         valores = {
-            "username": username,
+            "rut": rut_ingresado,
             "nombre": nombre,
             "email": email,
             "rol": rol_codigo,
@@ -266,12 +271,14 @@ def administracion_usuarios_view(request):
             "delegacion": delegacion_nombre,
             "id_funcionario": id_funcionario,
         }
-        if not re.fullmatch(r"[a-z0-9._-]{3,20}", username or ""):
-            errores["username"] = "Usuario de 3 a 20 caracteres (letras minúsculas, números, punto o guion)."
-        elif Usuario.objects.filter(username=username).exists():
-            errores["username"] = "Ese nombre de usuario ya existe."
-        if len(password) < 6:
-            errores["password"] = "La contraseña de demostración debe tener al menos 6 caracteres."
+        rut = rut_normalizado_valido(rut_ingresado)
+        if rut is None:
+            errores["rut"] = MENSAJE_RUT
+        elif Funcionario.objects.filter(rut=rut).exists() or Usuario.objects.filter(username=rut).exists():
+            errores["rut"] = "Ese RUT ya está registrado."
+        fallas_clave = errores_clave(password)
+        if fallas_clave:
+            errores["password"] = " ".join(fallas_clave)
         if len(nombre) < 5:
             errores["nombre"] = "Ingrese el nombre completo (mínimo 5 caracteres)."
         if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
@@ -284,30 +291,55 @@ def administracion_usuarios_view(request):
         cargo = Cargo.objects.filter(nombre=cargo_nombre).first() if cargo_nombre else None
         if not cargo_nombre or cargo is None:
             errores["cargo"] = "Seleccione o indique un cargo."
+        if not delegacion_nombre:
+            errores["delegacion"] = "Seleccione la delegación del trabajador."
+        funcionario = Funcionario.objects.filter(codigo=id_funcionario).first() if id_funcionario else None
+        if funcionario is not None and Usuario.objects.filter(funcionario=funcionario).exists():
+            errores["id_funcionario"] = "Esa ficha ya tiene una cuenta."
         if errores:
             messages.error(request, "Revise los campos marcados antes de guardar el usuario.")
         else:
-            delegacion = None
-            if delegacion_nombre:
-                delegacion, _ = Delegacion.objects.get_or_create(
-                    nombre=delegacion_nombre, defaults={"comuna": "La Serena"}
+            delegacion, _ = Delegacion.objects.get_or_create(
+                nombre=delegacion_nombre, defaults={"comuna": "La Serena"}
+            )
+            partes = [p for p in nombre.replace("(ficticio)", "").split() if p]
+            nombres = partes[0][:60]
+            paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
+            materno = (" ".join(partes[2:])[:60] or None) if len(partes) > 2 else None
+            if nombres == "Registro":
+                gen_n, gen_p, gen_m = identidad(Funcionario.objects.count() + 1)
+                nombres, paterno, materno = gen_n, gen_p, gen_m
+            visible = nombre_visible(nombres, paterno, materno or "", True) if "(ficticio)" in nombre else nombre
+            if funcionario is None:
+                funcionario = Funcionario(
+                    codigo=siguiente_codigo(Funcionario, "codigo", "FUN-", 3),
+                    cargo=cargo,
+                    delegacion=delegacion,
+                    estado=EstadoRegistro.ACTIVO,
                 )
-            funcionario = Funcionario.objects.filter(codigo=id_funcionario).first() if id_funcionario else None
-            correo = email or f"{username}@laserena.cl"
+            funcionario.rut = rut
+            funcionario.nombres = nombres
+            funcionario.apellido_paterno = paterno
+            funcionario.apellido_materno = materno
+            funcionario.nombre = visible[:120]
+            funcionario.cargo = cargo
+            funcionario.delegacion = delegacion
+            funcionario.es_simulacion = "(ficticio)" in funcionario.nombre
+            funcionario.save()
+            correo = email or f"{funcionario.codigo.lower()}@siged.test"
             from django.contrib.auth import get_user_model
 
             User = get_user_model()
-            user = User(username=username, email=correo, is_active=True)
-            partes = nombre.split(" ", 1)
-            user.first_name = partes[0][:150]
-            user.last_name = (partes[1] if len(partes) > 1 else "")[:150]
+            user = User(username=rut, email=correo, is_active=True)
+            user.first_name = nombres[:150]
+            user.last_name = paterno[:150]
             user.set_password(password)
             user.save()
             Usuario.objects.create(
                 codigo=siguiente_codigo(Usuario, "codigo", "USR-", 3),
                 user=user,
-                username=username,
-                nombre=nombre,
+                username=rut,
+                nombre=funcionario.nombre,
                 correo=correo,
                 rol=rol,
                 cargo=cargo,
@@ -315,7 +347,7 @@ def administracion_usuarios_view(request):
                 funcionario=funcionario,
                 estado=EstadoRegistro.ACTIVO,
             )
-            messages.success(request, f"Usuario {username} creado.")
+            messages.success(request, f"Usuario {formatear_rut(rut)} creado.")
             return redirect("admin_usuarios")
 
     roles = list(Rol.objects.order_by("nombre").values_list("codigo", "nombre")) or ROLES_DISPONIBLES

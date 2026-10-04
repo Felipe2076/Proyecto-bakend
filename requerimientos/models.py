@@ -28,7 +28,7 @@ class Vecino(models.Model):
 
     nombre = models.CharField(max_length=120)
     rut = models.CharField("RUT", max_length=12, unique=True, null=True, blank=True,
-                           help_text="Formato 12.345.678-9. Vacío si no se registró.")
+                           help_text="Normalizado o con puntos. Ejemplo: 33.500.001-3. Vacío si no se registró.")
     direccion = models.CharField("dirección", max_length=200, blank=True)
     telefono = models.CharField("teléfono", max_length=20, blank=True)
     correo = models.EmailField(blank=True)
@@ -37,6 +37,7 @@ class Vecino(models.Model):
                                    related_name="vecinos", verbose_name="delegación")
     tipo_gestion = models.ForeignKey(TipoGestion, on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name="vecinos", verbose_name="tipo de gestión")
+    es_simulacion = models.BooleanField("dato de simulación", default=False)
     estado = models.CharField(max_length=10, choices=EstadoRegistro.choices, default=EstadoRegistro.ACTIVO)
 
     class Meta:

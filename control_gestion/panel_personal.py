@@ -176,8 +176,10 @@ def construir_panel_personal(perfil, hoy=None):
     rol = perfil.rol.codigo if perfil is not None and perfil.rol_id else ""
     funcionario = perfil.funcionario if perfil is not None else None
     delegacion = None
+    nombre = ""
     if perfil is not None:
-        delegacion = perfil.delegacion or (funcionario.delegacion if funcionario and funcionario.delegacion_id else None)
+        delegacion = (funcionario.delegacion if funcionario and funcionario.delegacion_id else None) or perfil.delegacion
+        nombre = funcionario.nombre if funcionario is not None else perfil.nombre
 
     propios = _tickets_de(funcionario)
     filas_tickets = [_fila_ticket(req, sla_verde, sla_amarillo) for req in propios]
@@ -194,7 +196,8 @@ def construir_panel_personal(perfil, hoy=None):
         delegaciones = nombres_delegaciones()
 
     return {
-        "nombre": perfil.nombre if perfil is not None else "",
+        "nombre": nombre,
+        "delegacion_nombre": delegacion.nombre if delegacion is not None else "",
         "rol": rol,
         "tiene_funcionario": funcionario is not None,
         "sla_verde": sla_verde,

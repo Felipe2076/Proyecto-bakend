@@ -94,7 +94,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('nombre', models.CharField(max_length=120)),
-                ('rut', models.CharField(blank=True, help_text='Formato 12.345.678-9. Vacío si no se registró.', max_length=12, null=True, unique=True, verbose_name='RUT')),
+                ('rut', models.CharField(blank=True, help_text='Normalizado o con puntos. Ejemplo: 33.500.001-3. Vacío si no se registró.', max_length=12, null=True, unique=True, verbose_name='RUT')),
                 ('direccion', models.CharField(blank=True, max_length=200, verbose_name='dirección')),
                 ('telefono', models.CharField(blank=True, max_length=20, verbose_name='teléfono')),
                 ('correo', models.EmailField(blank=True, max_length=254)),

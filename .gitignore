@@ -15,3 +15,8 @@ _generar_evidencias_docx.py
 
 .env
 staticfiles/
+
+# Respaldos de MySQL (nunca se versionan; el de D003 queda solo fuera del repo).
+backups/
+*.sql.gz
+*.dump

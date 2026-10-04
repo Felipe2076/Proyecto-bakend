@@ -120,10 +120,27 @@ class Command(BaseCommand):
 
     def importar_funcionarios(self):
         for f in self._leer("funcionarios.json", []):
+            from cuentas.simulacion import nombre_visible
+
+            nombres = (f.get("nombres") or "").strip()
+            paterno = (f.get("apellido_paterno") or "").strip()
+            materno = (f.get("apellido_materno") or "").strip() or None
+            if not nombres or not paterno:
+                partes = (f.get("nombre") or "").replace("(ficticio)", "").split()
+                nombres = nombres or (partes[0] if partes else "Sin")
+                paterno = paterno or (partes[1] if len(partes) > 1 else "Registro")
+                if materno is None and len(partes) > 2:
+                    materno = " ".join(partes[2:])
+            ficticio = bool(f.get("es_simulacion", "(ficticio)" in (f.get("nombre") or "")))
             funcionario, _ = Funcionario.objects.update_or_create(
                 codigo=f["id_funcionario"],
                 defaults={
-                    "nombre": f["nombre"],
+                    "rut": f.get("rut"),
+                    "nombres": nombres[:60],
+                    "apellido_paterno": paterno[:60],
+                    "apellido_materno": (materno[:60] if materno else None),
+                    "nombre": f.get("nombre") or nombre_visible(nombres, paterno, materno or "", ficticio),
+                    "es_simulacion": ficticio,
                     "cargo": self._cargo(f.get("cargo")),
                     "delegacion": self._delegacion(f.get("delegacion")),
                     "fecha_ultimo_ingreso": _fecha(f.get("fecha_ultimo_ingreso")),
@@ -141,6 +158,8 @@ class Command(BaseCommand):
                 )
 
     def importar_usuarios(self, crear_auth):
+        from cuentas.simulacion import CLAVE_DEMO
+
         User = get_user_model()
         for u in self._leer("usuarios.json", []):
             codigo_rol = u.get("rol", "funcionario")
@@ -150,34 +169,44 @@ class Command(BaseCommand):
                           "descripcion": ROLES_ETIQUETA.get(codigo_rol, "")},
             )
             funcionario = Funcionario.objects.filter(codigo=u.get("id_funcionario") or None).first()
+            username = (u.get("username") or (funcionario.rut if funcionario else "")).strip()
+            if funcionario is not None and funcionario.rut:
+                username = funcionario.rut
+            correo = u.get("email") or (f"{funcionario.codigo.lower()}@siged.test" if funcionario else f"{username}@siged.test")
+            nombre = u.get("nombre") or (funcionario.nombre if funcionario else username)
             usuario, _ = Usuario.objects.update_or_create(
-                username=u["username"],
+                username=username,
                 defaults={
                     "codigo": u.get("id_usuario"),
-                    "nombre": u.get("nombre", u["username"]),
-                    "correo": u.get("email") or f"{u['username']}@laserena.cl",
+                    "nombre": nombre,
+                    "correo": correo,
                     "rol": rol,
-                    "cargo": self._cargo(u["cargo"]) if u.get("cargo") else None,
-                    "delegacion": self._delegacion(u.get("delegacion")),
+                    "cargo": self._cargo(u["cargo"]) if u.get("cargo") else (funcionario.cargo if funcionario else None),
+                    "delegacion": self._delegacion(u.get("delegacion")) if u.get("delegacion") else (
+                        funcionario.delegacion if funcionario else None
+                    ),
                     "funcionario": funcionario,
                     "estado": EstadoRegistro.ACTIVO if u.get("activo", True) else EstadoRegistro.INACTIVO,
                 },
             )
             if not crear_auth:
                 continue
-            user = usuario.user or User.objects.filter(username=u["username"]).first()
+            # La clave no viaja en el JSON. Si el archivo aún trae una (legado), se hashea al crear.
+            clave = u.get("password") or CLAVE_DEMO
+            user = usuario.user or User.objects.filter(username=username).first()
             if user is None:
-                partes = usuario.nombre.split(" ", 1)
-                user = User(username=u["username"], email=usuario.correo, first_name=partes[0][:150],
-                            last_name=(partes[1] if len(partes) > 1 else "")[:150],
+                partes = usuario.nombre.replace("(ficticio)", "").split(" ", 1)
+                user = User(username=username, email=usuario.correo, first_name=partes[0][:150],
+                            last_name=(partes[1].strip() if len(partes) > 1 else "")[:150],
                             is_active=usuario.activo)
-                # Se guarda solo el hash (PBKDF2), nunca la clave en texto plano.
-                if u.get("password"):
-                    user.set_password(u["password"])
-                else:
-                    user.set_unusable_password()
+                user.set_password(clave)
                 user.save()
                 self.auth_creados += 1
+            elif not user.has_usable_password():
+                user.username = username
+                user.email = usuario.correo
+                user.set_password(clave)
+                user.save()
             if usuario.user_id != user.pk:
                 usuario.user = user
                 usuario.save(update_fields=["user"])

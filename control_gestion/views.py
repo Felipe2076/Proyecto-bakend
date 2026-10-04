@@ -15,6 +15,7 @@ from control_gestion.consultas import (
 )
 from control_gestion.indicadores import color_semaforo_diario, cumplimiento_item, construir_panel
 from control_gestion.models import Medicion
+from cuentas.ambito import denegar_otra_delegacion
 from cuentas.servicios import nombres_delegaciones, obtener_parametros
 from requerimientos.consultas import queryset_requerimientos, ticket_a_dict
 from requerimientos.models import AreaSoporte
@@ -419,6 +420,9 @@ def tubo_trabajo_view(request):
 def funcionarios_view(request):
     periodo = cargar_periodo_medicion()
     filtro_delegacion = request.GET.get("delegacion", "").strip()
+    bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
+    if bloqueo_ambito:
+        return bloqueo_ambito
     funcionarios = _funcionarios_enriquecidos(periodo)
     if filtro_delegacion:
         funcionarios = [item for item in funcionarios if (item.get("delegacion") or "") == filtro_delegacion]
@@ -449,6 +453,11 @@ def detalle_funcionario_view(request, id_funcionario):
     if funcionario_obj is None:
         messages.error(request, f"No se encontró el funcionario {id_funcionario}.")
         return redirect("funcionarios")
+    bloqueo_ambito = denegar_otra_delegacion(
+        request, funcionario_obj.delegacion.nombre if funcionario_obj.delegacion_id else ""
+    )
+    if bloqueo_ambito:
+        return bloqueo_ambito
     compromisos = [
         compromiso_a_dict(item)
         for item in queryset_compromisos().filter(funcionario__codigo=id_funcionario)
@@ -477,6 +486,9 @@ def detalle_funcionario_view(request, id_funcionario):
 def resumen_delegacion_view(request):
     periodo = cargar_periodo_medicion()
     filtro_delegacion = request.GET.get("delegacion", "").strip() or periodo["delegacion_piloto"]
+    bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
+    if bloqueo_ambito:
+        return bloqueo_ambito
     funcionarios = [
         item
         for item in _funcionarios_enriquecidos(periodo)
