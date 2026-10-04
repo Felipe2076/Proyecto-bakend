@@ -179,7 +179,7 @@ def construir_panel_personal(perfil, hoy=None):
     nombre = ""
     if perfil is not None:
         delegacion = (funcionario.delegacion if funcionario and funcionario.delegacion_id else None) or perfil.delegacion
-        nombre = funcionario.nombre if funcionario is not None else perfil.nombre
+        nombre = funcionario.nombre_mostrado if funcionario is not None else perfil.nombre_mostrado
 
     propios = _tickets_de(funcionario)
     filas_tickets = [_fila_ticket(req, sla_verde, sla_amarillo) for req in propios]

@@ -4,8 +4,8 @@ Uso (desde la raíz del repo, con el entorno de Django)::
 
     python manage.py generar_simulacion
 
-No incluye la clave de demostración en texto plano. D003 guarda solo el hash.
-Es idempotente: volver a ejecutarlo deja los mismos RUT.
+No escribe claves utilizables. D003 y el fixture dejan la contraseña en ``!``.
+``importar_json`` asigna una distinta por cuenta. Es idempotente en los RUT.
 """
 
 import json
@@ -13,12 +13,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from django.conf import settings
-from django.contrib.auth.hashers import make_password
 from django.core.management.base import BaseCommand
 
 from cuentas.simulacion import (
     CARGO_POR_ROL,
-    CLAVE_DEMO,
     CODIGO_ADMIN_GLOBAL,
     ROLES_ORDEN,
     correo_funcionario,
@@ -227,8 +225,8 @@ def _transformar_fixture(fixture):
     if not any(c["codigo_usuario"] == CODIGO_ADMIN_GLOBAL for c in cuentas):
         agregar_usuario("administrador", "Delegación Centro", codigo_usuario=CODIGO_ADMIN_GLOBAL)
 
-    # Auth: una fila por cuenta, pk = pk del usuario, clave solo como hash.
-    password_hash = make_password(CLAVE_DEMO)
+    # Auth: una fila por cuenta. La clave queda inutilizable hasta importar_json.
+    password_hash = "!"
     ahora = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     auth_existentes = {obj["pk"] for obj in _por_modelo(fixture, "auth.user")}
     for usuario in _por_modelo(fixture, "cuentas.usuario"):
@@ -269,7 +267,7 @@ def _transformar_fixture(fixture):
         campos = obj["fields"]
         viejo = campos.get("nombre") or ""
         if es_organizacion(viejo):
-            campos["nombre"] = f"Organización Ficticia {indice_v:02d} (ficticio)"
+            campos["nombre"] = f"Organización Ficticia {indice_v:02d}"
         else:
             nombres, paterno, materno = identidad(indice_v + 40)
             campos["nombre"] = nombre_visible(nombres, paterno, materno, True)
@@ -320,7 +318,7 @@ def _transformar_fixture(fixture):
         if obj["model"] == "requerimientos.requerimiento" and campos.get("funcionario") in fun_nombre_por_pk:
             campos["asignado_a"] = fun_nombre_por_pk[campos["funcionario"]]
         if obj["model"] == "control_gestion.actividad" and campos.get("contacto"):
-            campos["contacto"] = f"Contacto ficticio {obj['pk']} (ficticio)"
+            campos["contacto"] = f"Contacto ficticio {obj['pk']}"
         for clave, valor in list(campos.items()):
             if isinstance(valor, str):
                 campos[clave] = _reemplazar(valor, mapa)
@@ -403,7 +401,7 @@ def _reescribir_json(data_dir, resultado):
         if nombre == "actividades.json":
             for i, item in enumerate(datos, start=1):
                 if item.get("contacto"):
-                    item["contacto"] = f"Contacto ficticio {i} (ficticio)"
+                    item["contacto"] = f"Contacto ficticio {i}"
                 codigo = item.get("id_funcionario")
                 if codigo in fun_por_codigo:
                     item["funcionario_nombre"] = fun_por_codigo[codigo]["nombre"]
@@ -542,7 +540,7 @@ def _sql_d003(resultado):
     lineas.extend([
         "",
         "UPDATE control_gestion_actividad",
-        "SET contacto = CONCAT('Contacto ficticio ', id, ' (ficticio)')",
+        "SET contacto = CONCAT('Contacto ficticio ', id)",
         "WHERE contacto IS NOT NULL AND contacto <> '';",
         "",
         "UPDATE requerimientos_requerimiento r",

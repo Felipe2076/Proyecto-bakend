@@ -3,7 +3,9 @@
 import builtins
 import re
 
-from django.test import Client, TestCase
+from django.contrib.auth.hashers import check_password
+from django.core import mail
+from django.test import Client, TestCase, override_settings
 
 from cuentas.fabrica_pruebas import crear_cuenta
 from cuentas.models import Delegacion, Rol
@@ -184,18 +186,47 @@ class AutenticacionOrmTests(TestCase):
         finally:
             builtins.open = self._open_real
 
+    def _codigo_del_correo(self):
+        self.assertEqual(len(mail.outbox), 1)
+        encontrado = re.search(r"(\d{6})", mail.outbox[0].body)
+        self.assertIsNotNone(encontrado)
+        return encontrado.group(1)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_recuperacion_guarda_la_clave_en_user(self):
+        from cuentas.models import CodigoRecuperacion
+
         self._open_real = builtins.open
         builtins.open = self._abrir
         cliente = Client()
         try:
+            mail.outbox.clear()
             pedido = cliente.post("/recuperar/", {"correo": "admin.prueba@siged.test"}, follow=True)
             self.assertEqual(pedido.status_code, 200)
-            codigo = re.search(r"(\d{6})", pedido.content.decode()).group(1)
+            codigo = self._codigo_del_correo()
+            self.assertNotIn(codigo, pedido.content.decode())
+            fila = CodigoRecuperacion.objects.get()
+            self.assertNotEqual(fila.codigo_hash, codigo)
+            self.assertTrue(check_password(codigo, fila.codigo_hash))
+            self.assertTrue(fila.codigo_hash.startswith("pbkdf2_"))
+            sesion = cliente.session["recuperacion"]
+            self.assertNotIn("codigo", sesion)
+            self.assertNotIn(codigo, str(sesion))
             digitos = {f"d{i}": digito for i, digito in enumerate(codigo, start=1)}
             validado = cliente.post("/recuperar/codigo/", digitos)
             self.assertEqual(validado.status_code, 302)
+            fila.refresh_from_db()
+            self.assertTrue(fila.usado)
+            sesion = cliente.session
+            sesion["recuperacion"] = {"usuario_id": fila.usuario_id, "verificado": False}
+            sesion.save()
+            reuso = cliente.post("/recuperar/codigo/", digitos)
+            self.assertEqual(reuso.status_code, 200)
+            self.assertContains(reuso, "ya no es válido")
             nueva = "NuevaClave1!"
+            sesion = cliente.session
+            sesion["recuperacion"] = {"usuario_id": fila.usuario_id, "verificado": True}
+            sesion.save()
             guardada = cliente.post(
                 "/recuperar/nueva/",
                 {"password": nueva, "confirmacion": nueva},
@@ -213,3 +244,51 @@ class AutenticacionOrmTests(TestCase):
         respuesta = ingreso.post("/login/", {"rut": "33.100.011-6", "password": nueva})
         self.assertEqual(respuesta.status_code, 302)
         self.assertNotIn("/login/", respuesta["Location"])
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_un_codigo_nuevo_invalida_el_anterior(self):
+        self._open_real = builtins.open
+        builtins.open = self._abrir
+        cliente = Client()
+        try:
+            mail.outbox.clear()
+            cliente.post("/recuperar/", {"correo": "admin.prueba@siged.test"})
+            primero = self._codigo_del_correo()
+            mail.outbox.clear()
+            cliente.post("/recuperar/codigo/", {"accion": "reenviar"})
+            segundo = self._codigo_del_correo()
+            self.assertNotEqual(primero, segundo)
+            viejo = {f"d{i}": digito for i, digito in enumerate(primero, start=1)}
+            rechazado = cliente.post("/recuperar/codigo/", viejo)
+            self.assertEqual(rechazado.status_code, 200)
+            self.assertContains(rechazado, "no coincide")
+            self.assertNotContains(rechazado, primero)
+            nuevo = {f"d{i}": digito for i, digito in enumerate(segundo, start=1)}
+            aceptado = cliente.post("/recuperar/codigo/", nuevo)
+            self.assertEqual(aceptado.status_code, 302)
+            self.assertIn("/recuperar/nueva/", aceptado["Location"])
+        finally:
+            builtins.open = self._open_real
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_el_quinto_intento_invalida_el_codigo(self):
+        self._open_real = builtins.open
+        builtins.open = self._abrir
+        cliente = Client()
+        try:
+            mail.outbox.clear()
+            cliente.post("/recuperar/", {"correo": "admin.prueba@siged.test"})
+            codigo = self._codigo_del_correo()
+            malo = "222222" if codigo != "222222" else "333333"
+            digitos_malos = {f"d{i}": digito for i, digito in enumerate(malo, start=1)}
+            for _ in range(4):
+                respuesta = cliente.post("/recuperar/codigo/", digitos_malos)
+                self.assertContains(respuesta, "no coincide")
+            agotado = cliente.post("/recuperar/codigo/", digitos_malos)
+            self.assertContains(agotado, "Demasiados intentos")
+            correcto = {f"d{i}": digito for i, digito in enumerate(codigo, start=1)}
+            despues = cliente.post("/recuperar/codigo/", correcto)
+            self.assertContains(despues, "ya no es válido")
+            self.assertNotContains(despues, codigo)
+        finally:
+            builtins.open = self._open_real

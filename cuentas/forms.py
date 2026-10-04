@@ -115,9 +115,13 @@ class UsuarioForm(FormularioBootstrap):
         return cleaned
 
     def clean_nombre(self):
+        from core.validaciones import MENSAJE_NOMBRE, validar_nombre
+
         nombre = (self.cleaned_data.get("nombre") or "").strip()
         if len(nombre) < 5:
             raise forms.ValidationError("Ingrese el nombre completo (mínimo 5 caracteres).")
+        if not validar_nombre(nombre):
+            raise forms.ValidationError(MENSAJE_NOMBRE)
         return nombre
 
     def clean_password(self):

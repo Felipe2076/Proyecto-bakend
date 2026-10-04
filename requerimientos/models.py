@@ -46,7 +46,35 @@ class Vecino(models.Model):
         ordering = ["nombre"]
 
     def __str__(self):
-        return f"{self.nombre} ({self.rut})" if self.rut else self.nombre
+        visible = self.nombre_mostrado
+        return f"{visible} ({self.rut})" if self.rut else visible
+
+    @property
+    def nombre_mostrado(self):
+        from cuentas.simulacion import con_marca
+
+        return con_marca(self.nombre, self.es_simulacion)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
+        # El nombre de una organización puede llevar dígitos. El patrón de persona
+        # no aplica aquí; sí se rechazan los paréntesis de la marca de simulación.
+        self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())
+        if "(" in self.nombre or ")" in self.nombre:
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
+
+    def save(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
+        self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())[:120]
+        if "(" in self.nombre or ")" in self.nombre:
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
+        super().save(*args, **kwargs)
 
 
 class TipoAtencion(models.Model):

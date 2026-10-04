@@ -58,9 +58,9 @@ python manage.py runserver
 
 ## Quién entra (simulación)
 
-El ingreso es **RUT + clave**. Cada cuenta es un funcionario ficticio, marcado `(ficticio)`, con correo `@siged.test`. Hay al menos una cuenta por cada rol (`administrador`, `jefatura`, `funcionario`, `ventanilla`) en cada una de las seis delegaciones, más un administrador global (`USR-025`).
+El ingreso es **RUT + clave**. Cada cuenta es un funcionario ficticio, con correo `@siged.test`. La marca `(ficticio)` no se guarda en el nombre: sale en pantalla cuando `es_simulacion` es verdadero. Hay al menos una cuenta por cada rol (`administrador`, `jefatura`, `funcionario`, `ventanilla`) en cada una de las seis delegaciones, más un administrador global (`USR-025`).
 
-La clave de **todas** las cuentas de simulación es la convención `Simulacion#2026`. No es un secreto de producción: no está en `data/usuarios.json` (ahí no hay clave) y en la base queda solo el hash. Con `DEBUG=True` el login lista los RUT, sin mostrar la clave.
+Las claves no están en el repositorio. `data/usuarios.json` no trae clave, y el fixture y `D003` dejan `auth_user.password` en `!` (inutilizable). `importar_json` genera una clave distinta por cuenta, no la imprime, y la escribe solo en `.demo_credentials.local` (ignorado por Git, modo 0600). `SIGED_DEMO_PASSWORD` es opcional y solo para pruebas locales: si está definida, esa ejecución usa ese único valor y tampoco lo muestra. Con `DEBUG=True` el login lista los RUT, sin la clave.
 
 | RUT | Rol | Delegación | Código |
 | --- | --- | --- | --- |
@@ -158,7 +158,7 @@ python manage.py loaddata 01_catalogos 02_datos_sistema
 python manage.py importar_json
 ```
 
-`importar_json` asigna la convención `Simulacion#2026` solo si el usuario Django aún no tiene clave usable. `02_datos_sistema.json` ya trae el hash.
+`importar_json` reemplaza la clave de cada cuenta de simulación y reescribe `.demo_credentials.local`. Hay que ejecutarlo después de `loaddata` o de `D003`: sin ese paso las cuentas quedan con clave inutilizable. El código de recuperación se envía por correo (consola del proceso si `DEBUG=True`) y en la base solo queda un hash de un solo uso.
 
 3. Camino manual, equivalente, sobre un esquema que ya tiene las tablas de `0001`:
 
@@ -166,6 +166,8 @@ python manage.py importar_json
 mysql gestion_muni < sql/migraciones/V017__funcionario_rut_nombres.sql
 mysql gestion_muni < sql/datos/D003__datos_simulacion.sql
 mysql gestion_muni < sql/migraciones/V018__rut_obligatorio.sql
+mysql gestion_muni < sql/migraciones/V023__codigo_recuperacion.sql
+python manage.py importar_json
 python manage.py migrate --fake
 ```
 

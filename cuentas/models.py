@@ -98,18 +98,25 @@ class Funcionario(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.nombre} ({self.codigo})"
+        return f"{self.nombre_mostrado} ({self.codigo})"
 
     @property
     def nombre_completo(self):
-        from cuentas.simulacion import nombre_visible
+        """Nombre compuesto que se guarda, sin la marca de simulación."""
+        from cuentas.simulacion import nombre_almacenado
 
-        return nombre_visible(self.nombres, self.apellido_paterno, self.apellido_materno or "", self.es_simulacion)
+        return nombre_almacenado(self.nombres, self.apellido_paterno, self.apellido_materno or "")
+
+    @property
+    def nombre_mostrado(self):
+        from cuentas.simulacion import con_marca
+
+        return con_marca(self.nombre, self.es_simulacion)
 
     def clean(self):
         from django.core.exceptions import ValidationError
 
-        from core.validaciones import MENSAJE_RUT, normalizar_rut, validar_rut
+        from core.validaciones import MENSAJE_NOMBRE, MENSAJE_RUT, normalizar_rut, validar_nombre, validar_rut
 
         self.rut = normalizar_rut(self.rut or "")
         if not validar_rut(self.rut):
@@ -118,8 +125,21 @@ class Funcionario(models.Model):
         self.apellido_paterno = " ".join((self.apellido_paterno or "").split())
         if self.apellido_materno:
             self.apellido_materno = " ".join(self.apellido_materno.split()) or None
+        errores = {}
+        for campo in ("nombres", "apellido_paterno", "apellido_materno"):
+            valor = getattr(self, campo) or ""
+            if valor and not validar_nombre(valor):
+                errores[campo] = MENSAJE_NOMBRE
+        if self.nombre and not validar_nombre(" ".join(self.nombre.replace("(ficticio)", "").split())):
+            errores["nombre"] = MENSAJE_NOMBRE
+        if errores:
+            raise ValidationError(errores)
 
     def save(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
         if not (self.nombres or "").strip() and self.nombre:
             limpio = self.nombre.replace("(ficticio)", "").strip()
             partes = limpio.split()
@@ -129,6 +149,10 @@ class Funcionario(models.Model):
                 self.apellido_materno = " ".join(partes[2:])[:60]
         if (self.nombres or "").strip() and (self.apellido_paterno or "").strip():
             self.nombre = self.nombre_completo[:120]
+        else:
+            self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())[:120]
+        if "(" in (self.nombre or "") or ")" in (self.nombre or ""):
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
         super().save(*args, **kwargs)
 
 
@@ -156,11 +180,29 @@ class Usuario(models.Model):
         ordering = ["nombre"]
 
     def __str__(self):
-        return f"{self.nombre} ({self.username})"
+        return f"{self.nombre_mostrado} ({self.username})"
+
+    @property
+    def nombre_mostrado(self):
+        """La marca sale del funcionario. Esta tabla no tiene columna propia."""
+        from cuentas.simulacion import con_marca
+
+        es_simulacion = bool(self.funcionario_id and self.funcionario.es_simulacion)
+        return con_marca(self.nombre, es_simulacion)
 
     @property
     def activo(self):
         return self.estado == EstadoRegistro.ACTIVO
+
+    def save(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
+        self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())[:120]
+        if "(" in self.nombre or ")" in self.nombre:
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
+        super().save(*args, **kwargs)
 
 
 class ParametroSistema(models.Model):
@@ -182,3 +224,31 @@ class ParametroSistema(models.Model):
 
     def __str__(self):
         return self.nombre_sistema
+
+
+class CodigoRecuperacion(models.Model):
+    """Código de un solo uso para recuperar la clave. Solo se guarda el hash."""
+
+    MAX_INTENTOS = 5
+    VIGENCIA_MINUTOS = 10
+
+    usuario = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, related_name="codigos_recuperacion", db_index=False,
+    )
+    codigo_hash = models.CharField("hash del código", max_length=128)
+    expira = models.DateTimeField()
+    intentos = models.PositiveSmallIntegerField(default=0)
+    usado = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "código de recuperación"
+        verbose_name_plural = "códigos de recuperación"
+        ordering = ["-creado"]
+        indexes = [
+            models.Index(fields=["usuario", "usado"], name="idx_recup_usuario_usado"),
+        ]
+
+    def __str__(self):
+        estado = "usado" if self.usado else "vigente"
+        return f"recuperación {self.usuario_id} ({estado})"

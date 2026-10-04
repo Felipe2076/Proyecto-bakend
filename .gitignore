@@ -20,3 +20,6 @@ staticfiles/
 backups/
 *.sql.gz
 *.dump
+
+# Claves de simulación generadas por importar_json. Una por cuenta.
+.demo_credentials.local

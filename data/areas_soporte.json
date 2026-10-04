@@ -2,7 +2,7 @@
   {
     "id_area": "AREA-001",
     "nombre_area": "Seguridad Ciudadana",
-    "encargado": "Iris Alamo Lago (ficticio)",
+    "encargado": "Iris Alamo Lago",
     "tiempo_promedio_dias": 2.4,
     "total_casos_mes": 142,
     "porcentaje_cumplimiento": 88,
@@ -13,7 +13,7 @@
   {
     "id_area": "AREA-002",
     "nombre_area": "Servicio a la Comunidad",
-    "encargado": "Felix Alamo Castro (ficticio)",
+    "encargado": "Felix Alamo Castro",
     "tiempo_promedio_dias": 3.8,
     "total_casos_mes": 215,
     "porcentaje_cumplimiento": 82,
@@ -24,7 +24,7 @@
   {
     "id_area": "AREA-003",
     "nombre_area": "Gestión Social y Comunitaria",
-    "encargado": "Bruno Alamo Keller (ficticio)",
+    "encargado": "Bruno Alamo Keller",
     "tiempo_promedio_dias": 4.5,
     "total_casos_mes": 180,
     "porcentaje_cumplimiento": 75,
@@ -35,7 +35,7 @@
   {
     "id_area": "AREA-004",
     "nombre_area": "Instituciones Municipales y Participación",
-    "encargado": "Greta Alamo Flores (ficticio)",
+    "encargado": "Greta Alamo Flores",
     "tiempo_promedio_dias": 6.2,
     "total_casos_mes": 165,
     "porcentaje_cumplimiento": 58,

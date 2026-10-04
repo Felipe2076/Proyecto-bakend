@@ -116,13 +116,13 @@ def sesion_desde_usuario(usuario):
     fun = usuario.funcionario if usuario.funcionario_id else None
     rol = usuario.rol.codigo if usuario.rol_id else ""
     if fun is not None:
-        nombre = fun.nombre
+        nombre = fun.nombre_mostrado
         delegacion = fun.delegacion.nombre if fun.delegacion_id else ""
         rut = fun.rut or ""
         cargo = fun.cargo.nombre if fun.cargo_id else ""
         id_funcionario = fun.codigo
     else:
-        nombre = usuario.nombre
+        nombre = usuario.nombre_mostrado
         delegacion = usuario.delegacion.nombre if usuario.delegacion_id else ""
         rut = ""
         cargo = usuario.cargo.nombre if usuario.cargo_id else ""

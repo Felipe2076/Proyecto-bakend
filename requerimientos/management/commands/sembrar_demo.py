@@ -41,7 +41,7 @@ TICKETS_DEMO = [
 # Metas por defecto si el funcionario no tiene ninguna: (nombre, ponderador, meta trimestre, avance)
 METAS_DEMO = [("Cobertura", 40, 30, 22), ("Tiempos", 30, 20, 13), ("Satisfacción", 30, 10, 8)]
 
-VECINO_DEMO = "Vecino demo SIGED-SGR (ficticio)"
+VECINO_DEMO = "Vecino demo SIGED-SGR"
 
 
 class Command(BaseCommand):

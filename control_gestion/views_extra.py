@@ -70,12 +70,12 @@ def agenda_view(request):
             {
                 "id": item.codigo,
                 "titulo": item.descripcion,
-                "detalle": f"{item.vecino.nombre} · {item.estado}",
+                "detalle": f"{item.vecino.nombre_mostrado} · {item.estado}",
                 "tipo": "Compromiso ciudadano",
                 "fecha": item.fecha_compromiso,
                 "fecha_iso": item.fecha_compromiso.strftime("%Y-%m-%d"),
                 "delegacion": item.delegacion.nombre,
-                "responsable": item.funcionario.nombre,
+                "responsable": item.funcionario.nombre_mostrado,
                 "origen": "compromiso",
                 "clase": "text-bg-warning",
             }
@@ -90,7 +90,7 @@ def agenda_view(request):
                 "fecha": item.fecha_actividad,
                 "fecha_iso": item.fecha_actividad.strftime("%Y-%m-%d"),
                 "delegacion": item.delegacion.nombre,
-                "responsable": item.funcionario.nombre,
+                "responsable": item.funcionario.nombre_mostrado,
                 "origen": "actividad",
                 "clase": "text-bg-success",
             }

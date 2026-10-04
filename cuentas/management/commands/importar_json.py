@@ -81,13 +81,22 @@ class Command(BaseCommand):
                 or Funcionario.objects.filter(nombre__istartswith=limpio).first())
 
     def _vecino(self, nombre, telefono="", correo="", delegacion=None):
-        nombre = (nombre or "Vecino sin nombre").strip()
+        marca = "(ficticio)" in (nombre or "") or (correo or "").endswith("@siged.test")
+        nombre = " ".join((nombre or "Vecino sin nombre").replace("(ficticio)", "").split())
         vecino = Vecino.objects.filter(nombre=nombre).first()
         if vecino is None:
-            vecino = Vecino.objects.create(nombre=nombre, telefono=telefono or "", correo=correo or "",
-                                           delegacion=delegacion)
+            vecino = Vecino.objects.create(
+                nombre=nombre,
+                telefono=telefono or "",
+                correo=correo or "",
+                delegacion=delegacion,
+                es_simulacion=marca,
+            )
         else:
             cambios = False
+            if marca and not vecino.es_simulacion:
+                vecino.es_simulacion = True
+                cambios = True
             for campo, valor in (("telefono", telefono), ("correo", correo), ("delegacion", delegacion)):
                 if valor and not getattr(vecino, campo):
                     setattr(vecino, campo, valor)
@@ -119,9 +128,10 @@ class Command(BaseCommand):
             obj.save()
 
     def importar_funcionarios(self):
-        for f in self._leer("funcionarios.json", []):
-            from cuentas.simulacion import nombre_visible
+        from core.validaciones import cuerpo_en_rango_ficticio
+        from cuentas.simulacion import nombre_almacenado
 
+        for f in self._leer("funcionarios.json", []):
             nombres = (f.get("nombres") or "").strip()
             paterno = (f.get("apellido_paterno") or "").strip()
             materno = (f.get("apellido_materno") or "").strip() or None
@@ -131,7 +141,11 @@ class Command(BaseCommand):
                 paterno = paterno or (partes[1] if len(partes) > 1 else "Registro")
                 if materno is None and len(partes) > 2:
                     materno = " ".join(partes[2:])
-            ficticio = bool(f.get("es_simulacion", "(ficticio)" in (f.get("nombre") or "")))
+            ficticio = (
+                bool(f.get("es_simulacion"))
+                or "(ficticio)" in (f.get("nombre") or "")
+                or cuerpo_en_rango_ficticio(f.get("rut") or "")
+            )
             funcionario, _ = Funcionario.objects.update_or_create(
                 codigo=f["id_funcionario"],
                 defaults={
@@ -139,7 +153,7 @@ class Command(BaseCommand):
                     "nombres": nombres[:60],
                     "apellido_paterno": paterno[:60],
                     "apellido_materno": (materno[:60] if materno else None),
-                    "nombre": f.get("nombre") or nombre_visible(nombres, paterno, materno or "", ficticio),
+                    "nombre": nombre_almacenado(nombres, paterno, materno or ""),
                     "es_simulacion": ficticio,
                     "cargo": self._cargo(f.get("cargo")),
                     "delegacion": self._delegacion(f.get("delegacion")),
@@ -158,9 +172,15 @@ class Command(BaseCommand):
                 )
 
     def importar_usuarios(self, crear_auth):
-        from cuentas.simulacion import CLAVE_DEMO
+        from cuentas.simulacion import (
+            clave_compartida_de_prueba,
+            escribir_claves_locales,
+            nueva_clave_simulacion,
+        )
 
         User = get_user_model()
+        compartida = clave_compartida_de_prueba()
+        credenciales = []
         for u in self._leer("usuarios.json", []):
             codigo_rol = u.get("rol", "funcionario")
             rol, _ = Rol.objects.get_or_create(
@@ -191,25 +211,33 @@ class Command(BaseCommand):
             )
             if not crear_auth:
                 continue
-            # La clave no viaja en el JSON. Si el archivo aún trae una (legado), se hashea al crear.
-            clave = u.get("password") or CLAVE_DEMO
+            # El JSON no trae clave. Cada cuenta recibe una distinta, salvo que
+            # SIGED_DEMO_PASSWORD esté definida para una prueba local.
+            clave = nueva_clave_simulacion(compartida)
             user = usuario.user or User.objects.filter(username=username).first()
+            partes = usuario.nombre.split(" ", 1)
             if user is None:
-                partes = usuario.nombre.replace("(ficticio)", "").split(" ", 1)
                 user = User(username=username, email=usuario.correo, first_name=partes[0][:150],
                             last_name=(partes[1].strip() if len(partes) > 1 else "")[:150],
                             is_active=usuario.activo)
-                user.set_password(clave)
-                user.save()
                 self.auth_creados += 1
-            elif not user.has_usable_password():
-                user.username = username
-                user.email = usuario.correo
-                user.set_password(clave)
-                user.save()
+            user.username = username
+            user.email = usuario.correo
+            user.first_name = partes[0][:150]
+            user.last_name = (partes[1].strip() if len(partes) > 1 else "")[:150]
+            user.is_active = usuario.activo
+            user.set_password(clave)
+            user.save()
             if usuario.user_id != user.pk:
                 usuario.user = user
                 usuario.save(update_fields=["user"])
+            rut = funcionario.rut if funcionario is not None and funcionario.rut else username
+            credenciales.append((rut, usuario.codigo or "", clave))
+        if crear_auth and credenciales:
+            nombre_archivo = escribir_claves_locales(credenciales)
+            self.stdout.write(
+                f"Claves de simulación escritas en {nombre_archivo}. No se imprimen."
+            )
 
     def importar_areas(self):
         for a in self._leer("areas_soporte.json", []):

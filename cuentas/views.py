@@ -1,18 +1,17 @@
 import re
-import secrets
-from datetime import date, datetime, timedelta
+from datetime import date
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.shortcuts import redirect, render
-from django.utils import timezone
 
-from core.validaciones import MENSAJE_RUT, formatear_rut, rut_normalizado_valido
+from core.validaciones import MENSAJE_NOMBRE, MENSAJE_RUT, formatear_rut, rut_normalizado_valido, validar_nombre
 from cuentas.auth import requerir_modulo, usuario_sesion
 from cuentas.forms import NuevaContrasenaForm
 from cuentas.models import Cargo, Delegacion, EstadoRegistro, Funcionario, ParametroSistema, Rol, Usuario
+from cuentas.recuperacion import emitir_codigo, enviar_codigo, verificar_codigo
 from cuentas.servicios import (
     autenticar,
     errores_clave,
@@ -21,7 +20,7 @@ from cuentas.servicios import (
     sesion_desde_usuario,
     siguiente_codigo,
 )
-from cuentas.simulacion import CODIGO_ADMIN_GLOBAL, identidad, nombre_visible
+from cuentas.simulacion import CODIGO_ADMIN_GLOBAL, identidad, nombre_almacenado
 from control_gestion.models import Medicion
 
 ROLES_DISPONIBLES = [
@@ -51,7 +50,7 @@ def _demos():
         demos.append(
             {
                 "rut": formatear_rut(fun.rut) if fun else "",
-                "nombre": fun.nombre if fun else usuario.nombre,
+                "nombre": fun.nombre_mostrado if fun else usuario.nombre_mostrado,
                 "rol": usuario.rol.codigo if usuario.rol_id else "",
                 "delegacion": fun.delegacion.nombre if fun and fun.delegacion_id else "",
                 "global": usuario.codigo == CODIGO_ADMIN_GLOBAL,
@@ -106,30 +105,27 @@ def logout_view(request):
     return redirect("login")
 
 
-def _guardar_recuperacion(request, usuario, codigo):
+def _sesion_recuperacion(request, usuario, verificado=False):
+    """La cookie guarda el id y, tras acertar, la marca de verificado. Nunca el código."""
     request.session["recuperacion"] = {
         "usuario_id": usuario.pk,
-        "codigo": codigo,
-        "expira": (timezone.now() + timedelta(minutes=10)).isoformat(),
-        "correo": usuario.correo,
-        "verificado": False,
+        "verificado": verificado,
     }
     request.session.modified = True
 
 
-def _recuperacion_vigente(request):
+def _usuario_en_recuperacion(request):
     datos = request.session.get("recuperacion") or {}
-    if not datos.get("usuario_id") or not datos.get("codigo"):
-        return None
-    try:
-        expira = datetime.fromisoformat(datos["expira"])
-        if timezone.is_naive(expira):
-            expira = timezone.make_aware(expira, timezone.get_current_timezone())
-    except (TypeError, ValueError):
-        return None
-    if timezone.now() > expira:
-        return None
-    return datos
+    usuario_id = datos.get("usuario_id")
+    if not usuario_id:
+        return None, datos
+    usuario = Usuario.objects.select_related("user").filter(pk=usuario_id).first()
+    return usuario, datos
+
+
+def _emitir_y_enviar(usuario):
+    codigo = emitir_codigo(usuario)
+    enviar_codigo(usuario, codigo)
 
 
 def recuperar_contrasena_view(request):
@@ -148,61 +144,65 @@ def recuperar_contrasena_view(request):
             if usuario is None or usuario.user_id is None:
                 errores["correo"] = "No encontramos un usuario activo con ese correo."
             else:
-                codigo = f"{secrets.randbelow(1_000_000):06d}"
-                _guardar_recuperacion(request, usuario, codigo)
+                _emitir_y_enviar(usuario)
+                _sesion_recuperacion(request, usuario, verificado=False)
                 messages.success(
                     request,
-                    "Generamos un código de 6 dígitos, vigente por 10 minutos. "
-                    f"En esta demostración (sin servidor de correo) el código es {codigo}.",
+                    "Enviamos un código de 6 dígitos a su correo. "
+                    "Vence en 10 minutos y solo puede usarse una vez.",
                 )
                 return redirect("validar_codigo")
     return render(request, "cuentas/recuperar.html", {"errores": errores, "correo": correo})
 
 
 def validar_codigo_view(request):
-    datos = _recuperacion_vigente(request)
-    if datos is None:
-        messages.error(request, "El código expiró o no hay una recuperación en curso. Solicite uno nuevo.")
+    usuario, datos = _usuario_en_recuperacion(request)
+    if usuario is None:
+        messages.error(request, "No hay una recuperación en curso. Solicite un código nuevo.")
         return redirect("recuperar_contrasena")
     errores = {}
     if request.method == "POST":
         if (request.POST.get("accion") or "") == "reenviar":
-            usuario = Usuario.objects.filter(pk=datos["usuario_id"]).first()
-            if usuario is None:
-                messages.error(request, "No fue posible reenviar el código.")
-                return redirect("recuperar_contrasena")
-            codigo = f"{secrets.randbelow(1_000_000):06d}"
-            _guardar_recuperacion(request, usuario, codigo)
-            messages.success(request, f"Enviamos un código nuevo. En esta demostración el código es {codigo}.")
+            _emitir_y_enviar(usuario)
+            _sesion_recuperacion(request, usuario, verificado=False)
+            messages.success(
+                request,
+                "Enviamos un código nuevo a su correo. El anterior ya no sirve.",
+            )
             return redirect("validar_codigo")
         ingresado = "".join((request.POST.get(f"d{i}") or "").strip() for i in range(1, 7))
         if not re.fullmatch(r"\d{6}", ingresado):
             errores["codigo"] = "Ingrese los 6 dígitos del código."
-        elif not secrets.compare_digest(ingresado, datos["codigo"]):
-            errores["codigo"] = "El código no coincide. Revíselo e intente de nuevo."
         else:
-            datos["verificado"] = True
-            request.session["recuperacion"] = datos
-            request.session.modified = True
-            messages.success(request, "Código verificado. Defina su nueva contraseña.")
-            return redirect("nueva_contrasena")
+            resultado = verificar_codigo(usuario, ingresado)
+            if resultado == "ok":
+                _sesion_recuperacion(request, usuario, verificado=True)
+                messages.success(request, "Código verificado. Defina su nueva contraseña.")
+                return redirect("nueva_contrasena")
+            if resultado == "agotado":
+                errores["codigo"] = "Demasiados intentos. Solicite un código nuevo."
+            elif resultado == "expirado":
+                errores["codigo"] = "El código expiró. Solicite uno nuevo."
+            elif resultado == "ausente":
+                errores["codigo"] = "Ese código ya no es válido. Solicite uno nuevo."
+            else:
+                errores["codigo"] = "El código no coincide. Revíselo e intente de nuevo."
         messages.error(request, "No pudimos validar el código.")
     return render(
         request,
         "cuentas/validar_codigo.html",
-        {"errores": errores, "correo": datos.get("correo", "")},
+        {"errores": errores, "correo": usuario.correo},
     )
 
 
 def nueva_contrasena_view(request):
-    datos = _recuperacion_vigente(request)
-    if datos is None or not datos.get("verificado"):
+    usuario, datos = _usuario_en_recuperacion(request)
+    if usuario is None or not datos.get("verificado"):
         messages.error(request, "Primero debe validar el código enviado a su correo.")
-        return redirect("validar_codigo" if datos else "recuperar_contrasena")
+        return redirect("validar_codigo" if usuario else "recuperar_contrasena")
     form = NuevaContrasenaForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        usuario = Usuario.objects.select_related("user").filter(pk=datos["usuario_id"]).first()
-        if usuario is None or usuario.user_id is None:
+        if usuario.user_id is None:
             messages.error(request, "No fue posible actualizar la contraseña de ese usuario.")
             return redirect("recuperar_contrasena")
         usuario.user.set_password(form.cleaned_data["password"])
@@ -220,7 +220,7 @@ def _usuario_a_fila(usuario):
     return {
         "id_usuario": usuario.codigo or str(usuario.pk),
         "username": formatear_rut(fun.rut) if fun else usuario.username,
-        "nombre": fun.nombre if fun else usuario.nombre,
+        "nombre": (fun.nombre_mostrado if fun else usuario.nombre_mostrado),
         "email": usuario.correo,
         "rol": usuario.rol.nombre if usuario.rol_id else "",
         "cargo": usuario.cargo.nombre if usuario.cargo_id else "",
@@ -281,6 +281,8 @@ def administracion_usuarios_view(request):
             errores["password"] = " ".join(fallas_clave)
         if len(nombre) < 5:
             errores["nombre"] = "Ingrese el nombre completo (mínimo 5 caracteres)."
+        elif not validar_nombre(nombre):
+            errores["nombre"] = MENSAJE_NOMBRE
         if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
             errores["email"] = "Ingrese un correo válido."
         if email and Usuario.objects.filter(correo__iexact=email).exists():
@@ -302,14 +304,14 @@ def administracion_usuarios_view(request):
             delegacion, _ = Delegacion.objects.get_or_create(
                 nombre=delegacion_nombre, defaults={"comuna": "La Serena"}
             )
-            partes = [p for p in nombre.replace("(ficticio)", "").split() if p]
+            partes = [p for p in nombre.split() if p]
             nombres = partes[0][:60]
             paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
             materno = (" ".join(partes[2:])[:60] or None) if len(partes) > 2 else None
             if nombres == "Registro":
                 gen_n, gen_p, gen_m = identidad(Funcionario.objects.count() + 1)
                 nombres, paterno, materno = gen_n, gen_p, gen_m
-            visible = nombre_visible(nombres, paterno, materno or "", True) if "(ficticio)" in nombre else nombre
+            visible = nombre_almacenado(nombres, paterno, materno or "")
             if funcionario is None:
                 funcionario = Funcionario(
                     codigo=siguiente_codigo(Funcionario, "codigo", "FUN-", 3),
@@ -324,7 +326,7 @@ def administracion_usuarios_view(request):
             funcionario.nombre = visible[:120]
             funcionario.cargo = cargo
             funcionario.delegacion = delegacion
-            funcionario.es_simulacion = "(ficticio)" in funcionario.nombre
+            funcionario.es_simulacion = False
             funcionario.save()
             correo = email or f"{funcionario.codigo.lower()}@siged.test"
             from django.contrib.auth import get_user_model
@@ -357,7 +359,7 @@ def administracion_usuarios_view(request):
             for item in Usuario.objects.select_related("rol", "cargo").order_by("nombre")
         ],
         "funcionarios": [
-            {"id_funcionario": fun.codigo, "nombre": fun.nombre}
+            {"id_funcionario": fun.codigo, "nombre": fun.nombre_mostrado}
             for fun in Funcionario.objects.order_by("nombre")
         ],
         "cargos": Cargo.objects.order_by("nombre"),

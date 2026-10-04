@@ -41,7 +41,7 @@ class ItemFuncionario(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.funcionario.nombre}: {self.meta}"
+        return f"{self.funcionario.nombre_mostrado}: {self.meta}"
 
     @property
     def porcentaje_avance(self):

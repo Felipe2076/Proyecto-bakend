@@ -7,13 +7,11 @@ de pruebas) no inserta las 25 cuentas. Esas llegan por fixtures o por
 
 import re
 
-from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 
 from core.validaciones import cuerpo_en_rango_ficticio
 from cuentas.simulacion import (
     CARGO_POR_ROL,
-    CLAVE_DEMO,
     CODIGO_ADMIN_GLOBAL,
     ROLES_ORDEN,
     correo_funcionario,
@@ -21,7 +19,7 @@ from cuentas.simulacion import (
     direccion_ficticia,
     es_organizacion,
     identidad,
-    nombre_visible,
+    nombre_almacenado,
     rut_trabajador,
     rut_vecino,
     telefono_ficticio,
@@ -61,8 +59,9 @@ def _siguiente_codigo(modelo, prefijo, using):
     return f"{prefijo}{maximo + 1:03d}"
 
 
-def _ya_ficticio(rut, nombre):
-    return bool(rut) and "(ficticio)" in (nombre or "") and cuerpo_en_rango_ficticio(rut)
+def _ya_simulado(obj):
+    """Ya tiene RUT de simulación y la marca en la columna, no en el nombre."""
+    return bool(getattr(obj, "es_simulacion", False)) and cuerpo_en_rango_ficticio(getattr(obj, "rut", "") or "")
 
 
 def _limpiar_texto(texto, mapa):
@@ -89,12 +88,13 @@ def _marcar_funcionario(fun, indice):
     fun.apellido_paterno = paterno
     fun.apellido_materno = materno
     fun.es_simulacion = True
-    fun.nombre = nombre_visible(nombres, paterno, materno, True)
+    fun.nombre = nombre_almacenado(nombres, paterno, materno)
     fun.save()
 
 
-def _hash():
-    return make_password(CLAVE_DEMO)
+def _clave_inutilizable():
+    """No autentica. importar_json asigna después una clave distinta por cuenta."""
+    return "!"
 
 
 def _sincronizar_acceso(usuario, fun, User, using):
@@ -119,7 +119,7 @@ def _sincronizar_acceso(usuario, fun, User, using):
     user.first_name = (fun.nombres or "")[:150]
     user.last_name = (fun.apellido_paterno or "")[:150]
     user.is_active = usuario.estado == "activo"
-    user.password = _hash()
+    user.password = _clave_inutilizable()
     user.save()
     usuario.user = user
     usuario.save()
@@ -134,7 +134,7 @@ def _crear_funcionario(Funcionario, cargo, delegacion, indice, using):
         nombres=nombres,
         apellido_paterno=paterno,
         apellido_materno=materno,
-        nombre=nombre_visible(nombres, paterno, materno, True),
+        nombre=nombre_almacenado(nombres, paterno, materno),
         es_simulacion=True,
         cargo=cargo,
         delegacion=delegacion,
@@ -191,7 +191,7 @@ def aplicar(apps, schema_editor):
         default=0,
     )
     for fun in Funcionario.objects.using(using).order_by("codigo", "pk"):
-        if _ya_ficticio(fun.rut, fun.nombre):
+        if _ya_simulado(fun):
             continue
         viejo = fun.nombre
         indice += 1
@@ -246,15 +246,15 @@ def aplicar(apps, schema_editor):
             default=0,
         )
         for vecino in Vecino.objects.using(using).order_by("pk"):
-            if _ya_ficticio(vecino.rut, vecino.nombre) and vecino.es_simulacion:
+            if _ya_simulado(vecino):
                 continue
             viejo = vecino.nombre
             indice_v += 1
             if es_organizacion(viejo):
-                vecino.nombre = f"Organización Ficticia {indice_v:02d} (ficticio)"
+                vecino.nombre = f"Organización Ficticia {indice_v:02d}"
             else:
                 nombres, paterno, materno = identidad(indice_v + 40)
-                vecino.nombre = nombre_visible(nombres, paterno, materno, True)
+                vecino.nombre = nombre_almacenado(nombres, paterno, materno)
             vecino.rut = rut_vecino(indice_v)
             vecino.telefono = telefono_ficticio(indice_v)
             vecino.correo = correo_vecino(indice_v)
@@ -270,7 +270,7 @@ def aplicar(apps, schema_editor):
                 indice_v += 1
                 nombres, paterno, materno = identidad(indice_v + 40)
                 Vecino.objects.using(using).create(
-                    nombre=nombre_visible(nombres, paterno, materno, True),
+                    nombre=nombre_almacenado(nombres, paterno, materno),
                     rut=rut_vecino(indice_v),
                     telefono=telefono_ficticio(indice_v),
                     correo=correo_vecino(indice_v),
@@ -317,7 +317,7 @@ def _limpiar_textos(apps, using, mapa):
 
     for actividad in Actividad.objects.using(using).all():
         if actividad.contacto:
-            actividad.contacto = f"Contacto ficticio {actividad.pk} (ficticio)"
+            actividad.contacto = f"Contacto ficticio {actividad.pk}"
         actividad.servicio = _limpiar_texto(actividad.servicio, mapa)
         actividad.save()
 

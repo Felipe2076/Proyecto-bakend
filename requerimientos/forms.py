@@ -74,6 +74,14 @@ class VecinoForm(NombreMinimoMixin, FormularioBootstrap):
             "estado": "Estado",
         }
 
+    def clean_nombre(self):
+        from core.validaciones import MENSAJE_NOMBRE
+
+        nombre = super().clean_nombre()
+        if "(" in nombre or ")" in nombre:
+            raise forms.ValidationError(MENSAJE_NOMBRE)
+        return nombre.replace("(ficticio)", "").strip()
+
     def clean_rut(self):
         from core.validaciones import MENSAJE_RUT, normalizar_rut, validar_rut
 

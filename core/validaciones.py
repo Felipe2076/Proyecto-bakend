@@ -12,6 +12,12 @@ _RUT = re.compile(PATRON_RUT)
 
 MENSAJE_RUT = "Ingrese un RUT válido, por ejemplo 33.100.001-9."
 
+# Letras, espacio, apóstrofo, punto o guion. Los paréntesis no entran: la marca
+# «(ficticio)» no se guarda en el nombre; sale de es_simulacion al mostrar.
+PATRON_NOMBRE = r"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ' .-]{1,119}$"
+_NOMBRE = re.compile(PATRON_NOMBRE)
+MENSAJE_NOMBRE = "Use solo letras, espacios, apóstrofo o guion (2 a 120). No use paréntesis."
+
 
 def dv_rut(cuerpo: str) -> str:
     """Dígito verificador por módulo 11. ``cuerpo`` son solo dígitos."""
@@ -71,6 +77,11 @@ def enmascarar_rut(rut: str) -> str:
         return f"{cuerpo}-{'X' * 0}{dv}"
     prefijo = cuerpo[:3]
     return f"{prefijo[:2]}.{prefijo[2]}XX.XXX-{dv}"
+
+
+def validar_nombre(nombre: str) -> bool:
+    """True si el nombre cumple el patrón y, por lo tanto, no trae paréntesis."""
+    return bool(_NOMBRE.fullmatch((nombre or "").strip()))
 
 
 def cuerpo_en_rango_ficticio(rut: str) -> bool:

@@ -7,8 +7,13 @@ Cada cambio de esquema de la prioridad 1 tiene script y rollback, y también una
 | Orden | Script | Qué hace | Rollback |
 | --- | --- | --- | --- |
 | 1 | `V017__funcionario_rut_nombres.sql` | Columnas anulables `rut`, `nombres`, apellidos y `es_simulacion`; índice `idx_funcionario_delegacion_apellido` | `R017__funcionario_rut_nombres.sql` |
-| 2 | `D003__datos_simulacion.sql` | Reemplaza identidades por la simulación (RUT del rango 33.xxx, hash de clave, sin texto plano) | No hay rollback de datos: restaurar el `mysqldump` |
+| 2 | `D003__datos_simulacion.sql` | Reemplaza identidades por la simulación (RUT del rango 33.xxx, nombres sin marca, clave `!`) | No hay rollback de datos: restaurar el `mysqldump` |
 | 3 | `V018__rut_obligatorio.sql` | `rut` y nombres obligatorios, `uq_funcionario_rut`, `CHECK` con `REGEXP_LIKE`, `cuentas_usuario.funcionario_id` obligatorio | `R018__rut_obligatorio.sql` |
+| 4 | `V023__codigo_recuperacion.sql` | Tabla `cuentas_codigorecuperacion`: hash del código, vencimiento, intentos y marca de usado | `R023__codigo_recuperacion.sql` |
+
+`V019`, `V019b`, `V019c` y `V021` están reservados. El plan ya asigna `V020` (cuenta de vecino) y `V022` (MFA). El código de recuperación usa `V023` para no tomar esos números. `es_simulacion` ya está en `V017`; no hay `V018b`. La restricción `UNIQUE` `uq_funcionario_rut` se mantiene en `V018`.
+
+`R017` crea antes `idx_funcionario_delegacion_id` y solo entonces borra el índice compuesto. Sin ese paso MySQL responde 1553, porque el compuesto es el que sostiene la llave foránea de `delegacion_id`. También contempla el nombre corto `idx_fun_deleg_apellido` de Django. La bitácora que detallaba el arreglo no estaba en el workspace.
 
 El índice equivalente en Django se llama `idx_fun_deleg_apellido` porque el ORM limita el nombre a 30 caracteres. El `CHECK` de formato vive solo en MySQL (`V018`); SQLite, usado por la suite, no tiene `REGEXP_LIKE`. El dígito verificador se exige en Python y en JavaScript.
 
@@ -21,7 +26,7 @@ python manage.py loaddata 01_catalogos 02_datos_sistema
 python manage.py importar_json
 ```
 
-La migración `cuentas.0003` reescribe los datos si ya hay funcionarios. En una base vacía no inserta la simulación: eso lo hacen el fixture y `importar_json`.
+`importar_json` escribe las claves en `.demo_credentials.local` y no las imprime. La migración `cuentas.0003` reescribe los datos si ya hay funcionarios y deja la clave inutilizable; `cuentas.0004` crea la tabla del código de recuperación. En una base vacía `0003` no inserta la simulación: eso lo hacen el fixture y `importar_json`.
 
 ## Esquema ya creado por Django 0001, sin pasar por migrate de la 0002/0003
 
@@ -30,6 +35,8 @@ mysqldump -u "$DB_USER" -p --single-transaction --routines gestion_muni > backup
 mysql gestion_muni < sql/migraciones/V017__funcionario_rut_nombres.sql
 mysql gestion_muni < sql/datos/D003__datos_simulacion.sql
 mysql gestion_muni < sql/migraciones/V018__rut_obligatorio.sql
+mysql gestion_muni < sql/migraciones/V023__codigo_recuperacion.sql
+python manage.py importar_json
 python manage.py migrate --fake
 ```
 

@@ -7,7 +7,8 @@ El dibujo del MER sigue pendiente del aporte gráfico (ramoncito). Esta nota reg
 | v1.12 | `V017` | `cuentas_funcionario` gana `rut`, `nombres`, `apellido_paterno`, `apellido_materno` (anulables) y `es_simulacion`. Índice por delegación y apellido. `requerimientos_vecino.es_simulacion`. |
 | datos | `D003` | Identidades de simulación. No cambia columnas. |
 | v1.13 | `V018` | `rut`, `nombres` y `apellido_paterno` obligatorios. Único `uq_funcionario_rut`. `CHECK` de formato en MySQL. `cuentas_usuario.funcionario_id` obligatorio (`ON DELETE` protege al funcionario). |
+| v1.14 | `V023` | `cuentas_codigorecuperacion`: hash del código (`codigo_hash`), `expira`, `intentos`, `usado` y `usuario_id`. No usa `V019`–`V021` (reservados) ni `V020`/`V022` (asignados en el plan). |
 
-`nombre` en funcionario se conserva como texto compuesto para las pantallas que ya lo leían. El identificador de acceso es `rut` normalizado (`33100001-9`), copiado a `auth_user.username`.
+`nombre` en funcionario se conserva como texto compuesto, sin la marca `(ficticio)`. Esa marca se arma al mostrar a partir de `es_simulacion`. El identificador de acceso es `rut` normalizado (`33100001-9`), copiado a `auth_user.username`. La clave de simulación no se guarda en estos scripts: `D003` deja `!`.
 
-Equivalente Django: `cuentas.0002_funcionario_rut`, `requerimientos.0002_vecino_es_simulacion`, `cuentas.0003_rut_obligatorio` (incluye el relleno de datos).
+Equivalente Django: `cuentas.0002_funcionario_rut`, `requerimientos.0002_vecino_es_simulacion`, `cuentas.0003_rut_obligatorio` (incluye el relleno de datos) y `cuentas.0004_codigo_recuperacion`.

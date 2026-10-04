@@ -1,7 +1,7 @@
 [
   {
     "id_ticket": "TK-1017",
-    "vecino_nombre": "Alba Castro Herrera (ficticio)",
+    "vecino_nombre": "Alba Castro Herrera",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Centro",
@@ -18,7 +18,7 @@
   },
   {
     "id_ticket": "TK-1016",
-    "vecino_nombre": "Alba Castro Herrera (ficticio)",
+    "vecino_nombre": "Alba Castro Herrera",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Centro",
@@ -35,7 +35,7 @@
   },
   {
     "id_ticket": "TK-1015",
-    "vecino_nombre": "Alba Castro Herrera (ficticio)",
+    "vecino_nombre": "Alba Castro Herrera",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Centro",
@@ -52,7 +52,7 @@
   },
   {
     "id_ticket": "TK-1014",
-    "vecino_nombre": "Alba Castro Herrera (ficticio)",
+    "vecino_nombre": "Alba Castro Herrera",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Centro",
@@ -68,7 +68,7 @@
   },
   {
     "id_ticket": "TK-1013",
-    "vecino_nombre": "Alba Castro Herrera (ficticio)",
+    "vecino_nombre": "Alba Castro Herrera",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Centro",
@@ -84,7 +84,7 @@
   },
   {
     "id_ticket": "TK-1042",
-    "vecino_nombre": "Bruno Castro Keller (ficticio)",
+    "vecino_nombre": "Bruno Castro Keller",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación La Antena",
@@ -100,7 +100,7 @@
   },
   {
     "id_ticket": "TK-1038",
-    "vecino_nombre": "Celia Castro Nieto (ficticio)",
+    "vecino_nombre": "Celia Castro Nieto",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Las Compañías",
@@ -116,7 +116,7 @@
   },
   {
     "id_ticket": "TK-0995",
-    "vecino_nombre": "Dario Castro Quilo (ficticio)",
+    "vecino_nombre": "Dario Castro Quilo",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Rural",
@@ -132,7 +132,7 @@
   },
   {
     "id_ticket": "TK-1050",
-    "vecino_nombre": "Elena Castro Toro (ficticio)",
+    "vecino_nombre": "Elena Castro Toro",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Av. del Mar",
@@ -148,7 +148,7 @@
   },
   {
     "id_ticket": "TK-1048",
-    "vecino_nombre": "Felix Castro Diaz (ficticio)",
+    "vecino_nombre": "Felix Castro Diaz",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación La Pampa",
@@ -164,7 +164,7 @@
   },
   {
     "id_ticket": "TK-1020",
-    "vecino_nombre": "Greta Castro Flores (ficticio)",
+    "vecino_nombre": "Greta Castro Flores",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Centro",
@@ -180,7 +180,7 @@
   },
   {
     "id_ticket": "TK-1015",
-    "vecino_nombre": "Hugo Castro Ibanez (ficticio)",
+    "vecino_nombre": "Hugo Castro Ibanez",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Centro",
@@ -196,7 +196,7 @@
   },
   {
     "id_ticket": "TK-0980",
-    "vecino_nombre": "Iris Castro Lago (ficticio)",
+    "vecino_nombre": "Iris Castro Lago",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Rural",
@@ -212,7 +212,7 @@
   },
   {
     "id_ticket": "TK-1033",
-    "vecino_nombre": "Julio Castro Olmo (ficticio)",
+    "vecino_nombre": "Julio Castro Olmo",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación La Pampa",
@@ -228,7 +228,7 @@
   },
   {
     "id_ticket": "TK-1025",
-    "vecino_nombre": "Kael Castro Rios (ficticio)",
+    "vecino_nombre": "Kael Castro Rios",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Las Compañías",
@@ -244,7 +244,7 @@
   },
   {
     "id_ticket": "TK-1011",
-    "vecino_nombre": "Luna Castro Alamo (ficticio)",
+    "vecino_nombre": "Luna Castro Alamo",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación Av. del Mar",
@@ -260,7 +260,7 @@
   },
   {
     "id_ticket": "TK-1002",
-    "vecino_nombre": "Milo Castro Diaz (ficticio)",
+    "vecino_nombre": "Milo Castro Diaz",
     "telefono_whatsapp": "+56900000000",
     "email": "correo@siged.test",
     "delegacion": "Delegación La Antena",

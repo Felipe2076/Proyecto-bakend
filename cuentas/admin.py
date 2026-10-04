@@ -46,11 +46,15 @@ class CargoAdmin(admin.ModelAdmin):
 
 @admin.register(Funcionario)
 class FuncionarioAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "rut", "nombre", "cargo", "delegacion", "es_simulacion", "fecha_ultimo_ingreso", "estado")
+    list_display = ("codigo", "rut", "nombre_visible", "cargo", "delegacion", "es_simulacion", "fecha_ultimo_ingreso", "estado")
     search_fields = ("codigo", "rut", "nombre", "nombres", "apellido_paterno", "cargo__nombre", "delegacion__nombre")
     list_filter = ("estado", "delegacion", "cargo")
     autocomplete_fields = ("cargo", "delegacion")
     date_hierarchy = "fecha_ultimo_ingreso"
+
+    @admin.display(description="nombre")
+    def nombre_visible(self, obj):
+        return obj.nombre_mostrado
 
     def get_inlines(self, request, obj):
         # Import diferido para evitar dependencia circular entre apps.
@@ -60,11 +64,18 @@ class FuncionarioAdmin(admin.ModelAdmin):
 
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
-    list_display = ("id", "nombre", "username", "correo", "rol", "delegacion", "estado")
+    list_display = ("id", "nombre_visible", "username", "correo", "rol", "delegacion", "estado")
     search_fields = ("nombre", "username", "correo", "codigo", "funcionario__rut", "funcionario__nombre")
     list_filter = ("estado", "rol", "delegacion")
     autocomplete_fields = ("rol", "cargo", "delegacion", "funcionario", "user")
     readonly_fields = ("creado",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("funcionario")
+
+    @admin.display(description="nombre")
+    def nombre_visible(self, obj):
+        return obj.nombre_mostrado
 
 
 @admin.register(ParametroSistema)

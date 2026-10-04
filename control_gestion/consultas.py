@@ -38,8 +38,8 @@ def compromiso_a_dict(compromiso):
     return {
         "id_compromiso": compromiso.codigo,
         "descripcion": compromiso.descripcion,
-        "vecino": compromiso.vecino.nombre,
-        "funcionario": compromiso.funcionario.nombre,
+        "vecino": compromiso.vecino.nombre_mostrado,
+        "funcionario": compromiso.funcionario.nombre_mostrado,
         "id_funcionario": compromiso.funcionario.codigo,
         "delegacion": compromiso.delegacion.nombre,
         "fecha_ingreso": compromiso.fecha_ingreso.isoformat(),
@@ -56,7 +56,7 @@ def actividad_a_dict(actividad):
     return {
         "id_actividad": actividad.codigo,
         "id_funcionario": actividad.funcionario.codigo,
-        "funcionario_nombre": actividad.funcionario.nombre,
+        "funcionario_nombre": actividad.funcionario.nombre_mostrado,
         "cargo": actividad.funcionario.cargo.nombre if actividad.funcionario.cargo_id else "",
         "delegacion": actividad.delegacion.nombre,
         "fecha_actividad": actividad.fecha_actividad.isoformat(),

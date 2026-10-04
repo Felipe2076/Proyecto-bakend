@@ -13,11 +13,12 @@ from core.validaciones import (
     enmascarar_rut,
     formatear_rut,
     normalizar_rut,
+    validar_nombre,
     validar_rut,
 )
 from cuentas.fabrica_pruebas import crear_cuenta
 from cuentas.models import Delegacion
-from cuentas.simulacion import CLAVE_DEMO
+from cuentas.simulacion import con_marca
 
 RAIZ = Path(settings.BASE_DIR)
 ROLES = ("administrador", "jefatura", "funcionario", "ventanilla")
@@ -171,7 +172,9 @@ class DatosSimulacionTests(SimpleTestCase):
         for item in usuarios:
             self.assertNotIn("password", item)
             self.assertNotIn("clave", item)
-            self.assertTrue(item["nombre"].endswith("(ficticio)"))
+            self.assertNotIn("(ficticio)", item["nombre"])
+            self.assertNotIn("(", item["nombre"])
+            self.assertTrue(validar_nombre(item["nombre"]))
             self.assertTrue(item["email"].endswith("@siged.test"))
             self.assertTrue(validar_rut(item["rut"]))
             self.assertTrue(cuerpo_en_rango_ficticio(item["rut"]))
@@ -182,8 +185,9 @@ class DatosSimulacionTests(SimpleTestCase):
     def test_fixture_y_d003_no_guardan_la_clave_en_claro(self):
         fixture = json.loads((RAIZ / "fixtures" / "02_datos_sistema.json").read_text(encoding="utf-8"))
         d003 = (RAIZ / "sql" / "datos" / "D003__datos_simulacion.sql").read_text(encoding="utf-8")
-        self.assertNotIn(CLAVE_DEMO, d003)
+        self.assertNotIn("pbkdf2_", d003)
         self.assertNotIn("admin123", d003)
+        self.assertNotIn("(ficticio)", d003)
         vecinos = [fila for fila in fixture if fila["model"] == "requerimientos.vecino"]
         funcionarios = [fila for fila in fixture if fila["model"] == "cuentas.funcionario"]
         auth = [fila for fila in fixture if fila["model"] == "auth.user"]
@@ -193,7 +197,8 @@ class DatosSimulacionTests(SimpleTestCase):
         for fila in vecinos:
             campos = fila["fields"]
             self.assertTrue(campos["es_simulacion"])
-            self.assertIn("(ficticio)", campos["nombre"])
+            self.assertNotIn("(ficticio)", campos["nombre"])
+            self.assertNotIn("(", campos["nombre"])
             self.assertTrue(campos["correo"].endswith("@siged.test"))
             self.assertTrue(campos["telefono"].startswith("+5690000"))
             self.assertTrue(validar_rut(campos["rut"]))
@@ -202,10 +207,19 @@ class DatosSimulacionTests(SimpleTestCase):
         for fila in funcionarios:
             campos = fila["fields"]
             self.assertTrue(validar_rut(campos["rut"]))
-            self.assertIn("(ficticio)", campos["nombre"])
+            self.assertNotIn("(ficticio)", campos["nombre"])
+            self.assertNotIn("(", campos["nombre"])
+            self.assertTrue(campos["es_simulacion"])
+            self.assertTrue(validar_nombre(campos["nombres"]))
+            self.assertTrue(validar_nombre(campos["apellido_paterno"]))
             cuerpo = int(normalizar_rut(campos["rut"]).split("-")[0])
             self.assertTrue(33_100_001 <= cuerpo <= 33_100_999)
         for fila in auth:
             clave = fila["fields"]["password"]
-            self.assertTrue(clave.startswith("pbkdf2_"))
-            self.assertNotIn(CLAVE_DEMO, clave)
+            self.assertEqual(clave, "!")
+
+    def test_la_marca_se_muestra_y_el_patron_rechaza_parentesis(self):
+        self.assertFalse(validar_nombre("Ana (ficticio)"))
+        self.assertTrue(validar_nombre("Ana Soto"))
+        self.assertEqual(con_marca("Ana Soto", True), "Ana Soto (ficticio)")
+        self.assertEqual(con_marca("Ana Soto", False), "Ana Soto")

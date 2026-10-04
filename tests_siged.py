@@ -152,7 +152,7 @@ def run_tests() -> None:
     assert len(usuarios) >= 24, "Faltan usuarios de simulación (rol × delegación)"
     assert all("password" not in item and "clave" not in item for item in usuarios)
     assert all(validar_rut(item.get("rut", "")) for item in usuarios)
-    assert all("(ficticio)" in item.get("nombre", "") for item in usuarios)
+    assert all("(ficticio)" not in item.get("nombre", "") and "(" not in item.get("nombre", "") for item in usuarios)
     print(f"   [OK] usuarios.json: {len(usuarios)} perfiles de simulación, sin clave en claro")
 
     assert "Delegación Centro" in DELEGACIONES_OFICIALES
