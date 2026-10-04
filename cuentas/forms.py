@@ -1,10 +1,9 @@
 """Formularios de cuentas: mantenedores y nueva contraseña."""
 
-import re
-
 from django import forms
 from django.contrib.auth import get_user_model
 
+from core.validaciones import MENSAJE_RUT, normalizar_rut, validar_rut
 from cuentas.models import Delegacion, Rol, Usuario
 from cuentas.servicios import errores_clave, siguiente_codigo
 
@@ -83,7 +82,10 @@ class UsuarioForm(FormularioBootstrap):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["username"].widget.attrs["autocomplete"] = "username"
+        self.fields["username"].required = False
+        self.fields["username"].help_text = "Se completa con el RUT del funcionario. Puede dejarlo en blanco."
+        self.fields["funcionario"].required = True
+        self.fields["funcionario"].help_text = "Persona con RUT. El acceso usa ese RUT."
         if self.instance.pk is None:
             self.fields["password"].required = True
             self.fields["password"].widget.attrs["required"] = "required"
@@ -94,17 +96,32 @@ class UsuarioForm(FormularioBootstrap):
             self.fields["password"].help_text = "Déjela en blanco para mantener la contraseña actual."
 
     def clean_username(self):
-        username = (self.cleaned_data.get("username") or "").strip().lower()
-        if not re.fullmatch(r"[a-z0-9._-]{3,20}", username):
-            raise forms.ValidationError(
-                "Use de 3 a 20 caracteres: letras minúsculas, números, punto o guion."
-            )
-        return username
+        return (self.cleaned_data.get("username") or "").strip()
+
+    def clean(self):
+        cleaned = super().clean()
+        funcionario = cleaned.get("funcionario")
+        if funcionario is None:
+            return cleaned
+        rut = normalizar_rut(funcionario.rut or "")
+        if not validar_rut(rut):
+            self.add_error("funcionario", MENSAJE_RUT)
+            return cleaned
+        duplicado = Usuario.objects.filter(username=rut).exclude(pk=self.instance.pk).exists()
+        if duplicado:
+            self.add_error("funcionario", "Ese RUT ya tiene otra cuenta.")
+            return cleaned
+        cleaned["username"] = rut
+        return cleaned
 
     def clean_nombre(self):
+        from core.validaciones import MENSAJE_NOMBRE, validar_nombre
+
         nombre = (self.cleaned_data.get("nombre") or "").strip()
         if len(nombre) < 5:
             raise forms.ValidationError("Ingrese el nombre completo (mínimo 5 caracteres).")
+        if not validar_nombre(nombre):
+            raise forms.ValidationError(MENSAJE_NOMBRE)
         return nombre
 
     def clean_password(self):
@@ -120,6 +137,12 @@ class UsuarioForm(FormularioBootstrap):
 
     def save(self, commit=True):
         usuario = super().save(commit=False)
+        funcionario = usuario.funcionario
+        if funcionario is not None and funcionario.rut:
+            usuario.username = normalizar_rut(funcionario.rut)
+            usuario.nombre = funcionario.nombre
+            if funcionario.delegacion_id:
+                usuario.delegacion = funcionario.delegacion
         if not usuario.codigo:
             usuario.codigo = siguiente_codigo(Usuario, "codigo", "USR-", 3)
         if commit:

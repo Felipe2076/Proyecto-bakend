@@ -28,7 +28,7 @@ class Vecino(models.Model):
 
     nombre = models.CharField(max_length=120)
     rut = models.CharField("RUT", max_length=12, unique=True, null=True, blank=True,
-                           help_text="Formato 12.345.678-9. Vacío si no se registró.")
+                           help_text="Normalizado o con puntos. Ejemplo: 33.500.001-3. Vacío si no se registró.")
     direccion = models.CharField("dirección", max_length=200, blank=True)
     telefono = models.CharField("teléfono", max_length=20, blank=True)
     correo = models.EmailField(blank=True)
@@ -37,6 +37,7 @@ class Vecino(models.Model):
                                    related_name="vecinos", verbose_name="delegación")
     tipo_gestion = models.ForeignKey(TipoGestion, on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name="vecinos", verbose_name="tipo de gestión")
+    es_simulacion = models.BooleanField("dato de simulación", default=False)
     estado = models.CharField(max_length=10, choices=EstadoRegistro.choices, default=EstadoRegistro.ACTIVO)
 
     class Meta:
@@ -45,7 +46,35 @@ class Vecino(models.Model):
         ordering = ["nombre"]
 
     def __str__(self):
-        return f"{self.nombre} ({self.rut})" if self.rut else self.nombre
+        visible = self.nombre_mostrado
+        return f"{visible} ({self.rut})" if self.rut else visible
+
+    @property
+    def nombre_mostrado(self):
+        from cuentas.simulacion import con_marca
+
+        return con_marca(self.nombre, self.es_simulacion)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
+        # El nombre de una organización puede llevar dígitos. El patrón de persona
+        # no aplica aquí; sí se rechazan los paréntesis de la marca de simulación.
+        self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())
+        if "(" in self.nombre or ")" in self.nombre:
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
+
+    def save(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
+        self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())[:120]
+        if "(" in self.nombre or ")" in self.nombre:
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
+        super().save(*args, **kwargs)
 
 
 class TipoAtencion(models.Model):

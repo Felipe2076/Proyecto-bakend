@@ -2,13 +2,13 @@
 
 from datetime import date, timedelta
 
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.utils import timezone
 
 from control_gestion.models import ItemFuncionario, Medicion, Meta
 from control_gestion.panel_personal import color_avance_diario, color_ticket, construir_panel_personal
-from cuentas.models import Cargo, Delegacion, EstadoRegistro, Funcionario, Rol, Usuario
+from cuentas.fabrica_pruebas import crear_cuenta
+from cuentas.models import Cargo, Delegacion, Rol
 from requerimientos.models import AreaSoporte, CanalIngreso, Requerimiento, TipoGestion, Vecino
 
 
@@ -29,29 +29,38 @@ class UmbralAvanceDiarioTests(TestCase):
 
 class AislamientoPanelTests(TestCase):
     def setUp(self):
-        User = get_user_model()
         self.rol = Rol.objects.create(codigo="funcionario", nombre="Funcionario")
         self.delegacion = Delegacion.objects.create(nombre="Delegación Rural")
         self.otra = Delegacion.objects.create(nombre="Delegación Centro")
         cargo = Cargo.objects.create(nombre="Gestor social")
-        self.fun_a = Funcionario.objects.create(
-            codigo="FUN-A", nombre="Ana Soto", cargo=cargo, delegacion=self.delegacion
+        self.perfil_a = crear_cuenta(
+            codigo="USR-A",
+            rut="33100001-9",
+            password="AnaClave1!",
+            rol_codigo="funcionario",
+            correo="ana@siged.test",
+            nombre="Ana Soto",
+            nombres="Ana",
+            apellido_paterno="Soto",
+            delegacion=self.delegacion,
+            cargo=cargo,
         )
-        self.fun_b = Funcionario.objects.create(
-            codigo="FUN-B", nombre="Bruno Díaz", cargo=cargo, delegacion=self.otra
+        self.perfil_b = crear_cuenta(
+            codigo="USR-B",
+            rut="33100002-7",
+            password="BrunoClave1!",
+            rol_codigo="funcionario",
+            correo="bruno@siged.test",
+            nombre="Bruno Diaz",
+            nombres="Bruno",
+            apellido_paterno="Diaz",
+            delegacion=self.otra,
+            cargo=cargo,
         )
-        self.user_a = User.objects.create_user("ana", "ana@laserena.cl", "AnaClave1!")
-        self.user_b = User.objects.create_user("bruno", "bruno@laserena.cl", "BrunoClave1!")
-        self.perfil_a = Usuario.objects.create(
-            codigo="USR-A", user=self.user_a, username="ana", nombre="Ana Soto",
-            correo="ana@laserena.cl", rol=self.rol, delegacion=self.delegacion,
-            funcionario=self.fun_a, estado=EstadoRegistro.ACTIVO,
-        )
-        self.perfil_b = Usuario.objects.create(
-            codigo="USR-B", user=self.user_b, username="bruno", nombre="Bruno Díaz",
-            correo="bruno@laserena.cl", rol=self.rol, delegacion=self.otra,
-            funcionario=self.fun_b, estado=EstadoRegistro.ACTIVO,
-        )
+        self.fun_a = self.perfil_a.funcionario
+        self.fun_b = self.perfil_b.funcionario
+        self.user_a = self.perfil_a.user
+        self.user_b = self.perfil_b.user
         meta_a = Meta.objects.create(nombre="Meta exclusiva de Ana")
         meta_b = Meta.objects.create(nombre="Meta exclusiva de Bruno")
         ItemFuncionario.objects.create(
@@ -102,7 +111,7 @@ class AislamientoPanelTests(TestCase):
 
     def test_pantalla_de_ana_oculta_a_bruno(self):
         cliente = Client()
-        ingreso = cliente.post("/login/", {"username": "ana", "password": "AnaClave1!"})
+        ingreso = cliente.post("/login/", {"rut": "33.100.001-9", "password": "AnaClave1!"})
         self.assertEqual(ingreso.status_code, 302)
         respuesta = cliente.get("/")
         self.assertEqual(respuesta.status_code, 200)

@@ -97,33 +97,84 @@ def funcionario_por_texto(texto):
     )
 
 
+_HASH_FICTICIO = None
+
+
+def _hash_ficticio():
+    """Hash fijo para igualar el tiempo de respuesta cuando el RUT no existe."""
+    global _HASH_FICTICIO
+    if _HASH_FICTICIO is None:
+        from django.contrib.auth.hashers import make_password
+
+        _HASH_FICTICIO = make_password("tiempo-parejo-siged-no-es-clave")
+    return _HASH_FICTICIO
+
+
 def sesion_desde_usuario(usuario):
+    from core.validaciones import enmascarar_rut, formatear_rut
+
+    fun = usuario.funcionario if usuario.funcionario_id else None
     rol = usuario.rol.codigo if usuario.rol_id else ""
+    if fun is not None:
+        nombre = fun.nombre_mostrado
+        delegacion = fun.delegacion.nombre if fun.delegacion_id else ""
+        rut = fun.rut or ""
+        cargo = fun.cargo.nombre if fun.cargo_id else ""
+        id_funcionario = fun.codigo
+    else:
+        nombre = usuario.nombre_mostrado
+        delegacion = usuario.delegacion.nombre if usuario.delegacion_id else ""
+        rut = ""
+        cargo = usuario.cargo.nombre if usuario.cargo_id else ""
+        id_funcionario = ""
+    if not cargo and usuario.cargo_id:
+        cargo = usuario.cargo.nombre
+    if not delegacion and usuario.delegacion_id:
+        delegacion = usuario.delegacion.nombre
     return {
         "id_usuario": usuario.codigo or "",
-        "username": usuario.username,
-        "nombre": usuario.nombre,
+        "username": rut or usuario.username,
+        "rut": rut,
+        "rut_visible": formatear_rut(rut) if rut else "",
+        "rut_enmascarado": enmascarar_rut(rut) if rut else "",
+        "nombre": nombre,
         "email": usuario.correo,
         "rol": rol,
         "rol_etiqueta": etiqueta_rol(rol),
-        "cargo": usuario.cargo.nombre if usuario.cargo_id else "",
-        "delegacion": usuario.delegacion.nombre if usuario.delegacion_id else "",
-        "id_funcionario": usuario.funcionario.codigo if usuario.funcionario_id else "",
+        "cargo": cargo,
+        "delegacion": delegacion,
+        "id_funcionario": id_funcionario,
         "activo": usuario.activo,
     }
 
 
-def autenticar(username, password):
+def autenticar(rut, password):
+    """Busca la cuenta activa por RUT normalizado y comprueba la clave.
+
+    Cualquier fallo (formato, DV, inexistente, inactivo, clave mala) devuelve
+    None. Si el RUT no corresponde a una cuenta, igual se verifica un hash
+    ficticio para no adelantar la respuesta.
+    """
+    from django.contrib.auth.hashers import check_password
+
+    from core.validaciones import rut_normalizado_valido
     from cuentas.models import Usuario
 
-    usuario = (
-        Usuario.objects.select_related("rol", "cargo", "delegacion", "funcionario", "user")
-        .filter(username=(username or "").strip())
-        .first()
-    )
-    if usuario is None or not usuario.activo:
+    normal = rut_normalizado_valido(rut or "")
+    usuario = None
+    if normal:
+        usuario = (
+            Usuario.objects.select_related(
+                "rol", "cargo", "delegacion", "funcionario", "funcionario__delegacion",
+                "funcionario__cargo", "user",
+            )
+            .filter(funcionario__rut=normal)
+            .first()
+        )
+    clave = password or ""
+    if usuario is None or not usuario.activo or usuario.user_id is None or not usuario.user.is_active:
+        check_password(clave, _hash_ficticio())
         return None
-    user = usuario.user
-    if user is None or not user.is_active or not user.check_password(password or ""):
+    if not usuario.user.check_password(clave):
         return None
     return usuario

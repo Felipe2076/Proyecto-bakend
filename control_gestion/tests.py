@@ -2,7 +2,6 @@
 
 from datetime import date
 
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
 from control_gestion.indicadores import (
@@ -11,7 +10,8 @@ from control_gestion.indicadores import (
     porcentaje_esperado,
 )
 from control_gestion.models import Actividad, Compromiso, ItemFuncionario, Medicion, Meta
-from cuentas.models import Cargo, Delegacion, EstadoRegistro, Funcionario, ParametroSistema, Rol, Usuario
+from cuentas.fabrica_pruebas import crear_cuenta
+from cuentas.models import Cargo, Delegacion, Funcionario, ParametroSistema
 from requerimientos.models import Vecino
 
 
@@ -43,7 +43,13 @@ class PanelOrmTests(TestCase):
         self.delegacion = Delegacion.objects.create(nombre="Delegación Rural", direccion="Camino 1")
         self.cargo = Cargo.objects.create(nombre="Gestor social")
         self.ana = Funcionario.objects.create(
-            codigo="FUN-001", nombre="Ana Soto", cargo=self.cargo, delegacion=self.delegacion
+            codigo="FUN-001",
+            rut="33100001-9",
+            nombres="Ana",
+            apellido_paterno="Soto",
+            nombre="Ana Soto",
+            cargo=self.cargo,
+            delegacion=self.delegacion,
         )
         self.meta = Meta.objects.create(nombre="Cobertura territorial")
         ItemFuncionario.objects.create(
@@ -104,20 +110,18 @@ class PanelOrmTests(TestCase):
         self.assertEqual(delegacion["promedio_diario"], round(3 / 62, 2))
 
     def test_dashboard_muestra_las_tarjetas(self):
-        User = get_user_model()
-        rol = Rol.objects.create(codigo="administrador", nombre="Administrador")
-        user = User.objects.create_user("admin", "admin.siged@laserena.cl", "Admin123!")
-        Usuario.objects.create(
+        crear_cuenta(
             codigo="USR-001",
-            user=user,
-            username="admin",
-            nombre="Administrador SIGED",
-            correo="admin.siged@laserena.cl",
-            rol=rol,
-            estado=EstadoRegistro.ACTIVO,
+            rut="33100011-6",
+            password="Admin123!",
+            rol_codigo="administrador",
+            correo="usr-001@siged.test",
+            nombre="Admin Prueba",
+            delegacion=self.delegacion,
+            cargo=self.cargo,
         )
         cliente = Client()
-        cliente.post("/login/", {"username": "admin", "password": "Admin123!"})
+        cliente.post("/login/", {"rut": "33100011-6", "password": "Admin123!"})
         respuesta = cliente.get("/control/")
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "card-calculo")

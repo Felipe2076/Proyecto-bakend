@@ -23,14 +23,14 @@
                         {% csrf_token %}
                         <input type="hidden" name="accion" value="crear">
                         <div class="mb-3">
-                            <label class="form-label" for="username">Usuario <span class="text-danger">*</span></label>
-                            <input class="form-control {% if errores.username %}is-invalid{% endif %}" id="username" name="username" required minlength="3" maxlength="20" pattern="[a-z0-9._-]{3,20}" value="{{ valores.username }}">
-                            <div class="invalid-feedback">{% if errores.username %}{{ errores.username }}{% else %}3 a 20 caracteres en minúsculas.{% endif %}</div>
+                            <label class="form-label" for="rut">RUT <span class="text-danger">*</span></label>
+                            <input class="form-control {% if errores.rut %}is-invalid{% endif %}" id="rut" name="rut" required inputmode="text" placeholder="33.100.001-9" data-regla="rut" value="{{ valores.rut }}">
+                            <div class="invalid-feedback">{% if errores.rut %}{{ errores.rut }}{% else %}RUT con dígito verificador, por ejemplo 33.100.001-9.{% endif %}</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="password">Contraseña <span class="text-danger">*</span></label>
-                            <input class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" required minlength="6">
-                            <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Mínimo 6 caracteres.{% endif %}</div>
+                            <input class="form-control {% if errores.password %}is-invalid{% endif %}" id="password" name="password" type="password" required minlength="8">
+                            <div class="invalid-feedback">{% if errores.password %}{{ errores.password }}{% else %}Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo.{% endif %}</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="nombre">Nombre completo <span class="text-danger">*</span></label>
@@ -63,9 +63,9 @@
                             <div class="invalid-feedback">{% if errores.cargo %}{{ errores.cargo }}{% else %}Seleccione un cargo.{% endif %}</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label" for="delegacion">Delegación</label>
-                            <select class="form-select" id="delegacion" name="delegacion">
-                                <option value="">Sin asignar</option>
+                            <label class="form-label" for="delegacion">Delegación <span class="text-danger">*</span></label>
+                            <select class="form-select {% if errores.delegacion %}is-invalid{% endif %}" id="delegacion" name="delegacion" required>
+                                <option value="">Seleccione...</option>
                                 {% for del in delegaciones %}
                                 <option value="{{ del }}" {% if valores.delegacion == del %}selected{% endif %}>{{ del }}</option>
                                 {% endfor %}

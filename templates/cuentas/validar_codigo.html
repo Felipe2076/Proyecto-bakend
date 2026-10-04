@@ -14,7 +14,7 @@
         {% endfor %}
     </div>
     {% if errores.codigo %}<div class="text-danger small text-center mb-2">{{ errores.codigo }}</div>{% endif %}
-    <p class="text-muted small text-center">El código expira en 10 minutos.</p>
+    <p class="text-muted small text-center">El código expira en 10 minutos y solo puede usarse una vez. No aparece en esta pantalla.</p>
     <button type="submit" class="btn btn-primary-custom w-100">Verificar código</button>
 </form>
 <form method="post" class="text-center mt-3">

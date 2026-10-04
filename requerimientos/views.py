@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from cuentas.auth import requerir_modulo
+from cuentas.ambito import denegar_otra_delegacion
 from cuentas.servicios import nombres_delegaciones, obtener_parametros
 from cuentas.vocabulario import normalizar_canal, normalizar_delegacion, normalizar_tipo
 from requerimientos.consultas import (
@@ -185,6 +186,9 @@ def inicio_view(request):
 def lista_requerimientos_view(request):
     qs = queryset_requerimientos()
     filtro_delegacion = request.GET.get("delegacion", "").strip()
+    bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
+    if bloqueo_ambito:
+        return bloqueo_ambito
     filtro_semaforo = request.GET.get("semaforo", "").strip()
     filtro_estado = request.GET.get("estado", "").strip()
     filtro_busqueda = request.GET.get("busqueda", "").strip()

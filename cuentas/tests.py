@@ -3,30 +3,31 @@
 import builtins
 import re
 
-from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core import mail
+from django.test import Client, TestCase, override_settings
 
-from cuentas.models import EstadoRegistro, Rol, Usuario
+from cuentas.fabrica_pruebas import crear_cuenta
+from cuentas.models import Delegacion, Rol
 
 
 class RolesMantenedorTests(TestCase):
     def setUp(self):
-        User = get_user_model()
         self.rol_admin = Rol.objects.create(
             codigo="administrador", nombre="Administrador", descripcion="Acceso total"
         )
-        self.user = User.objects.create_user("admin", "admin.siged@laserena.cl", "Admin123!")
-        Usuario.objects.create(
+        delegacion = Delegacion.objects.create(nombre="Delegación Centro")
+        perfil = crear_cuenta(
             codigo="USR-001",
-            user=self.user,
-            username="admin",
-            nombre="Administrador SIGED",
-            correo="admin.siged@laserena.cl",
-            rol=self.rol_admin,
-            estado=EstadoRegistro.ACTIVO,
+            rut="33100011-6",
+            password="Admin123!",
+            rol_codigo="administrador",
+            correo="usr-001@siged.test",
+            nombre="Admin Prueba",
+            delegacion=delegacion,
         )
+        self.user = perfil.user
         self.client = Client()
-        self.client.post("/login/", {"username": "admin", "password": "Admin123!"})
+        self.client.post("/login/", {"rut": "33100011-6", "password": "Admin123!"})
 
     def test_anonimo_redirige_al_login(self):
         anon = Client()
@@ -98,30 +99,29 @@ class RolesMantenedorTests(TestCase):
         self.assertEqual(Rol.objects.count(), antes)
 
     def test_ventanilla_no_administra(self):
-        User = get_user_model()
-        rol = Rol.objects.create(codigo="ventanilla", nombre="Ventanilla", descripcion="Ingreso")
-        user = User.objects.create_user("ventanilla", "ventanilla@laserena.cl", "Ventanilla1!")
-        Usuario.objects.create(
+        Rol.objects.create(codigo="ventanilla", nombre="Ventanilla", descripcion="Ingreso")
+        delegacion = Delegacion.objects.get(nombre="Delegación Centro")
+        crear_cuenta(
             codigo="USR-004",
-            user=user,
-            username="ventanilla",
-            nombre="Marisol Tapia",
-            correo="ventanilla@laserena.cl",
-            rol=rol,
-            estado=EstadoRegistro.ACTIVO,
+            rut="33100004-3",
+            password="Ventanilla1!",
+            rol_codigo="ventanilla",
+            correo="usr-004@siged.test",
+            nombre="Ventanilla Prueba",
+            delegacion=delegacion,
         )
         self.client.logout()
-        self.client.post("/login/", {"username": "ventanilla", "password": "Ventanilla1!"})
+        self.client.post("/login/", {"rut": "33100004-3", "password": "Ventanilla1!"})
         respuesta = self.client.get("/mantenedores/roles/", follow=True)
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "no tiene acceso")
 
 
 PERFILES_DEMO = (
-    ("admin", "admin123", "administrador", "admin.siged@laserena.cl", "/mantenedores/roles/", True),
-    ("jefatura", "jefatura123", "jefatura", "elizabeth.rojas@laserena.cl", "/mantenedores/roles/", False),
-    ("funcionario", "funcionario123", "funcionario", "camila.oyarzun@laserena.cl", "/administracion/usuarios/", False),
-    ("ventanilla", "ventanilla123", "ventanilla", "marisol.tapia@laserena.cl", "/control/actividades/", False),
+    ("33100011-6", "ClaveAdmin1!", "administrador", "admin.prueba@siged.test", "/mantenedores/roles/", True),
+    ("33100001-9", "ClaveJefatura1!", "jefatura", "jefatura.prueba@siged.test", "/mantenedores/roles/", False),
+    ("33100002-7", "ClaveFuncionario1!", "funcionario", "funcionario.prueba@siged.test", "/administracion/usuarios/", False),
+    ("33100004-3", "ClaveVentanilla1!", "ventanilla", "ventanilla.prueba@siged.test", "/control/actividades/", False),
 )
 
 
@@ -140,21 +140,19 @@ class AutenticacionOrmTests(TestCase):
     """Los cuatro perfiles entran por Usuario.user y el rol sale de Usuario.rol."""
 
     def setUp(self):
-        User = get_user_model()
+        self.delegacion = Delegacion.objects.create(nombre="Delegación Rural")
         self.users = {}
-        for username, password, rol_codigo, correo, _ruta, _permitido in PERFILES_DEMO:
-            rol = Rol.objects.create(codigo=rol_codigo, nombre=rol_codigo.capitalize(), descripcion=rol_codigo)
-            user = User.objects.create_user(username, correo, password)
-            Usuario.objects.create(
-                codigo=f"USR-{username[:3].upper()}",
-                user=user,
-                username=username,
-                nombre=f"Perfil {username}",
+        for indice, (rut, password, rol_codigo, correo, _ruta, _permitido) in enumerate(PERFILES_DEMO, start=1):
+            perfil = crear_cuenta(
+                codigo=f"USR-10{indice}",
+                rut=rut,
+                password=password,
+                rol_codigo=rol_codigo,
                 correo=correo,
-                rol=rol,
-                estado=EstadoRegistro.ACTIVO,
+                nombre=f"Perfil {rol_codigo}",
+                delegacion=self.delegacion,
             )
-            self.users[username] = user
+            self.users[rut] = perfil.user
 
     def _abrir(self, path, *args, **kwargs):
         if "usuarios.json" in str(path):
@@ -165,15 +163,16 @@ class AutenticacionOrmTests(TestCase):
         self._open_real = builtins.open
         builtins.open = self._abrir
         try:
-            for username, password, rol_codigo, _correo, ruta, permitido in PERFILES_DEMO:
+            for rut, password, rol_codigo, _correo, ruta, permitido in PERFILES_DEMO:
                 cliente = Client()
-                respuesta = cliente.post("/login/", {"username": username, "password": password})
-                self.assertEqual(respuesta.status_code, 302, username)
+                respuesta = cliente.post("/login/", {"rut": rut, "password": password})
+                self.assertEqual(respuesta.status_code, 302, rut)
                 self.assertNotIn("/login/", respuesta["Location"])
                 sesion = cliente.session["usuario"]
                 self.assertEqual(sesion["rol"], rol_codigo)
-                self.assertEqual(sesion["username"], username)
-                self.assertEqual(int(cliente.session["_auth_user_id"]), self.users[username].pk)
+                self.assertEqual(sesion["username"], rut)
+                self.assertEqual(sesion["delegacion"], "Delegación Rural")
+                self.assertEqual(int(cliente.session["_auth_user_id"]), self.users[rut].pk)
                 pantalla = cliente.get(ruta, follow=True)
                 self.assertEqual(pantalla.status_code, 200)
                 if permitido:
@@ -181,23 +180,55 @@ class AutenticacionOrmTests(TestCase):
                 else:
                     self.assertContains(pantalla, "no tiene acceso")
                 ajeno = Client()
-                clave_mala = ajeno.post("/login/", {"username": username, "password": "no-es-la-clave"})
+                clave_mala = ajeno.post("/login/", {"rut": rut, "password": "no-es-la-clave"})
                 self.assertContains(clave_mala, "incorrectos")
         finally:
             builtins.open = self._open_real
 
+    def _codigo_del_correo(self):
+        self.assertEqual(len(mail.outbox), 1)
+        encontrado = re.search(r"(\d{6})", mail.outbox[0].body)
+        self.assertIsNotNone(encontrado)
+        return encontrado.group(1)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_recuperacion_guarda_la_clave_en_user(self):
+        from cuentas.models import CodigoUnUso
+        from cuentas.recuperacion import hash_codigo
+
         self._open_real = builtins.open
         builtins.open = self._abrir
         cliente = Client()
         try:
-            pedido = cliente.post("/recuperar/", {"correo": "admin.siged@laserena.cl"}, follow=True)
+            mail.outbox.clear()
+            pedido = cliente.post("/recuperar/", {"correo": "admin.prueba@siged.test"}, follow=True)
             self.assertEqual(pedido.status_code, 200)
-            codigo = re.search(r"(\d{6})", pedido.content.decode()).group(1)
+            codigo = self._codigo_del_correo()
+            self.assertNotIn(codigo, pedido.content.decode())
+            fila = CodigoUnUso.objects.get()
+            self.assertEqual(fila.proposito, "RECUPERAR_CLAVE")
+            self.assertEqual(fila.codigo_hash, hash_codigo(codigo))
+            self.assertEqual(len(fila.codigo_hash), 64)
+            self.assertNotEqual(fila.codigo_hash, codigo)
+            self.assertIsNone(fila.usado_en)
+            sesion = cliente.session["recuperacion"]
+            self.assertNotIn("codigo", sesion)
+            self.assertNotIn(codigo, str(sesion))
             digitos = {f"d{i}": digito for i, digito in enumerate(codigo, start=1)}
             validado = cliente.post("/recuperar/codigo/", digitos)
             self.assertEqual(validado.status_code, 302)
+            fila.refresh_from_db()
+            self.assertIsNotNone(fila.usado_en)
+            sesion = cliente.session
+            sesion["recuperacion"] = {"usuario_id": fila.usuario_id, "verificado": False}
+            sesion.save()
+            reuso = cliente.post("/recuperar/codigo/", digitos)
+            self.assertEqual(reuso.status_code, 200)
+            self.assertContains(reuso, "ya no es válido")
             nueva = "NuevaClave1!"
+            sesion = cliente.session
+            sesion["recuperacion"] = {"usuario_id": fila.usuario_id, "verificado": True}
+            sesion.save()
             guardada = cliente.post(
                 "/recuperar/nueva/",
                 {"password": nueva, "confirmacion": nueva},
@@ -207,11 +238,64 @@ class AutenticacionOrmTests(TestCase):
             self.assertContains(guardada, "actualizada")
         finally:
             builtins.open = self._open_real
-        user = self.users["admin"]
+        user = self.users["33100011-6"]
         user.refresh_from_db()
         self.assertTrue(user.check_password(nueva))
-        self.assertFalse(user.check_password("admin123"))
+        self.assertFalse(user.check_password("ClaveAdmin1!"))
         ingreso = Client()
-        respuesta = ingreso.post("/login/", {"username": "admin", "password": nueva})
+        respuesta = ingreso.post("/login/", {"rut": "33.100.011-6", "password": nueva})
         self.assertEqual(respuesta.status_code, 302)
         self.assertNotIn("/login/", respuesta["Location"])
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_un_codigo_nuevo_invalida_el_anterior(self):
+        self._open_real = builtins.open
+        builtins.open = self._abrir
+        cliente = Client()
+        try:
+            from cuentas.models import CodigoUnUso
+
+            mail.outbox.clear()
+            cliente.post("/recuperar/", {"correo": "admin.prueba@siged.test"})
+            primero = self._codigo_del_correo()
+            mail.outbox.clear()
+            cliente.post("/recuperar/codigo/", {"accion": "reenviar"})
+            anterior = CodigoUnUso.objects.order_by("pk").first()
+            self.assertIsNotNone(anterior.anulado_en)
+            self.assertIsNone(anterior.usado_en)
+            segundo = self._codigo_del_correo()
+            self.assertNotEqual(primero, segundo)
+            viejo = {f"d{i}": digito for i, digito in enumerate(primero, start=1)}
+            rechazado = cliente.post("/recuperar/codigo/", viejo)
+            self.assertEqual(rechazado.status_code, 200)
+            self.assertContains(rechazado, "no coincide")
+            self.assertNotContains(rechazado, primero)
+            nuevo = {f"d{i}": digito for i, digito in enumerate(segundo, start=1)}
+            aceptado = cliente.post("/recuperar/codigo/", nuevo)
+            self.assertEqual(aceptado.status_code, 302)
+            self.assertIn("/recuperar/nueva/", aceptado["Location"])
+        finally:
+            builtins.open = self._open_real
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_el_quinto_intento_invalida_el_codigo(self):
+        self._open_real = builtins.open
+        builtins.open = self._abrir
+        cliente = Client()
+        try:
+            mail.outbox.clear()
+            cliente.post("/recuperar/", {"correo": "admin.prueba@siged.test"})
+            codigo = self._codigo_del_correo()
+            malo = "222222" if codigo != "222222" else "333333"
+            digitos_malos = {f"d{i}": digito for i, digito in enumerate(malo, start=1)}
+            for _ in range(4):
+                respuesta = cliente.post("/recuperar/codigo/", digitos_malos)
+                self.assertContains(respuesta, "no coincide")
+            agotado = cliente.post("/recuperar/codigo/", digitos_malos)
+            self.assertContains(agotado, "Demasiados intentos")
+            correcto = {f"d{i}": digito for i, digito in enumerate(codigo, start=1)}
+            despues = cliente.post("/recuperar/codigo/", correcto)
+            self.assertContains(despues, "ya no es válido")
+            self.assertNotContains(despues, codigo)
+        finally:
+            builtins.open = self._open_real

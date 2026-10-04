@@ -4,7 +4,7 @@ Uso:
     python manage.py sembrar_demo
     python manage.py sembrar_demo --usuarios funcionario jefatura
 
-Para cada usuario de prueba (admin, jefatura, funcionario, ventanilla):
+Para cada rol de prueba (administrador, jefatura, funcionario, ventanilla):
   1. Asegura un Funcionario enlazado (Usuario.funcionario). Si no tiene, reutiliza
      uno libre con el mismo nombre o crea "FUN-DEMO-<USUARIO>" en su delegación.
   2. Deja asignados a ese funcionario 4 tickets marcados como demo
@@ -28,7 +28,7 @@ from control_gestion.models import ItemFuncionario, Meta
 from cuentas.models import Cargo, Delegacion, Funcionario, Usuario
 from requerimientos.models import AreaSoporte, CanalIngreso, Requerimiento, TipoGestion, Vecino
 
-USUARIOS_DEMO = ["admin", "jefatura", "funcionario", "ventanilla"]
+USUARIOS_DEMO = ["administrador", "jefatura", "funcionario", "ventanilla"]
 
 # (días desde el ingreso, estado, texto)
 TICKETS_DEMO = [
@@ -41,7 +41,7 @@ TICKETS_DEMO = [
 # Metas por defecto si el funcionario no tiene ninguna: (nombre, ponderador, meta trimestre, avance)
 METAS_DEMO = [("Cobertura", 40, 30, 22), ("Tiempos", 30, 20, 13), ("Satisfacción", 30, 10, 8)]
 
-VECINO_DEMO = "Vecino/a demo SIGED-SGR"
+VECINO_DEMO = "Vecino demo SIGED-SGR"
 
 
 class Command(BaseCommand):
@@ -59,8 +59,7 @@ class Command(BaseCommand):
         resumen = []
         with transaction.atomic():
             for username in opts["usuarios"]:
-                usuario = Usuario.objects.select_related("funcionario", "delegacion", "cargo").filter(
-                    username=username).first()
+                usuario = self._resolver_usuario(username)
                 if usuario is None:
                     self.stdout.write(self.style.WARNING(f"- {username}: no existe, se omite."))
                     continue
@@ -92,6 +91,32 @@ class Command(BaseCommand):
             )
         return {"canal": canal, "tipo": tipo, "area": area}
 
+    def _resolver_usuario(self, identificador):
+        from core.validaciones import rut_normalizado_valido
+
+        usuario = (
+            Usuario.objects.select_related("funcionario", "delegacion", "cargo", "rol")
+            .filter(username=identificador)
+            .first()
+        )
+        if usuario is not None:
+            return usuario
+        rut = rut_normalizado_valido(identificador)
+        if rut:
+            usuario = (
+                Usuario.objects.select_related("funcionario", "delegacion", "cargo", "rol")
+                .filter(funcionario__rut=rut)
+                .first()
+            )
+            if usuario is not None:
+                return usuario
+        return (
+            Usuario.objects.select_related("funcionario", "delegacion", "cargo", "rol")
+            .filter(rol__codigo=identificador)
+            .order_by("pk")
+            .first()
+        )
+
     def _delegacion_de(self, usuario):
         return (
             usuario.delegacion
@@ -110,9 +135,22 @@ class Command(BaseCommand):
             cargo = usuario.cargo or Cargo.objects.order_by("pk").first()
             if delegacion is None or cargo is None:
                 raise CommandError("Se necesitan al menos una Delegación y un Cargo (loaddata fixtures/01_catalogos.json).")
+            from cuentas.simulacion import identidad, nombre_visible, rut_trabajador
+
+            indice = 800 + Funcionario.objects.count()
+            nombres, paterno, materno = identidad(indice)
             funcionario, creado = Funcionario.objects.get_or_create(
-                codigo=f"FUN-DEMO-{usuario.username.upper()}"[:20],
-                defaults={"nombre": usuario.nombre, "cargo": cargo, "delegacion": delegacion},
+                codigo=f"FUN-DEMO-{usuario.pk}"[:20],
+                defaults={
+                    "nombre": nombre_visible(nombres, paterno, materno, True),
+                    "nombres": nombres,
+                    "apellido_paterno": paterno,
+                    "apellido_materno": materno,
+                    "rut": rut_trabajador(indice),
+                    "es_simulacion": True,
+                    "cargo": cargo,
+                    "delegacion": delegacion,
+                },
             )
             origen = "creado" if creado else "reutilizado"
             otro = getattr(funcionario, "usuario", None) if not creado else None
@@ -123,9 +161,19 @@ class Command(BaseCommand):
         return funcionario, origen
 
     def _vecino(self, delegacion):
+        from cuentas.simulacion import rut_vecino
+
         vecino, _ = Vecino.objects.get_or_create(
             nombre=VECINO_DEMO,
-            defaults={"delegacion": delegacion, "territorio": "Demo", "direccion": "Dirección de prueba"},
+            defaults={
+                "delegacion": delegacion,
+                "territorio": "Demo",
+                "direccion": "Calle Ficticia 900",
+                "rut": rut_vecino(900),
+                "telefono": "+56900000900",
+                "correo": "vecinodemo@siged.test",
+                "es_simulacion": True,
+            },
         )
         return vecino
 
