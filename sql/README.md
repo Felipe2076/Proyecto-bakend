@@ -7,7 +7,8 @@ Cada cambio de esquema de la prioridad 1 tiene script y rollback, y también una
 | Orden | Script | Qué hace | Rollback |
 | --- | --- | --- | --- |
 | 1 | `V017__funcionario_rut_nombres.sql` | Columnas anulables `rut`, `nombres`, apellidos y `es_simulacion`; índice `idx_funcionario_delegacion_apellido` | `R017__funcionario_rut_nombres.sql` |
-| 2 | `D003__datos_simulacion.sql` | Reemplaza identidades por la simulación (RUT del rango 33.xxx, nombres sin marca, clave `!`) | No hay rollback de datos: restaurar el `mysqldump` |
+| 2 | `D003__datos_simulacion.sql` | Reemplaza identidades por la simulación, también filas que no están en el fixture | No hay rollback de datos: restaurar el `mysqldump` |
+| — | `verificacion/B7__rut_simulacion.sql` | Consultas de lectura. Cada resultado debe ser 0. No cambia el esquema | No aplica |
 | 3 | `V018__rut_obligatorio.sql` | `rut` y nombres obligatorios, `uq_funcionario_rut`, `CHECK` con `REGEXP_LIKE`, `cuentas_usuario.funcionario_id` obligatorio | `R018__rut_obligatorio.sql` |
 | 4 | `V019__codigo_un_uso.sql` | Tabla `codigo_un_uso`: HMAC del código, vencimiento, intentos, `usado_en` y `anulado_en` | `R019__codigo_un_uso.sql` |
 
@@ -37,9 +38,30 @@ mysql gestion_muni < sql/datos/D003__datos_simulacion.sql
 mysql gestion_muni < sql/migraciones/V018__rut_obligatorio.sql
 mysql gestion_muni < sql/migraciones/V019__codigo_un_uso.sql
 python manage.py importar_json
+mysql gestion_muni < sql/verificacion/B7__rut_simulacion.sql
 python manage.py migrate --fake
 ```
 
-`D003` actualiza los vecinos con `id` 1 a 21, que es el orden del fixture de la sumativa 2. Si la base local tiene otros id, no usar `D003`: aplicar `migrate` y la migración de datos, que localiza las filas por código de funcionario y por el mapa en memoria, no por esos id.
+`D003` y `V018` se corrigieron en su archivo. No hay `D005` ni otro `V`: en la bitácora del equipo el siguiente hueco está después de `D004` (EQ-47) y esos dos scripts no habían quedado aplicados en las bases con datos. El detalle está en `docs/mer/BITACORA_MODELO.md`.
+
+## Ensayo sobre una copia (base que ya tiene filas)
+
+No correr esto primero contra la base real. Restaurar una copia (por ejemplo `gestion_muni_ensayo`) y trabajar ahí. `loaddata 02_datos_sistema` no es idempotente: si ya hay usuarios, choca por el correo. En una base con datos el orden es `migrate` y después `importar_json`.
+
+```bash
+mysqldump -u "$DB_USER" -p --single-transaction --routines gestion_muni > backups/gestion_muni_antes.sql
+mysql -u "$DB_USER" -p -e "CREATE DATABASE gestion_muni_ensayo CHARACTER SET utf8mb4"
+mysql -u "$DB_USER" -p gestion_muni_ensayo < backups/gestion_muni_antes.sql
+# Apuntar DB_NAME del .env a la copia, o cargar el volcado ahí y no a producción.
+python manage.py migrate
+python manage.py importar_json
+mysql -u "$DB_USER" -p gestion_muni_ensayo < sql/verificacion/B7__rut_simulacion.sql
+```
+
+`sql/verificacion/B7__rut_simulacion.sql` no modifica datos. Cada resultado tiene que ser 0: ningún RUT de funcionario, usuario o vecino fuera de 33.xxx.xxx, ningún vecino o funcionario sin marca de simulación, ningún correo de usuario fuera de `@siged.test`, ninguna combinación rol × delegación vacía y ningún RUT de funcionario repetido. Cubre cualquier id, no solo el 1 a 21 ni el código `FUN-DEMO-ADMIN`.
+
+Si alguna consulta no da 0, no repetir el procedimiento sobre la base real. Si todas dan 0, el mismo orden (`migrate`, sin `loaddata`, `importar_json`, otra vez B7) se aplica a la base de trabajo, con el respaldo ya tomado. Volver a correr `migrate` e `importar_json` no duplica personas.
+
+El `CHECK` de `0003` corre fuera de la transacción de Django. Si el migrate anterior se cortó en ese paso, hay que volver a ejecutar `migrate`: no recrea el índice único ni el `CHECK` si ya quedaron creados.
 
 `migrate --fake` marca como aplicadas las migraciones cuyo SQL ya se ejecutó. No volver a correr `V017`/`V018` después de un `migrate` real.
