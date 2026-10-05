@@ -39,6 +39,10 @@ def _hora(valor):
     return time.fromisoformat(valor) if valor else time(0, 0)
 
 
+# Alias de las bases viejas. No pueden seguir entrando con la clave anterior.
+_ALIAS_VIEJOS = ("admin", "jefatura", "funcionario", "ventanilla")
+
+
 class Command(BaseCommand):
     help = "Importa los archivos data/*.json del mockup a la base de datos (idempotente)."
 
@@ -127,6 +131,112 @@ class Command(BaseCommand):
             obj.modulo_principal = c.get("modulo_principal", "")
             obj.save()
 
+    def _rut_libre(self, excepto_pk=None):
+        from cuentas.simulacion import fichas_funcionario, rut_libre_trabajador
+
+        usados = {ficha["rut"] for ficha in fichas_funcionario().values()}
+        consulta = Funcionario.objects.exclude(rut__isnull=True).exclude(rut="")
+        if excepto_pk:
+            consulta = consulta.exclude(pk=excepto_pk)
+        usados.update(consulta.values_list("rut", flat=True))
+        _indice, rut = rut_libre_trabajador(usados, 33)
+        return rut
+
+    def _liberar_rut(self, rut, codigo_dueno):
+        if not rut:
+            return
+        for otro in list(Funcionario.objects.filter(rut=rut).exclude(codigo=codigo_dueno)):
+            otro.rut = self._rut_libre(otro.pk)
+            otro.es_simulacion = True
+            otro.save(update_fields=["rut", "es_simulacion"])
+
+    def _aparcar(self, usuario):
+        """Suelta el funcionario sin dejar NULL: la columna es obligatoria y única.
+
+        La plaza se borra al cerrar la importación si nadie se quedó en ella.
+        """
+        from cuentas.simulacion import ficha_extra, rut_libre_trabajador
+
+        origen = usuario.funcionario
+        self._n_plaza = getattr(self, "_n_plaza", 0) + 1
+        usados = set(
+            Funcionario.objects.exclude(rut__isnull=True).exclude(rut="").values_list("rut", flat=True)
+        )
+        indice, rut = rut_libre_trabajador(usados, 800)
+        ficha = ficha_extra(indice)
+        codigo = f"FP{self._n_plaza}"
+        plaza = Funcionario.objects.create(
+            codigo=codigo,
+            rut=rut,
+            nombres=(ficha["nombres"] or "Extra")[:60],
+            apellido_paterno=(ficha["apellido_paterno"] or "Simulado")[:60],
+            apellido_materno=(ficha["apellido_materno"] or None),
+            nombre=(ficha["nombre"] or "Extra Simulado")[:120],
+            es_simulacion=True,
+            cargo=origen.cargo if origen is not None else Cargo.objects.order_by("pk").first(),
+            delegacion=origen.delegacion if origen is not None else Delegacion.objects.order_by("pk").first(),
+            estado=EstadoRegistro.ACTIVO,
+        )
+        self._plazas.append(plaza.pk)
+        usuario.funcionario = plaza
+        usuario.save(update_fields=["funcionario"])
+
+    def _desocupar(self, funcionario, dueno_pk):
+        """Quien tenga este funcionario, y no sea el dueño, pasa a una plaza."""
+        if funcionario is None:
+            return
+        consulta = Usuario.objects.filter(funcionario=funcionario)
+        if dueno_pk:
+            consulta = consulta.exclude(pk=dueno_pk)
+        for otro in list(consulta):
+            self._aparcar(otro)
+
+    def _limpiar_plazas(self):
+        for pk in getattr(self, "_plazas", []):
+            plaza = Funcionario.objects.filter(pk=pk).first()
+            if plaza is not None and not Usuario.objects.filter(funcionario=plaza).exists():
+                plaza.delete()
+
+    def _retirar_alias(self):
+        """Ningún login admin/jefatura/funcionario/ventanilla sigue activo con la clave vieja."""
+        User = get_user_model()
+        for user in list(User.objects.filter(username__in=_ALIAS_VIEJOS)):
+            perfil = Usuario.objects.filter(user=user).first()
+            if perfil is not None and perfil.username not in _ALIAS_VIEJOS:
+                user.username = perfil.username
+                user.email = perfil.correo
+                user.is_active = perfil.activo
+            else:
+                user.username = f"retirado-{user.pk}"
+                user.email = f"retirado-{user.pk}@siged.test"
+                user.is_active = False
+            user.set_unusable_password()
+            user.save()
+
+    def _liberar_cuenta(self, username, correo, propio_pk, propio_user_id):
+        User = get_user_model()
+        ajenos = Usuario.objects.filter(username=username)
+        if propio_pk:
+            ajenos = ajenos.exclude(pk=propio_pk)
+        for otro in list(ajenos):
+            reserva = f"reserva-{otro.pk}"
+            otro.username = reserva
+            if otro.correo == correo:
+                otro.correo = f"{reserva}@siged.test"
+            otro.save(update_fields=["username", "correo"])
+        ajenos = Usuario.objects.filter(correo=correo)
+        if propio_pk:
+            ajenos = ajenos.exclude(pk=propio_pk)
+        for otro in list(ajenos):
+            otro.correo = f"reserva-{otro.pk}@siged.test"
+            otro.save(update_fields=["correo"])
+        auth = User.objects.filter(username=username)
+        if propio_user_id:
+            auth = auth.exclude(pk=propio_user_id)
+        for user in list(auth):
+            user.username = f"reserva-auth-{user.pk}"
+            user.save(update_fields=["username"])
+
     def importar_funcionarios(self):
         from core.validaciones import cuerpo_en_rango_ficticio
         from cuentas.simulacion import nombre_almacenado
@@ -146,6 +256,7 @@ class Command(BaseCommand):
                 or "(ficticio)" in (f.get("nombre") or "")
                 or cuerpo_en_rango_ficticio(f.get("rut") or "")
             )
+            self._liberar_rut(f.get("rut"), f["id_funcionario"])
             funcionario, _ = Funcionario.objects.update_or_create(
                 codigo=f["id_funcionario"],
                 defaults={
@@ -181,6 +292,10 @@ class Command(BaseCommand):
         User = get_user_model()
         compartida = clave_compartida_de_prueba()
         credenciales = []
+        self._plazas = []
+        # Cada fila se reconoce por su código (USR-001), no por el funcionario
+        # que tenga hoy. En la base de Pipe ese enlace viene corrido; en EC2
+        # USR-001 todavía es el alias ``admin`` de FUN-DEMO-ADMIN.
         for u in self._leer("usuarios.json", []):
             codigo_rol = u.get("rol", "funcionario")
             rol, _ = Rol.objects.get_or_create(
@@ -194,21 +309,35 @@ class Command(BaseCommand):
                 username = funcionario.rut
             correo = u.get("email") or (f"{funcionario.codigo.lower()}@siged.test" if funcionario else f"{username}@siged.test")
             nombre = u.get("nombre") or (funcionario.nombre if funcionario else username)
-            usuario, _ = Usuario.objects.update_or_create(
-                username=username,
-                defaults={
-                    "codigo": u.get("id_usuario"),
-                    "nombre": nombre,
-                    "correo": correo,
-                    "rol": rol,
-                    "cargo": self._cargo(u["cargo"]) if u.get("cargo") else (funcionario.cargo if funcionario else None),
-                    "delegacion": self._delegacion(u.get("delegacion")) if u.get("delegacion") else (
-                        funcionario.delegacion if funcionario else None
-                    ),
-                    "funcionario": funcionario,
-                    "estado": EstadoRegistro.ACTIVO if u.get("activo", True) else EstadoRegistro.INACTIVO,
-                },
+            codigo = u.get("id_usuario")
+            usuario = Usuario.objects.filter(codigo=codigo).first() if codigo else None
+            self._desocupar(funcionario, usuario.pk if usuario is not None else None)
+            self._liberar_cuenta(
+                username,
+                correo,
+                usuario.pk if usuario is not None else None,
+                usuario.user_id if usuario is not None else None,
             )
+            campos = {
+                "username": username,
+                "nombre": nombre,
+                "correo": correo,
+                "rol": rol,
+                "cargo": self._cargo(u["cargo"]) if u.get("cargo") else (funcionario.cargo if funcionario else None),
+                "delegacion": self._delegacion(u.get("delegacion")) if u.get("delegacion") else (
+                    funcionario.delegacion if funcionario else None
+                ),
+                "funcionario": funcionario,
+                "estado": EstadoRegistro.ACTIVO if u.get("activo", True) else EstadoRegistro.INACTIVO,
+            }
+            if usuario is None:
+                usuario = Usuario.objects.create(codigo=codigo, **campos)
+            else:
+                if codigo:
+                    usuario.codigo = codigo
+                for campo, valor in campos.items():
+                    setattr(usuario, campo, valor)
+                usuario.save()
             if not crear_auth:
                 continue
             # El JSON no trae clave. Cada cuenta recibe una distinta, salvo que
@@ -233,6 +362,8 @@ class Command(BaseCommand):
                 usuario.save(update_fields=["user"])
             rut = funcionario.rut if funcionario is not None and funcionario.rut else username
             credenciales.append((rut, usuario.codigo or "", clave))
+        self._limpiar_plazas()
+        self._retirar_alias()
         if crear_auth and credenciales:
             nombre_archivo = escribir_claves_locales(credenciales)
             self.stdout.write(
@@ -392,6 +523,9 @@ class Command(BaseCommand):
             for paso in ("areas", "requerimientos", "compromisos", "actividades", "agenda", "medicion",
                          "notificaciones"):
                 getattr(self, f"importar_{paso}")()
+            from cuentas.simulacion_bd import normalizar_filas_sueltas
+
+            normalizar_filas_sueltas()
 
         modelos = [Rol, Delegacion, Cargo, Funcionario, Usuario, ParametroSistema, Meta, ItemFuncionario,
                    AreaSoporte, CanalIngreso, TipoGestion, Vecino, Requerimiento, Compromiso, Actividad,

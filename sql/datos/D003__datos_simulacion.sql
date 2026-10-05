@@ -2,16 +2,57 @@
 -- Descripción : Reemplaza identidades de demostración por datos ficticios
 -- Autor       : Bakend pipi       Revisor: ramoncito
 -- Rollback    : restaurar el respaldo mysqldump previo (no hay script inverso)
--- Requiere    : V017 aplicado y todavía sin V018 (columnas anulables)
+-- Requiere    : V017. También se puede repetir después de V018: no escribe NULL.
 -- Nota        : no contiene claves en texto plano ni hashes utilizables.
 --               auth_user.password queda en '!' (Django la trata como
 --               inutilizable). importar_json asigna una clave distinta por
 --               cuenta y la escribe solo en .demo_credentials.local.
 --               Los nombres se guardan sin la marca; es_simulacion la pinta.
---               Los id de vecino son los del fixture 02_datos_sistema.
---               Si la base no nació de ese fixture, use python manage.py migrate
---               (la migración 0003 recorre las filas y no depende del id).
+--               Los UPDATE de vecino por id 1 a 21 cubren el fixture.
+--               No alcanzan para una base real: el id 22, FUN-DEMO-ADMIN u
+--               otra fila quedan para el cierre de este script, que recorre
+--               cualquier fila fuera del rango 33.xxx.xxx. No hay una lista
+--               cerrada de id.
+--               Después: sql/verificacion/B7__rut_simulacion.sql debe dar 0.
 START TRANSACTION;
+
+-- Suelta el RUT canónico que tenga una fila ajena al catálogo, sin dejar NULL
+-- (V018 ya puede haber marcado la columna como obligatoria). 338xxxxx es un
+-- estacionamiento: el cierre de este script lo cambia por un RUT 33.100.xxx libre.
+UPDATE cuentas_funcionario f
+JOIN (
+  SELECT id, cuerpo,
+         11 - MOD(
+             (cuerpo DIV 1 % 10) * 2
+           + (cuerpo DIV 10 % 10) * 3
+           + (cuerpo DIV 100 % 10) * 4
+           + (cuerpo DIV 1000 % 10) * 5
+           + (cuerpo DIV 10000 % 10) * 6
+           + (cuerpo DIV 100000 % 10) * 7
+           + (cuerpo DIV 1000000 % 10) * 2
+           + (cuerpo DIV 10000000 % 10) * 3
+         , 11) AS resto
+  FROM (
+    SELECT id, 33800000 + id AS cuerpo
+    FROM cuentas_funcionario
+    WHERE codigo IS NULL OR codigo NOT IN ('FUN-001','FUN-002','FUN-003','FUN-004','FUN-005','FUN-006','FUN-007','FUN-008','FUN-009','FUN-010','FUN-011','FUN-012','FUN-013','FUN-014','FUN-015','FUN-016','FUN-017','FUN-018','FUN-019','FUN-020','FUN-021','FUN-022','FUN-023','FUN-024','FUN-025','FUN-026','FUN-027','FUN-028','FUN-029','FUN-030','FUN-031','FUN-032')
+  ) nums
+) x ON x.id = f.id
+SET f.rut = CONCAT(x.cuerpo, '-', CASE x.resto WHEN 11 THEN '0' WHEN 10 THEN 'K' ELSE CAST(x.resto AS UNSIGNED) END)
+WHERE f.rut IS NULL OR TRIM(f.rut) = ''
+   OR CAST(SUBSTRING_INDEX(REPLACE(f.rut, '.', ''), '-', 1) AS UNSIGNED) BETWEEN 33100001 AND 33100032
+   OR CAST(SUBSTRING_INDEX(REPLACE(f.rut, '.', ''), '-', 1) AS UNSIGNED) NOT BETWEEN 33000000 AND 33999999;
+
+UPDATE cuentas_usuario
+SET username = CONCAT('reserva-', id),
+    correo = CONCAT('reserva-', id, '@siged.test')
+WHERE codigo IS NULL OR codigo NOT IN ('USR-001','USR-002','USR-003','USR-004','USR-005','USR-006','USR-007','USR-008','USR-009','USR-010','USR-011','USR-012','USR-013','USR-014','USR-015','USR-016','USR-017','USR-018','USR-019','USR-020','USR-021','USR-022','USR-023','USR-024','USR-025');
+
+UPDATE auth_user au
+JOIN cuentas_usuario u ON u.user_id = au.id
+SET au.username = CONCAT('reserva-auth-', au.id),
+    au.email = u.correo
+WHERE u.codigo IS NULL OR u.codigo NOT IN ('USR-001','USR-002','USR-003','USR-004','USR-005','USR-006','USR-007','USR-008','USR-009','USR-010','USR-011','USR-012','USR-013','USR-014','USR-015','USR-016','USR-017','USR-018','USR-019','USR-020','USR-021','USR-022','USR-023','USR-024','USR-025');
 
 UPDATE cuentas_funcionario SET rut='33100001-9', nombres='Alba', apellido_paterno='Alamo', apellido_materno='Herrera', nombre='Alba Alamo Herrera', es_simulacion=1 WHERE codigo='FUN-001';
 UPDATE cuentas_funcionario SET rut='33100002-7', nombres='Bruno', apellido_paterno='Alamo', apellido_materno='Keller', nombre='Bruno Alamo Keller', es_simulacion=1 WHERE codigo='FUN-002';
@@ -23,6 +64,38 @@ UPDATE cuentas_funcionario SET rut='33100007-8', nombres='Greta', apellido_pater
 UPDATE cuentas_funcionario SET rut='33100008-6', nombres='Hugo', apellido_paterno='Alamo', apellido_materno='Ibanez', nombre='Hugo Alamo Ibanez', es_simulacion=1 WHERE codigo='FUN-008';
 UPDATE cuentas_funcionario SET rut='33100009-4', nombres='Iris', apellido_paterno='Alamo', apellido_materno='Lago', nombre='Iris Alamo Lago', es_simulacion=1 WHERE codigo='FUN-009';
 UPDATE cuentas_funcionario SET rut='33100010-8', nombres='Julio', apellido_paterno='Alamo', apellido_materno='Olmo', nombre='Julio Alamo Olmo', es_simulacion=1 WHERE codigo='FUN-010';
+-- Si FUN-011…FUN-032 ya existen (no solo el fixture 1 a 10), el RUT sigue al JSON.
+UPDATE cuentas_funcionario f
+JOIN (
+  SELECT 'FUN-011' AS codigo, '33100011-6' AS rut, 'Kael' AS nombres, 'Alamo' AS apellido_paterno, 'Rios' AS apellido_materno, 'Kael Alamo Rios' AS nombre
+  UNION ALL SELECT 'FUN-012', '33100012-4', 'Luna', 'Alamo', 'Bravo', 'Luna Alamo Bravo'
+  UNION ALL SELECT 'FUN-013', '33100013-2', 'Milo', 'Alamo', 'Diaz', 'Milo Alamo Diaz'
+  UNION ALL SELECT 'FUN-014', '33100014-0', 'Nora', 'Alamo', 'Guerra', 'Nora Alamo Guerra'
+  UNION ALL SELECT 'FUN-015', '33100015-9', 'Omar', 'Alamo', 'Jara', 'Omar Alamo Jara'
+  UNION ALL SELECT 'FUN-016', '33100016-7', 'Pia', 'Alamo', 'Mora', 'Pia Alamo Mora'
+  UNION ALL SELECT 'FUN-017', '33100017-5', 'Quique', 'Alamo', 'Paz', 'Quique Alamo Paz'
+  UNION ALL SELECT 'FUN-018', '33100018-3', 'Rita', 'Alamo', 'Solis', 'Rita Alamo Solis'
+  UNION ALL SELECT 'FUN-019', '33100019-1', 'Sael', 'Alamo', 'Bravo', 'Sael Alamo Bravo'
+  UNION ALL SELECT 'FUN-020', '33100020-5', 'Tomas', 'Alamo', 'Espinosa', 'Tomas Alamo Espinosa'
+  UNION ALL SELECT 'FUN-021', '33100021-3', 'Alba', 'Bravo', 'Herrera', 'Alba Bravo Herrera'
+  UNION ALL SELECT 'FUN-022', '33100022-1', 'Bruno', 'Bravo', 'Keller', 'Bruno Bravo Keller'
+  UNION ALL SELECT 'FUN-023', '33100023-K', 'Celia', 'Bravo', 'Nieto', 'Celia Bravo Nieto'
+  UNION ALL SELECT 'FUN-024', '33100024-8', 'Dario', 'Bravo', 'Quilo', 'Dario Bravo Quilo'
+  UNION ALL SELECT 'FUN-025', '33100025-6', 'Elena', 'Bravo', 'Toro', 'Elena Bravo Toro'
+  UNION ALL SELECT 'FUN-026', '33100026-4', 'Felix', 'Bravo', 'Castro', 'Felix Bravo Castro'
+  UNION ALL SELECT 'FUN-027', '33100027-2', 'Greta', 'Bravo', 'Flores', 'Greta Bravo Flores'
+  UNION ALL SELECT 'FUN-028', '33100028-0', 'Hugo', 'Bravo', 'Ibanez', 'Hugo Bravo Ibanez'
+  UNION ALL SELECT 'FUN-029', '33100029-9', 'Iris', 'Bravo', 'Lago', 'Iris Bravo Lago'
+  UNION ALL SELECT 'FUN-030', '33100030-2', 'Julio', 'Bravo', 'Olmo', 'Julio Bravo Olmo'
+  UNION ALL SELECT 'FUN-031', '33100031-0', 'Kael', 'Bravo', 'Rios', 'Kael Bravo Rios'
+  UNION ALL SELECT 'FUN-032', '33100032-9', 'Luna', 'Bravo', 'Alamo', 'Luna Bravo Alamo'
+) canonico ON canonico.codigo = f.codigo
+SET f.rut = canonico.rut,
+    f.nombres = canonico.nombres,
+    f.apellido_paterno = canonico.apellido_paterno,
+    f.apellido_materno = canonico.apellido_materno,
+    f.nombre = canonico.nombre,
+    f.es_simulacion = 1;
 INSERT INTO cuentas_funcionario (codigo, rut, nombres, apellido_paterno, apellido_materno, nombre, es_simulacion, cargo_id, delegacion_id, estado) SELECT 'FUN-011', '33100011-6', 'Kael', 'Alamo', 'Rios', 'Kael Alamo Rios', 1, (SELECT id FROM cuentas_cargo WHERE id=1 OR nombre='Gestor Social' ORDER BY id=1 DESC LIMIT 1), (SELECT id FROM cuentas_delegacion WHERE nombre='Delegación Centro' LIMIT 1), 'activo' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cuentas_funcionario WHERE codigo='FUN-011');
 INSERT INTO cuentas_funcionario (codigo, rut, nombres, apellido_paterno, apellido_materno, nombre, es_simulacion, cargo_id, delegacion_id, estado) SELECT 'FUN-012', '33100012-4', 'Luna', 'Alamo', 'Bravo', 'Luna Alamo Bravo', 1, (SELECT id FROM cuentas_cargo WHERE id=2 OR nombre='Gestor Social' ORDER BY id=2 DESC LIMIT 1), (SELECT id FROM cuentas_delegacion WHERE nombre='Delegación Centro' LIMIT 1), 'activo' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cuentas_funcionario WHERE codigo='FUN-012');
 INSERT INTO cuentas_funcionario (codigo, rut, nombres, apellido_paterno, apellido_materno, nombre, es_simulacion, cargo_id, delegacion_id, estado) SELECT 'FUN-013', '33100013-2', 'Milo', 'Alamo', 'Diaz', 'Milo Alamo Diaz', 1, (SELECT id FROM cuentas_cargo WHERE id=3 OR nombre='Gestor Social' ORDER BY id=3 DESC LIMIT 1), (SELECT id FROM cuentas_delegacion WHERE nombre='Delegación Centro' LIMIT 1), 'activo' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cuentas_funcionario WHERE codigo='FUN-013');
@@ -171,6 +244,198 @@ UPDATE requerimientos_areasoporte a
 JOIN cuentas_funcionario f ON f.id = a.encargado_id
 SET a.encargado_nombre = f.nombre
 WHERE a.encargado_id IS NOT NULL;
+
+-- Cualquier cuenta sin funcionario (no depende del id).
+INSERT INTO cuentas_funcionario (codigo, rut, nombres, apellido_paterno, nombre, es_simulacion, cargo_id, delegacion_id, estado)
+SELECT CONCAT('FUN-X', u.id), NULL, 'Extra', 'Simulado', 'Extra Simulado', 1,
+       COALESCE(u.cargo_id, (SELECT id FROM cuentas_cargo ORDER BY id LIMIT 1)),
+       COALESCE(u.delegacion_id, (SELECT id FROM cuentas_delegacion ORDER BY id LIMIT 1)),
+       'activo'
+FROM cuentas_usuario u
+WHERE u.funcionario_id IS NULL
+  AND COALESCE(u.cargo_id, (SELECT id FROM cuentas_cargo ORDER BY id LIMIT 1)) IS NOT NULL
+  AND COALESCE(u.delegacion_id, (SELECT id FROM cuentas_delegacion ORDER BY id LIMIT 1)) IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM cuentas_funcionario f WHERE f.codigo = CONCAT('FUN-X', u.id));
+
+UPDATE cuentas_usuario u
+JOIN cuentas_funcionario f ON f.codigo = CONCAT('FUN-X', u.id)
+SET u.funcionario_id = f.id
+WHERE u.funcionario_id IS NULL;
+
+-- Funcionarios que siguieron sin RUT 33.xxx.xxx (FUN-DEMO-ADMIN u otro código).
+UPDATE cuentas_funcionario
+SET nombres = IF(nombres IS NULL OR TRIM(nombres) = '', 'Extra', nombres),
+    apellido_paterno = IF(apellido_paterno IS NULL OR TRIM(apellido_paterno) = '', 'Simulado', apellido_paterno)
+WHERE rut IS NULL OR TRIM(rut) = ''
+   OR CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) NOT BETWEEN 33000000 AND 33999999
+   OR CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) BETWEEN 33800000 AND 33899999;
+
+UPDATE cuentas_funcionario
+SET nombre = TRIM(CONCAT(nombres, ' ', apellido_paterno))
+WHERE nombre IS NULL OR TRIM(nombre) = '';
+
+UPDATE cuentas_funcionario f
+JOIN (
+  SELECT id, cuerpo,
+         11 - MOD(
+             (cuerpo DIV 1 % 10) * 2
+           + (cuerpo DIV 10 % 10) * 3
+           + (cuerpo DIV 100 % 10) * 4
+           + (cuerpo DIV 1000 % 10) * 5
+           + (cuerpo DIV 10000 % 10) * 6
+           + (cuerpo DIV 100000 % 10) * 7
+           + (cuerpo DIV 1000000 % 10) * 2
+           + (cuerpo DIV 10000000 % 10) * 3
+         , 11) AS resto
+  FROM (
+    SELECT id, 33100032 + ROW_NUMBER() OVER (ORDER BY codigo, id) AS cuerpo
+    FROM cuentas_funcionario
+    WHERE rut IS NULL OR TRIM(rut) = ''
+       OR CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) NOT BETWEEN 33000000 AND 33999999
+       OR CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) BETWEEN 33800000 AND 33899999
+  ) nums
+) x ON x.id = f.id
+SET f.rut = CONCAT(x.cuerpo, '-', CASE x.resto WHEN 11 THEN '0' WHEN 10 THEN 'K' ELSE CAST(x.resto AS CHAR) END),
+    f.es_simulacion = 1;
+
+UPDATE cuentas_funcionario
+SET es_simulacion = 1
+WHERE es_simulacion = 0
+  AND CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) BETWEEN 33000000 AND 33999999;
+
+-- Vecinos fuera del rango, sea cual sea su id (el 22 y cualquier otro).
+SET @base_vecino := (
+  SELECT GREATEST(33500060, COALESCE(MAX(CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED)), 33500060))
+  FROM requerimientos_vecino
+  WHERE CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) BETWEEN 33500000 AND 33599999
+);
+
+UPDATE requerimientos_vecino v
+JOIN (
+  SELECT id, cuerpo,
+         11 - MOD(
+             (cuerpo DIV 1 % 10) * 2
+           + (cuerpo DIV 10 % 10) * 3
+           + (cuerpo DIV 100 % 10) * 4
+           + (cuerpo DIV 1000 % 10) * 5
+           + (cuerpo DIV 10000 % 10) * 6
+           + (cuerpo DIV 100000 % 10) * 7
+           + (cuerpo DIV 1000000 % 10) * 2
+           + (cuerpo DIV 10000000 % 10) * 3
+         , 11) AS resto
+  FROM (
+    SELECT id, CAST(@base_vecino AS UNSIGNED) + ROW_NUMBER() OVER (ORDER BY id) AS cuerpo
+    FROM requerimientos_vecino
+    WHERE rut IS NULL OR TRIM(rut) = ''
+       OR CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) NOT BETWEEN 33000000 AND 33999999
+  ) nums
+) x ON x.id = v.id
+SET v.nombre = CONCAT('Vecino Simulado ', x.cuerpo - 33500000),
+    v.rut = CONCAT(x.cuerpo, '-', CASE x.resto WHEN 11 THEN '0' WHEN 10 THEN 'K' ELSE CAST(x.resto AS CHAR) END),
+    v.telefono = CONCAT('+569', LPAD(x.cuerpo - 33500000, 8, '0')),
+    v.correo = CONCAT('vecino', x.cuerpo - 33500000, '@siged.test'),
+    v.direccion = CONCAT('Calle Ficticia ', x.cuerpo - 33500000),
+    v.territorio = 'Simulacion',
+    v.es_simulacion = 1;
+
+UPDATE requerimientos_vecino
+SET es_simulacion = 1
+WHERE es_simulacion = 0
+  AND CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) BETWEEN 33000000 AND 33999999;
+
+-- Cada rol presente × cada delegación presente. No es una lista fija de id.
+SET @base_fun := (
+  SELECT GREATEST(33100032, COALESCE(MAX(CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED)), 33100032))
+  FROM cuentas_funcionario
+  WHERE CAST(SUBSTRING_INDEX(REPLACE(rut, '.', ''), '-', 1) AS UNSIGNED) BETWEEN 33100000 AND 33100999
+);
+
+INSERT INTO cuentas_funcionario (codigo, rut, nombres, apellido_paterno, nombre, es_simulacion, cargo_id, delegacion_id, estado)
+SELECT codigo, CONCAT(cuerpo, '-', CASE resto WHEN 11 THEN '0' WHEN 10 THEN 'K' ELSE CAST(resto AS UNSIGNED) END),
+       'Extra', 'Simulado', 'Extra Simulado', 1, cargo_id, delegacion_id, 'activo'
+FROM (
+  SELECT codigo, cargo_id, delegacion_id, cuerpo,
+         11 - MOD(
+             (cuerpo DIV 1 % 10) * 2
+           + (cuerpo DIV 10 % 10) * 3
+           + (cuerpo DIV 100 % 10) * 4
+           + (cuerpo DIV 1000 % 10) * 5
+           + (cuerpo DIV 10000 % 10) * 6
+           + (cuerpo DIV 100000 % 10) * 7
+           + (cuerpo DIV 1000000 % 10) * 2
+           + (cuerpo DIV 10000000 % 10) * 3
+         , 11) AS resto
+  FROM (
+    SELECT CONCAT('FG', letra, '-', d.id) AS codigo,
+           COALESCE(
+             (SELECT c.id FROM cuentas_cargo c WHERE c.nombre = CASE letra
+                WHEN 'a' THEN 'Administrador del sistema'
+                WHEN 'j' THEN 'Delegada Territorial'
+                WHEN 'f' THEN 'Gestor Social'
+                WHEN 'v' THEN 'Apoyo Administrativo'
+              END LIMIT 1),
+             (SELECT id FROM cuentas_cargo ORDER BY id LIMIT 1)
+           ) AS cargo_id,
+           d.id AS delegacion_id,
+           CAST(@base_fun AS UNSIGNED) + ROW_NUMBER() OVER (ORDER BY letra, d.id) AS cuerpo
+    FROM (
+      SELECT r.id AS rol_id, CASE r.codigo
+        WHEN 'administrador' THEN 'a'
+        WHEN 'jefatura' THEN 'j'
+        WHEN 'funcionario' THEN 'f'
+        WHEN 'ventanilla' THEN 'v'
+      END AS letra
+      FROM cuentas_rol r
+      WHERE r.codigo IN ('administrador', 'jefatura', 'funcionario', 'ventanilla')
+    ) roles
+    JOIN cuentas_delegacion d
+    WHERE NOT EXISTS (
+      SELECT 1 FROM cuentas_usuario u
+      JOIN cuentas_funcionario f ON f.id = u.funcionario_id
+      WHERE u.rol_id = roles.rol_id AND f.delegacion_id = d.id
+    )
+  ) nums
+) listo
+WHERE cargo_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM cuentas_funcionario f WHERE f.codigo = listo.codigo);
+
+INSERT INTO auth_user (password, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined)
+SELECT '!', 0, f.rut, 'Extra', 'Simulado', CONCAT(LOWER(f.codigo), '@siged.test'), 0, 1, UTC_TIMESTAMP()
+FROM cuentas_funcionario f
+WHERE f.codigo LIKE 'FG_-%'
+  AND NOT EXISTS (SELECT 1 FROM cuentas_usuario u WHERE u.funcionario_id = f.id)
+  AND NOT EXISTS (SELECT 1 FROM auth_user au WHERE au.username = f.rut);
+
+INSERT INTO cuentas_usuario (codigo, user_id, username, nombre, correo, rol_id, cargo_id, delegacion_id, funcionario_id, estado, creado)
+SELECT CONCAT('UG', SUBSTRING(f.codigo, 3)), au.id, f.rut, f.nombre, CONCAT(LOWER(f.codigo), '@siged.test'),
+       r.id, f.cargo_id, f.delegacion_id, f.id, 'activo', UTC_TIMESTAMP()
+FROM cuentas_funcionario f
+JOIN auth_user au ON au.username = f.rut
+JOIN cuentas_rol r ON r.codigo = CASE SUBSTRING(f.codigo, 3, 1)
+  WHEN 'a' THEN 'administrador'
+  WHEN 'j' THEN 'jefatura'
+  WHEN 'f' THEN 'funcionario'
+  WHEN 'v' THEN 'ventanilla'
+END
+WHERE f.codigo LIKE 'FG_-%'
+  AND NOT EXISTS (SELECT 1 FROM cuentas_usuario u WHERE u.funcionario_id = f.id OR u.codigo = CONCAT('UG', SUBSTRING(f.codigo, 3)));
+
+-- El acceso de cualquier usuario queda en el RUT de su funcionario.
+UPDATE cuentas_usuario u
+JOIN cuentas_funcionario f ON f.id = u.funcionario_id
+SET u.username = f.rut,
+    u.nombre = f.nombre,
+    u.correo = CONCAT(LOWER(f.codigo), '@siged.test')
+WHERE u.codigo IS NULL
+   OR u.codigo NOT IN ('USR-001','USR-002','USR-003','USR-004','USR-005','USR-006','USR-007','USR-008','USR-009','USR-010','USR-011','USR-012','USR-013','USR-014','USR-015','USR-016','USR-017','USR-018','USR-019','USR-020','USR-021','USR-022','USR-023','USR-024','USR-025')
+   OR u.correo NOT LIKE '%@siged.test'
+   OR CAST(SUBSTRING_INDEX(REPLACE(u.username, '.', ''), '-', 1) AS UNSIGNED) NOT BETWEEN 33000000 AND 33999999;
+
+UPDATE auth_user au
+JOIN cuentas_usuario u ON u.user_id = au.id
+SET au.username = u.username,
+    au.email = u.correo
+WHERE au.username <> u.username OR au.email <> u.correo;
 
 COMMIT;
 

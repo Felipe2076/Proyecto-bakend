@@ -160,7 +160,27 @@ python manage.py importar_json
 
 `importar_json` reemplaza la clave de cada cuenta de simulación y reescribe `.demo_credentials.local`. Hay que ejecutarlo después de `loaddata` o de `D003`: sin ese paso las cuentas quedan con clave inutilizable. El código de recuperación se envía por correo (consola del proceso si `DEBUG=True`). En `codigo_un_uso` (`V019`) solo queda el HMAC-SHA256, de un solo uso. La clave de ese HMAC es `SIGED_CODE_HMAC_KEY` (si falta, `SECRET_KEY`).
 
-3. Camino manual, equivalente, sobre un esquema que ya tiene las tablas de `0001`:
+3. Base que **ya tiene filas** (EC2, WAMP u otra copia). Primero un ensayo sobre una copia, no sobre la base real. No usar `loaddata`: el fixture choca con correos que ya existen.
+
+```bash
+mysqldump -u "$DB_USER" -p --single-transaction --routines gestion_muni > backups/gestion_muni_antes.sql
+mysql -u "$DB_USER" -p -e "CREATE DATABASE gestion_muni_ensayo CHARACTER SET utf8mb4"
+mysql -u "$DB_USER" -p gestion_muni_ensayo < backups/gestion_muni_antes.sql
+```
+
+Apuntar `DB_NAME` a `gestion_muni_ensayo` y ejecutar:
+
+```bash
+python manage.py migrate
+python manage.py importar_json
+mysql -u "$DB_USER" -p gestion_muni_ensayo < sql/verificacion/B7__rut_simulacion.sql
+```
+
+Cada consulta de `sql/verificacion/B7__rut_simulacion.sql` tiene que devolver 0. Mide que no quede un RUT fuera de 33.xxx.xxx en funcionarios, usuarios ni vecinos, sin importar el id (el vecino 22 y `FUN-DEMO-ADMIN` entran igual que el resto). Si alguna no da 0, no seguir con la base real. Si todas dan 0, repetir `migrate` e `importar_json` sobre la base de trabajo y volver a correr B7. Repetir ese par no duplica personas.
+
+`importar_json` reconoce cada cuenta por su código (`USR-001`), no por el funcionario que tenga en ese momento. Si los enlaces vienen corridos (USR-001 en `FUN-DEMO-ADMIN` y USR-005 en `FUN-011`, como en el WAMP) o si solo existen los cuatro alias `admin`, `jefatura`, `funcionario` y `ventanilla` (como en EC2), los alinea con `data/usuarios.json` dentro de la misma transacción. `USR-001` queda en `FUN-011`. `FUN-DEMO-ADMIN` sigue como funcionario de simulación, sin cuenta: no se duplica una persona y el alias `admin` deja de entrar. Esos alias, y la clave que tenían, quedan inutilizables.
+
+4. Camino manual, equivalente, sobre un esquema que ya tiene las tablas de `0001`:
 
 ```bash
 mysql gestion_muni < sql/migraciones/V017__funcionario_rut_nombres.sql
@@ -168,9 +188,10 @@ mysql gestion_muni < sql/datos/D003__datos_simulacion.sql
 mysql gestion_muni < sql/migraciones/V018__rut_obligatorio.sql
 mysql gestion_muni < sql/migraciones/V019__codigo_un_uso.sql
 python manage.py importar_json
+mysql gestion_muni < sql/verificacion/B7__rut_simulacion.sql
 python manage.py migrate --fake
 ```
 
-`D003` actualiza vecinos por `id` 1–21 del fixture. Si esos id no coinciden con la base local, usar el camino de `migrate` (la migración de datos no depende de esos id). Detalle en [`sql/README.md`](sql/README.md).
+`D003` actualiza el catálogo por código (`FUN-001`…`FUN-032`) y, al final, cualquier otra fila que siga fuera del rango. Detalle en [`sql/README.md`](sql/README.md).
 
 El usuario MySQL de la aplicación solo necesita permisos sobre `gestion_muni` para el trabajo de Django (consultar, insertar, actualizar, borrar y, al migrar, alterar). La clave va en `.env`, no en este archivo. Host, llaves y consolas de administración del servidor no se documentan en el repositorio.
