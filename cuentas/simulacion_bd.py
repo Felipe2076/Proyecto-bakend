@@ -18,8 +18,12 @@ from cuentas.simulacion import (
     correo_vecino,
     direccion_ficticia,
     es_organizacion,
+    ficha_extra,
+    fichas_funcionario,
     identidad,
     nombre_almacenado,
+    rut_de,
+    rut_libre_trabajador,
     rut_trabajador,
     rut_vecino,
     telefono_ficticio,
@@ -81,15 +85,83 @@ def _limpiar_texto(texto, mapa):
     return _RUT_TXT.sub(_rut, texto)
 
 
-def _marcar_funcionario(fun, indice):
-    nombres, paterno, materno = identidad(indice)
-    fun.rut = rut_trabajador(indice)
-    fun.nombres = nombres
-    fun.apellido_paterno = paterno
-    fun.apellido_materno = materno
+def _escribir_ficha(fun, ficha):
+    fun.rut = ficha["rut"]
+    fun.nombres = (ficha["nombres"] or "")[:60]
+    fun.apellido_paterno = (ficha["apellido_paterno"] or "")[:60]
+    fun.apellido_materno = (ficha["apellido_materno"] or None)
+    if fun.apellido_materno:
+        fun.apellido_materno = fun.apellido_materno[:60]
     fun.es_simulacion = True
-    fun.nombre = nombre_almacenado(nombres, paterno, materno)
+    fun.nombre = (ficha["nombre"] or nombre_almacenado(fun.nombres, fun.apellido_paterno, fun.apellido_materno or ""))[:120]
     fun.save()
+
+
+def _plan_funcionarios(funcionarios, fichas):
+    """Cada código del JSON conserva su RUT. El resto parte en el 33."""
+    reservados = {ficha["rut"] for ficha in fichas.values()}
+    usados = set(reservados)
+    plan = {}
+    extras = []
+    for fun in funcionarios:
+        ficha = fichas.get(fun.codigo)
+        if ficha:
+            plan[fun.pk] = ficha
+        else:
+            extras.append(fun)
+    desde = 33
+    for fun in extras:
+        desde, rut = rut_libre_trabajador(usados, desde)
+        usados.add(rut)
+        plan[fun.pk] = ficha_extra(desde)
+        desde += 1
+    return plan, usados
+
+
+def _aplicar_fichas(funcionarios, plan):
+    """Dos pasadas para no chocar con uq_funcionario_rut si ya existe."""
+    mapa = {}
+    pendientes = []
+    for fun in funcionarios:
+        ficha = plan[fun.pk]
+        if fun.rut == ficha["rut"] and fun.es_simulacion and fun.nombres == ficha["nombres"]:
+            continue
+        pendientes.append(fun)
+    for fun in pendientes:
+        fun.rut = rut_de(33_800_000, fun.pk)
+        fun.save(update_fields=["rut"])
+    for fun in pendientes:
+        viejo = fun.nombre
+        _escribir_ficha(fun, plan[fun.pk])
+        if viejo and viejo != fun.nombre:
+            mapa[viejo] = fun.nombre
+    return mapa
+
+
+def _ceder_usuario(Usuario, using, campo, valor, propio_pk):
+    if not valor:
+        return
+    consulta = Usuario.objects.using(using).filter(**{campo: valor})
+    if propio_pk:
+        consulta = consulta.exclude(pk=propio_pk)
+    for otro in list(consulta):
+        reserva = f"reserva-{otro.pk}"
+        if campo == "username":
+            otro.username = reserva
+        else:
+            otro.correo = f"{reserva}@siged.test"
+        otro.save(update_fields=[campo])
+
+
+def _ceder_auth(User, using, username, propio_pk):
+    if not username:
+        return
+    consulta = User.objects.using(using).filter(username=username)
+    if propio_pk:
+        consulta = consulta.exclude(pk=propio_pk)
+    for otro in list(consulta):
+        otro.username = f"reserva-auth-{otro.pk}"
+        otro.save(update_fields=["username"])
 
 
 def _clave_inutilizable():
@@ -97,14 +169,17 @@ def _clave_inutilizable():
     return "!"
 
 
-def _sincronizar_acceso(usuario, fun, User, using):
+def _sincronizar_acceso(usuario, fun, User, Usuario, using):
     correo = correo_funcionario(fun.codigo)
+    _ceder_usuario(Usuario, using, "username", fun.rut, usuario.pk)
+    _ceder_usuario(Usuario, using, "correo", correo, usuario.pk)
     usuario.username = fun.rut
     usuario.nombre = fun.nombre
     usuario.correo = correo
     if fun.delegacion_id:
         usuario.delegacion_id = fun.delegacion_id
     user = usuario.user if usuario.user_id else User.objects.using(using).filter(username=fun.rut).first()
+    _ceder_auth(User, using, fun.rut, user.pk if user is not None and user.pk else None)
     if user is None:
         user = User(
             username=fun.rut,
@@ -125,16 +200,16 @@ def _sincronizar_acceso(usuario, fun, User, using):
     usuario.save()
 
 
-def _crear_funcionario(Funcionario, cargo, delegacion, indice, using):
-    nombres, paterno, materno = identidad(indice)
+def _crear_funcionario(Funcionario, cargo, delegacion, indice, using, fichas):
     codigo = _siguiente_codigo(Funcionario, "FUN-", using)
+    ficha = fichas.get(codigo) or ficha_extra(indice)
     return Funcionario.objects.using(using).create(
         codigo=codigo,
-        rut=rut_trabajador(indice),
-        nombres=nombres,
-        apellido_paterno=paterno,
-        apellido_materno=materno,
-        nombre=nombre_almacenado(nombres, paterno, materno),
+        rut=ficha["rut"],
+        nombres=(ficha["nombres"] or "")[:60],
+        apellido_paterno=(ficha["apellido_paterno"] or "")[:60],
+        apellido_materno=((ficha["apellido_materno"] or None)[:60] if ficha["apellido_materno"] else None),
+        nombre=(ficha["nombre"] or "")[:120],
         es_simulacion=True,
         cargo=cargo,
         delegacion=delegacion,
@@ -142,7 +217,7 @@ def _crear_funcionario(Funcionario, cargo, delegacion, indice, using):
     )
 
 
-def _crear_cuenta(apps, using, rol_codigo, delegacion, indice, codigo_usuario=None):
+def _crear_cuenta(apps, using, rol_codigo, delegacion, indice, fichas, codigo_usuario=None):
     Funcionario = apps.get_model("cuentas", "Funcionario")
     Usuario = apps.get_model("cuentas", "Usuario")
     Rol = apps.get_model("cuentas", "Rol")
@@ -157,7 +232,7 @@ def _crear_cuenta(apps, using, rol_codigo, delegacion, indice, codigo_usuario=No
     )
     if cargo is None:
         return None
-    fun = _crear_funcionario(Funcionario, cargo, delegacion, indice, using)
+    fun = _crear_funcionario(Funcionario, cargo, delegacion, indice, using, fichas)
     usuario = Usuario(
         codigo=codigo_usuario or _siguiente_codigo(Usuario, "USR-", using),
         username=fun.rut,
@@ -169,7 +244,7 @@ def _crear_cuenta(apps, using, rol_codigo, delegacion, indice, codigo_usuario=No
         funcionario=fun,
         estado="activo",
     )
-    _sincronizar_acceso(usuario, fun, User, using)
+    _sincronizar_acceso(usuario, fun, User, Usuario, using)
     return usuario
 
 
@@ -185,19 +260,19 @@ def aplicar(apps, schema_editor):
     if not Funcionario.objects.using(using).exists() and not Usuario.objects.using(using).exists():
         return
 
-    mapa = {}
-    indice = max(
-        (_indice_trabajador(fun.rut) for fun in Funcionario.objects.using(using).all()),
-        default=0,
-    )
-    for fun in Funcionario.objects.using(using).order_by("codigo", "pk"):
-        if _ya_simulado(fun):
-            continue
-        viejo = fun.nombre
+    fichas = fichas_funcionario()
+    funcionarios = list(Funcionario.objects.using(using).order_by("codigo", "pk"))
+    plan, usados = _plan_funcionarios(funcionarios, fichas)
+    mapa = _aplicar_fichas(funcionarios, plan)
+    indice = max((_indice_trabajador(rut) for rut in usados), default=32)
+
+    def _indice_libre():
+        nonlocal indice
         indice += 1
-        _marcar_funcionario(fun, indice)
-        if viejo and viejo != fun.nombre:
-            mapa[viejo] = fun.nombre
+        while rut_trabajador(indice) in usados:
+            indice += 1
+        usados.add(rut_trabajador(indice))
+        return indice
 
     cargo_defecto = Cargo.objects.using(using).order_by("pk").first()
     deleg_defecto = (
@@ -212,13 +287,13 @@ def aplicar(apps, schema_editor):
         cargo = usuario.cargo if usuario.cargo_id else cargo_defecto
         if delegacion is None or cargo is None:
             continue
-        indice += 1
-        usuario.funcionario = _crear_funcionario(Funcionario, cargo, delegacion, indice, using)
+        usuario.funcionario = _crear_funcionario(Funcionario, cargo, delegacion, _indice_libre(), using, fichas)
+        usados.add(usuario.funcionario.rut)
         usuario.save()
 
     for usuario in Usuario.objects.using(using).select_related("funcionario"):
         if usuario.funcionario_id:
-            _sincronizar_acceso(usuario, usuario.funcionario, User, using)
+            _sincronizar_acceso(usuario, usuario.funcionario, User, Usuario, using)
 
     for nombre_delegacion in DELEGACIONES_OFICIALES:
         delegacion = Delegacion.objects.using(using).filter(nombre=nombre_delegacion).first()
@@ -231,34 +306,43 @@ def aplicar(apps, schema_editor):
             ).exists()
             if cubierto:
                 continue
-            indice += 1
-            _crear_cuenta(apps, using, rol_codigo, delegacion, indice)
+            _crear_cuenta(apps, using, rol_codigo, delegacion, _indice_libre(), fichas)
 
     if not Usuario.objects.using(using).filter(codigo=CODIGO_ADMIN_GLOBAL).exists():
         centro = Delegacion.objects.using(using).filter(nombre="Delegación Centro").first()
         if centro is not None:
-            indice += 1
-            _crear_cuenta(apps, using, "administrador", centro, indice, codigo_usuario=CODIGO_ADMIN_GLOBAL)
+            _crear_cuenta(apps, using, "administrador", centro, _indice_libre(), fichas, codigo_usuario=CODIGO_ADMIN_GLOBAL)
 
     if Vecino is not None:
-        indice_v = max(
-            (_indice_vecino(vec.rut) for vec in Vecino.objects.using(using).all()),
-            default=0,
-        )
+        ocupados = set()
+        for vecino in Vecino.objects.using(using).all():
+            if vecino.rut and _ya_simulado(vecino):
+                ocupados.add(vecino.rut)
+        indice_v = 0
+        pendientes = []
         for vecino in Vecino.objects.using(using).order_by("pk"):
             if _ya_simulado(vecino):
                 continue
-            viejo = vecino.nombre
             indice_v += 1
+            while rut_vecino(indice_v) in ocupados:
+                indice_v += 1
+            ocupados.add(rut_vecino(indice_v))
+            pendientes.append((vecino.pk, indice_v, vecino.nombre))
+        for pk, _indice, _viejo in pendientes:
+            vecino = Vecino.objects.using(using).get(pk=pk)
+            vecino.rut = rut_de(33_700_000, pk)
+            vecino.save(update_fields=["rut"])
+        for pk, indice_asignado, viejo in pendientes:
+            vecino = Vecino.objects.using(using).get(pk=pk)
             if es_organizacion(viejo):
-                vecino.nombre = f"Organización Ficticia {indice_v:02d}"
+                vecino.nombre = f"Organización Ficticia {indice_asignado:02d}"
             else:
-                nombres, paterno, materno = identidad(indice_v + 40)
+                nombres, paterno, materno = identidad(indice_asignado + 40)
                 vecino.nombre = nombre_almacenado(nombres, paterno, materno)
-            vecino.rut = rut_vecino(indice_v)
-            vecino.telefono = telefono_ficticio(indice_v)
-            vecino.correo = correo_vecino(indice_v)
-            vecino.direccion = direccion_ficticia(indice_v)
+            vecino.rut = rut_vecino(indice_asignado)
+            vecino.telefono = telefono_ficticio(indice_asignado)
+            vecino.correo = correo_vecino(indice_asignado)
+            vecino.direccion = direccion_ficticia(indice_asignado)
             vecino.es_simulacion = True
             vecino.save()
             if viejo and viejo != vecino.nombre:
@@ -268,6 +352,9 @@ def aplicar(apps, schema_editor):
             cantidad = Vecino.objects.using(using).filter(delegacion=delegacion).count()
             while cantidad < 10:
                 indice_v += 1
+                while rut_vecino(indice_v) in ocupados:
+                    indice_v += 1
+                ocupados.add(rut_vecino(indice_v))
                 nombres, paterno, materno = identidad(indice_v + 40)
                 Vecino.objects.using(using).create(
                     nombre=nombre_almacenado(nombres, paterno, materno),
@@ -334,3 +421,91 @@ def _limpiar_textos(apps, using, mapa):
         aviso.titulo = _limpiar_texto(aviso.titulo, mapa)
         aviso.mensaje = _limpiar_texto(aviso.mensaje, mapa)
         aviso.save()
+
+
+def normalizar_filas_sueltas():
+    """Cubre cualquier fila que el JSON no nombra.
+
+    No depende de una lista de id. Un ``FUN-DEMO-ADMIN``, un vecino suelto o
+    un usuario cuyo nombre de acceso no es un RUT 33.xxx.xxx reciben identidad
+    de simulación sin pisar ``FUN-001`` … el código que sí está en el JSON.
+    """
+    from django.contrib.auth import get_user_model
+
+    from cuentas.models import Funcionario, Usuario
+    from requerimientos.models import Vecino
+
+    User = get_user_model()
+    fichas = fichas_funcionario()
+    reservados = {ficha["rut"] for ficha in fichas.values()}
+    usados = set(reservados)
+    usados.update(rut for rut in Funcionario.objects.values_list("rut", flat=True) if rut)
+    desde = 33
+    for fun in Funcionario.objects.exclude(codigo__in=list(fichas)).order_by("codigo", "pk"):
+        if (
+            fun.rut
+            and fun.rut not in reservados
+            and cuerpo_en_rango_ficticio(fun.rut)
+            and fun.es_simulacion
+            and fun.nombres
+            and fun.apellido_paterno
+        ):
+            continue
+        desde, rut = rut_libre_trabajador(usados, desde)
+        usados.add(rut)
+        ficha = dict(ficha_extra(desde))
+        ficha["rut"] = rut
+        _escribir_ficha(fun, ficha)
+        desde += 1
+
+    for usuario in Usuario.objects.select_related("funcionario"):
+        fun = usuario.funcionario
+        if fun is None or not fun.rut:
+            continue
+        correo = correo_funcionario(fun.codigo)
+        if usuario.username == fun.rut and (usuario.correo or "").endswith("@siged.test"):
+            continue
+        _ceder_usuario(Usuario, "default", "username", fun.rut, usuario.pk)
+        _ceder_usuario(Usuario, "default", "correo", correo, usuario.pk)
+        usuario.username = fun.rut
+        usuario.nombre = fun.nombre
+        usuario.correo = correo
+        usuario.save()
+        if usuario.user_id:
+            _ceder_auth(User, "default", fun.rut, usuario.user_id)
+            user = usuario.user
+            user.username = fun.rut
+            user.email = correo
+            user.save(update_fields=["username", "email"])
+
+    ocupados = {vecino.rut for vecino in Vecino.objects.all() if vecino.rut and cuerpo_en_rango_ficticio(vecino.rut)}
+    indice = 0
+    pendientes = []
+    for vecino in Vecino.objects.order_by("pk"):
+        if vecino.rut and vecino.es_simulacion and cuerpo_en_rango_ficticio(vecino.rut):
+            continue
+        indice += 1
+        while rut_vecino(indice) in ocupados:
+            indice += 1
+        ocupados.add(rut_vecino(indice))
+        pendientes.append((vecino.pk, indice))
+    for pk, _indice in pendientes:
+        vecino = Vecino.objects.get(pk=pk)
+        vecino.rut = rut_de(33_700_000, pk)
+        vecino.save(update_fields=["rut"])
+    for pk, indice_asignado in pendientes:
+        # No se cambia el nombre: importar_json busca por ese texto y, si
+        # desaparece, crea otra fila al repetir la carga.
+        vecino = Vecino.objects.get(pk=pk)
+        if not (vecino.nombre or "").strip():
+            nombres, paterno, materno = identidad(indice_asignado + 40)
+            vecino.nombre = nombre_almacenado(nombres, paterno, materno)
+        if not vecino.telefono:
+            vecino.telefono = telefono_ficticio(indice_asignado)
+        if not vecino.correo:
+            vecino.correo = correo_vecino(indice_asignado)
+        if not vecino.direccion:
+            vecino.direccion = direccion_ficticia(indice_asignado)
+        vecino.rut = rut_vecino(indice_asignado)
+        vecino.es_simulacion = True
+        vecino.save()

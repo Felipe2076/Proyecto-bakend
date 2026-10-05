@@ -10,21 +10,78 @@ from django.db import migrations, models
 
 from cuentas.simulacion_bd import aplicar
 
+_TABLA = "cuentas_funcionario"
+_UNICO = "uq_funcionario_rut"
+_CHECK = "ck_funcionario_rut"
+_CHECK_SQL = (
+    "ALTER TABLE cuentas_funcionario "
+    "ADD CONSTRAINT ck_funcionario_rut "
+    "CHECK (REGEXP_LIKE(rut, '^[0-9]{7,8}-[0-9K]$', 'c'))"
+)
 
-def _check_mysql(apps, schema_editor):
-    if schema_editor.connection.vendor != "mysql":
-        return
-    schema_editor.execute(
-        "ALTER TABLE cuentas_funcionario "
-        "ADD CONSTRAINT ck_funcionario_rut "
-        "CHECK (REGEXP_LIKE(rut, '^[0-9]{7,8}-[0-9K]$', 'c'))"
+
+def _existe(cursor, vendor, nombre):
+    if vendor == "mysql":
+        cursor.execute(
+            """
+            SELECT 1
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = %s
+              AND CONSTRAINT_NAME = %s
+            UNION
+            SELECT 1
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = %s
+              AND INDEX_NAME = %s
+            LIMIT 1
+            """,
+            [_TABLA, nombre, _TABLA, nombre],
+        )
+        return cursor.fetchone() is not None
+    cursor.execute(
+        "SELECT 1 FROM sqlite_master WHERE tbl_name = %s AND name = %s LIMIT 1",
+        [_TABLA, nombre],
     )
+    return cursor.fetchone() is not None
 
 
-def _drop_check_mysql(apps, schema_editor):
-    if schema_editor.connection.vendor != "mysql":
-        return
-    schema_editor.execute("ALTER TABLE cuentas_funcionario DROP CHECK ck_funcionario_rut")
+def _restricciones(apps, schema_editor):
+    """Único en todos los motores y CHECK solo en MySQL.
+
+    ``atomic=False``: en MySQL el DDL no puede ir dentro de la transacción
+    con la que Django envuelve cada ``RunPython``. Si el paso anterior ya
+    quedó aplicado (MySQL no revierte DDL), volver a migrar no vuelve a
+    crear la restricción.
+    """
+    connection = schema_editor.connection
+    Funcionario = apps.get_model("cuentas", "Funcionario")
+    with connection.cursor() as cursor:
+        hay_unico = _existe(cursor, connection.vendor, _UNICO)
+        hay_check = connection.vendor == "mysql" and _existe(cursor, connection.vendor, _CHECK)
+    if not hay_unico:
+        schema_editor.add_constraint(
+            Funcionario,
+            models.UniqueConstraint(fields=("rut",), name=_UNICO),
+        )
+    if hay_check is False and connection.vendor == "mysql":
+        schema_editor.execute(_CHECK_SQL)
+
+
+def _quitar_restricciones(apps, schema_editor):
+    connection = schema_editor.connection
+    Funcionario = apps.get_model("cuentas", "Funcionario")
+    with connection.cursor() as cursor:
+        hay_check = connection.vendor == "mysql" and _existe(cursor, connection.vendor, _CHECK)
+        hay_unico = _existe(cursor, connection.vendor, _UNICO)
+    if hay_check:
+        schema_editor.execute("ALTER TABLE cuentas_funcionario DROP CHECK ck_funcionario_rut")
+    if hay_unico:
+        schema_editor.remove_constraint(
+            Funcionario,
+            models.UniqueConstraint(fields=("rut",), name=_UNICO),
+        )
 
 
 class Migration(migrations.Migration):
@@ -55,9 +112,16 @@ class Migration(migrations.Migration):
             name="apellido_paterno",
             field=models.CharField(max_length=60, verbose_name="apellido paterno"),
         ),
-        migrations.AddConstraint(
-            model_name="funcionario",
-            constraint=models.UniqueConstraint(fields=("rut",), name="uq_funcionario_rut"),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AddConstraint(
+                    model_name="funcionario",
+                    constraint=models.UniqueConstraint(fields=("rut",), name="uq_funcionario_rut"),
+                ),
+            ],
+            database_operations=[
+                migrations.RunPython(_restricciones, _quitar_restricciones, atomic=False),
+            ],
         ),
         migrations.AlterField(
             model_name="usuario",
@@ -68,5 +132,4 @@ class Migration(migrations.Migration):
                 to="cuentas.funcionario",
             ),
         ),
-        migrations.RunPython(_check_mysql, _drop_check_mysql),
     ]

@@ -127,6 +127,49 @@ class Command(BaseCommand):
             obj.modulo_principal = c.get("modulo_principal", "")
             obj.save()
 
+    def _rut_libre(self, excepto_pk=None):
+        from cuentas.simulacion import fichas_funcionario, rut_libre_trabajador
+
+        usados = {ficha["rut"] for ficha in fichas_funcionario().values()}
+        consulta = Funcionario.objects.exclude(rut__isnull=True).exclude(rut="")
+        if excepto_pk:
+            consulta = consulta.exclude(pk=excepto_pk)
+        usados.update(consulta.values_list("rut", flat=True))
+        _indice, rut = rut_libre_trabajador(usados, 33)
+        return rut
+
+    def _liberar_rut(self, rut, codigo_dueno):
+        if not rut:
+            return
+        for otro in list(Funcionario.objects.filter(rut=rut).exclude(codigo=codigo_dueno)):
+            otro.rut = self._rut_libre(otro.pk)
+            otro.es_simulacion = True
+            otro.save(update_fields=["rut", "es_simulacion"])
+
+    def _liberar_cuenta(self, username, correo, propio_pk, propio_user_id):
+        User = get_user_model()
+        ajenos = Usuario.objects.filter(username=username)
+        if propio_pk:
+            ajenos = ajenos.exclude(pk=propio_pk)
+        for otro in list(ajenos):
+            reserva = f"reserva-{otro.pk}"
+            otro.username = reserva
+            if otro.correo == correo:
+                otro.correo = f"{reserva}@siged.test"
+            otro.save(update_fields=["username", "correo"])
+        ajenos = Usuario.objects.filter(correo=correo)
+        if propio_pk:
+            ajenos = ajenos.exclude(pk=propio_pk)
+        for otro in list(ajenos):
+            otro.correo = f"reserva-{otro.pk}@siged.test"
+            otro.save(update_fields=["correo"])
+        auth = User.objects.filter(username=username)
+        if propio_user_id:
+            auth = auth.exclude(pk=propio_user_id)
+        for user in list(auth):
+            user.username = f"reserva-auth-{user.pk}"
+            user.save(update_fields=["username"])
+
     def importar_funcionarios(self):
         from core.validaciones import cuerpo_en_rango_ficticio
         from cuentas.simulacion import nombre_almacenado
@@ -146,6 +189,7 @@ class Command(BaseCommand):
                 or "(ficticio)" in (f.get("nombre") or "")
                 or cuerpo_en_rango_ficticio(f.get("rut") or "")
             )
+            self._liberar_rut(f.get("rut"), f["id_funcionario"])
             funcionario, _ = Funcionario.objects.update_or_create(
                 codigo=f["id_funcionario"],
                 defaults={
@@ -194,21 +238,38 @@ class Command(BaseCommand):
                 username = funcionario.rut
             correo = u.get("email") or (f"{funcionario.codigo.lower()}@siged.test" if funcionario else f"{username}@siged.test")
             nombre = u.get("nombre") or (funcionario.nombre if funcionario else username)
-            usuario, _ = Usuario.objects.update_or_create(
-                username=username,
-                defaults={
-                    "codigo": u.get("id_usuario"),
-                    "nombre": nombre,
-                    "correo": correo,
-                    "rol": rol,
-                    "cargo": self._cargo(u["cargo"]) if u.get("cargo") else (funcionario.cargo if funcionario else None),
-                    "delegacion": self._delegacion(u.get("delegacion")) if u.get("delegacion") else (
-                        funcionario.delegacion if funcionario else None
-                    ),
-                    "funcionario": funcionario,
-                    "estado": EstadoRegistro.ACTIVO if u.get("activo", True) else EstadoRegistro.INACTIVO,
-                },
+            codigo = u.get("id_usuario")
+            usuario = Usuario.objects.filter(codigo=codigo).first() if codigo else None
+            if usuario is None and funcionario is not None:
+                usuario = Usuario.objects.filter(funcionario=funcionario).first()
+            self._liberar_cuenta(
+                username,
+                correo,
+                usuario.pk if usuario is not None else None,
+                usuario.user_id if usuario is not None else None,
             )
+            if usuario is None:
+                usuario = Usuario.objects.filter(username=username).first()
+            campos = {
+                "username": username,
+                "nombre": nombre,
+                "correo": correo,
+                "rol": rol,
+                "cargo": self._cargo(u["cargo"]) if u.get("cargo") else (funcionario.cargo if funcionario else None),
+                "delegacion": self._delegacion(u.get("delegacion")) if u.get("delegacion") else (
+                    funcionario.delegacion if funcionario else None
+                ),
+                "funcionario": funcionario,
+                "estado": EstadoRegistro.ACTIVO if u.get("activo", True) else EstadoRegistro.INACTIVO,
+            }
+            if usuario is None:
+                usuario = Usuario.objects.create(codigo=codigo, **campos)
+            else:
+                if codigo:
+                    usuario.codigo = codigo
+                for campo, valor in campos.items():
+                    setattr(usuario, campo, valor)
+                usuario.save()
             if not crear_auth:
                 continue
             # El JSON no trae clave. Cada cuenta recibe una distinta, salvo que
@@ -392,6 +453,9 @@ class Command(BaseCommand):
             for paso in ("areas", "requerimientos", "compromisos", "actividades", "agenda", "medicion",
                          "notificaciones"):
                 getattr(self, f"importar_{paso}")()
+            from cuentas.simulacion_bd import normalizar_filas_sueltas
+
+            normalizar_filas_sueltas()
 
         modelos = [Rol, Delegacion, Cargo, Funcionario, Usuario, ParametroSistema, Meta, ItemFuncionario,
                    AreaSoporte, CanalIngreso, TipoGestion, Vecino, Requerimiento, Compromiso, Actividad,

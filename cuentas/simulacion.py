@@ -55,6 +55,59 @@ def rut_vecino(indice: int) -> str:
     return rut_de(BASE_VECINO, indice)
 
 
+def fichas_funcionario() -> dict[str, dict]:
+    """RUT y nombre de cada código en ``data/funcionarios.json``.
+
+    ``FUN-001`` queda en ``33100001-9`` aunque la tabla tenga filas de más
+    (por ejemplo ``FUN-DEMO-ADMIN``). El orden de las filas no mueve esos RUT.
+    """
+    import json
+    from pathlib import Path
+
+    from django.conf import settings
+
+    ruta = Path(settings.BASE_DIR) / "data" / "funcionarios.json"
+    fichas = {}
+    for fila in json.loads(ruta.read_text(encoding="utf-8")):
+        codigo = fila.get("id_funcionario")
+        rut = fila.get("rut")
+        if not codigo or not rut:
+            continue
+        nombres = (fila.get("nombres") or "").strip()
+        paterno = (fila.get("apellido_paterno") or "").strip()
+        materno = (fila.get("apellido_materno") or "").strip()
+        fichas[codigo] = {
+            "rut": rut,
+            "nombres": nombres,
+            "apellido_paterno": paterno,
+            "apellido_materno": materno,
+            "nombre": (fila.get("nombre") or nombre_almacenado(nombres, paterno, materno))[:120],
+        }
+    return fichas
+
+
+def ficha_extra(indice: int) -> dict:
+    """Identidad para un código que no está en el JSON (desde el 33)."""
+    nombres, paterno, materno = identidad(indice)
+    return {
+        "rut": rut_trabajador(indice),
+        "nombres": nombres,
+        "apellido_paterno": paterno,
+        "apellido_materno": materno,
+        "nombre": nombre_almacenado(nombres, paterno, materno),
+    }
+
+
+def rut_libre_trabajador(usados: set[str], desde: int = 33) -> tuple[int, str]:
+    """Primer RUT de trabajador libre, fuera de los códigos del JSON."""
+    indice = desde
+    while True:
+        rut = rut_trabajador(indice)
+        if rut not in usados:
+            return indice, rut
+        indice += 1
+
+
 def identidad(indice: int) -> tuple[str, str, str]:
     """Nombres genéricos y estables. No incluyen la marca de simulación."""
     nombres = NOMBRES[(indice - 1) % len(NOMBRES)]
