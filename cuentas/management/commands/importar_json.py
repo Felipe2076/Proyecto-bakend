@@ -39,6 +39,10 @@ def _hora(valor):
     return time.fromisoformat(valor) if valor else time(0, 0)
 
 
+# Alias de las bases viejas. No pueden seguir entrando con la clave anterior.
+_ALIAS_VIEJOS = ("admin", "jefatura", "funcionario", "ventanilla")
+
+
 class Command(BaseCommand):
     help = "Importa los archivos data/*.json del mockup a la base de datos (idempotente)."
 
@@ -146,6 +150,69 @@ class Command(BaseCommand):
             otro.es_simulacion = True
             otro.save(update_fields=["rut", "es_simulacion"])
 
+    def _aparcar(self, usuario):
+        """Suelta el funcionario sin dejar NULL: la columna es obligatoria y única.
+
+        La plaza se borra al cerrar la importación si nadie se quedó en ella.
+        """
+        from cuentas.simulacion import ficha_extra, rut_libre_trabajador
+
+        origen = usuario.funcionario
+        self._n_plaza = getattr(self, "_n_plaza", 0) + 1
+        usados = set(
+            Funcionario.objects.exclude(rut__isnull=True).exclude(rut="").values_list("rut", flat=True)
+        )
+        indice, rut = rut_libre_trabajador(usados, 800)
+        ficha = ficha_extra(indice)
+        codigo = f"FP{self._n_plaza}"
+        plaza = Funcionario.objects.create(
+            codigo=codigo,
+            rut=rut,
+            nombres=(ficha["nombres"] or "Extra")[:60],
+            apellido_paterno=(ficha["apellido_paterno"] or "Simulado")[:60],
+            apellido_materno=(ficha["apellido_materno"] or None),
+            nombre=(ficha["nombre"] or "Extra Simulado")[:120],
+            es_simulacion=True,
+            cargo=origen.cargo if origen is not None else Cargo.objects.order_by("pk").first(),
+            delegacion=origen.delegacion if origen is not None else Delegacion.objects.order_by("pk").first(),
+            estado=EstadoRegistro.ACTIVO,
+        )
+        self._plazas.append(plaza.pk)
+        usuario.funcionario = plaza
+        usuario.save(update_fields=["funcionario"])
+
+    def _desocupar(self, funcionario, dueno_pk):
+        """Quien tenga este funcionario, y no sea el dueño, pasa a una plaza."""
+        if funcionario is None:
+            return
+        consulta = Usuario.objects.filter(funcionario=funcionario)
+        if dueno_pk:
+            consulta = consulta.exclude(pk=dueno_pk)
+        for otro in list(consulta):
+            self._aparcar(otro)
+
+    def _limpiar_plazas(self):
+        for pk in getattr(self, "_plazas", []):
+            plaza = Funcionario.objects.filter(pk=pk).first()
+            if plaza is not None and not Usuario.objects.filter(funcionario=plaza).exists():
+                plaza.delete()
+
+    def _retirar_alias(self):
+        """Ningún login admin/jefatura/funcionario/ventanilla sigue activo con la clave vieja."""
+        User = get_user_model()
+        for user in list(User.objects.filter(username__in=_ALIAS_VIEJOS)):
+            perfil = Usuario.objects.filter(user=user).first()
+            if perfil is not None and perfil.username not in _ALIAS_VIEJOS:
+                user.username = perfil.username
+                user.email = perfil.correo
+                user.is_active = perfil.activo
+            else:
+                user.username = f"retirado-{user.pk}"
+                user.email = f"retirado-{user.pk}@siged.test"
+                user.is_active = False
+            user.set_unusable_password()
+            user.save()
+
     def _liberar_cuenta(self, username, correo, propio_pk, propio_user_id):
         User = get_user_model()
         ajenos = Usuario.objects.filter(username=username)
@@ -225,6 +292,10 @@ class Command(BaseCommand):
         User = get_user_model()
         compartida = clave_compartida_de_prueba()
         credenciales = []
+        self._plazas = []
+        # Cada fila se reconoce por su código (USR-001), no por el funcionario
+        # que tenga hoy. En la base de Pipe ese enlace viene corrido; en EC2
+        # USR-001 todavía es el alias ``admin`` de FUN-DEMO-ADMIN.
         for u in self._leer("usuarios.json", []):
             codigo_rol = u.get("rol", "funcionario")
             rol, _ = Rol.objects.get_or_create(
@@ -240,16 +311,13 @@ class Command(BaseCommand):
             nombre = u.get("nombre") or (funcionario.nombre if funcionario else username)
             codigo = u.get("id_usuario")
             usuario = Usuario.objects.filter(codigo=codigo).first() if codigo else None
-            if usuario is None and funcionario is not None:
-                usuario = Usuario.objects.filter(funcionario=funcionario).first()
+            self._desocupar(funcionario, usuario.pk if usuario is not None else None)
             self._liberar_cuenta(
                 username,
                 correo,
                 usuario.pk if usuario is not None else None,
                 usuario.user_id if usuario is not None else None,
             )
-            if usuario is None:
-                usuario = Usuario.objects.filter(username=username).first()
             campos = {
                 "username": username,
                 "nombre": nombre,
@@ -294,6 +362,8 @@ class Command(BaseCommand):
                 usuario.save(update_fields=["user"])
             rut = funcionario.rut if funcionario is not None and funcionario.rut else username
             credenciales.append((rut, usuario.codigo or "", clave))
+        self._limpiar_plazas()
+        self._retirar_alias()
         if crear_auth and credenciales:
             nombre_archivo = escribir_claves_locales(credenciales)
             self.stdout.write(

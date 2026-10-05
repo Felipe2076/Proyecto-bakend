@@ -60,6 +60,8 @@ mysql -u "$DB_USER" -p gestion_muni_ensayo < sql/verificacion/B7__rut_simulacion
 
 `sql/verificacion/B7__rut_simulacion.sql` no modifica datos. Cada resultado tiene que ser 0: ningún RUT de funcionario, usuario o vecino fuera de 33.xxx.xxx, ningún vecino o funcionario sin marca de simulación, ningún correo de usuario fuera de `@siged.test`, ninguna combinación rol × delegación vacía y ningún RUT de funcionario repetido. Cubre cualquier id, no solo el 1 a 21 ni el código `FUN-DEMO-ADMIN`.
 
+Si `USR-001` apunta a `FUN-DEMO-ADMIN` y el resto viene corrido, o si los cuatro usuarios todavía entran como `admin`, `jefatura`, `funcionario` y `ventanilla`, `importar_json` los reconcilia por código con `data/usuarios.json`. `FUN-DEMO-ADMIN` queda sin cuenta. Esos alias dejan de servir para entrar.
+
 Si alguna consulta no da 0, no repetir el procedimiento sobre la base real. Si todas dan 0, el mismo orden (`migrate`, sin `loaddata`, `importar_json`, otra vez B7) se aplica a la base de trabajo, con el respaldo ya tomado. Volver a correr `migrate` e `importar_json` no duplica personas.
 
 El `CHECK` de `0003` corre fuera de la transacción de Django. Si el migrate anterior se cortó en ese paso, hay que volver a ejecutar `migrate`: no recrea el índice único ni el `CHECK` si ya quedaron creados.

@@ -178,6 +178,8 @@ mysql -u "$DB_USER" -p gestion_muni_ensayo < sql/verificacion/B7__rut_simulacion
 
 Cada consulta de `sql/verificacion/B7__rut_simulacion.sql` tiene que devolver 0. Mide que no quede un RUT fuera de 33.xxx.xxx en funcionarios, usuarios ni vecinos, sin importar el id (el vecino 22 y `FUN-DEMO-ADMIN` entran igual que el resto). Si alguna no da 0, no seguir con la base real. Si todas dan 0, repetir `migrate` e `importar_json` sobre la base de trabajo y volver a correr B7. Repetir ese par no duplica personas.
 
+`importar_json` reconoce cada cuenta por su código (`USR-001`), no por el funcionario que tenga en ese momento. Si los enlaces vienen corridos (USR-001 en `FUN-DEMO-ADMIN` y USR-005 en `FUN-011`, como en el WAMP) o si solo existen los cuatro alias `admin`, `jefatura`, `funcionario` y `ventanilla` (como en EC2), los alinea con `data/usuarios.json` dentro de la misma transacción. `USR-001` queda en `FUN-011`. `FUN-DEMO-ADMIN` sigue como funcionario de simulación, sin cuenta: no se duplica una persona y el alias `admin` deja de entrar. Esos alias, y la clave que tenían, quedan inutilizables.
+
 4. Camino manual, equivalente, sobre un esquema que ya tiene las tablas de `0001`:
 
 ```bash
