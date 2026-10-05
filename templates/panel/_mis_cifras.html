@@ -1,0 +1,26 @@
+<section class="row g-3 mb-4" aria-label="Mis cifras">
+    <div class="col-6 col-lg-3">
+        <div class="card card-calculo e3d-tilt kpi-card h-100">
+            <div class="small text-muted">Mis tickets</div>
+            <h3 class="fw-bold mb-0">{{ panel.cifras.total }}</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-calculo e3d-tilt kpi-card kpi-verde h-100">
+            <div class="small text-muted">Resueltos</div>
+            <h3 class="fw-bold text-success mb-0">{{ panel.cifras.resueltos }}</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-calculo e3d-tilt kpi-card kpi-ambar h-100">
+            <div class="small text-muted">Pendientes</div>
+            <h3 class="fw-bold mb-0" style="color: var(--siged-ambar);">{{ panel.cifras.pendientes }}</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-calculo e3d-tilt kpi-card kpi-info h-100">
+            <div class="small text-muted">Tasa de resolución</div>
+            <h3 class="fw-bold mb-0">{{ panel.cifras.tasa }}%</h3>
+        </div>
+    </div>
+</section>

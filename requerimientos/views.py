@@ -1,76 +1,36 @@
-import json
 import logging
 import re
-from datetime import date
-from pathlib import Path
+from datetime import timedelta
 
 import requests
-from django.conf import settings
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from cuentas.auth import requerir_modulo
-from cuentas.store import cargar_parametros
-from cuentas.vocabulario import (
-    AREAS_ESTRATEGICAS,
-    CANALES_INGRESO,
-    DELEGACIONES_OFICIALES,
-    TIPOS_TICKET,
-    normalizar_canal,
-    normalizar_delegacion,
-    normalizar_tipo,
+from cuentas.ambito import denegar_otra_delegacion
+from cuentas.servicios import nombres_delegaciones, obtener_parametros
+from cuentas.vocabulario import normalizar_canal, normalizar_delegacion, normalizar_tipo
+from requerimientos.consultas import (
+    FUNCIONARIOS_REFERENCIA,
+    crear_requerimiento,
+    opciones_areas,
+    opciones_canales,
+    opciones_funcionarios,
+    opciones_tipos,
+    queryset_requerimientos,
+    ticket_a_dict,
 )
+from requerimientos.models import Requerimiento
 
 logger = logging.getLogger(__name__)
 
-TIPOS_ENTRADA = TIPOS_TICKET
-
-FUNCIONARIOS_REFERENCIA = [
-    "Patrulla Sector 3 (Seguridad)",
-    "Gonzalo Pizarro (Seguridad)",
-    "Cuadrilla Verde (Aseo y Alumbrado)",
-    "Juan Carlos Pérez (Cuadrilla Aseo)",
-    "Valeria Moraga (Áreas Verdes)",
-    "Esteban Barraza (Obras Viales)",
-    "Rodrigo Santander (Operaciones)",
-    "DIDECO Soporte Social",
-    "Marcela Cárdenas (Atención Vecinal)",
-]
-
-
-def cargar_requerimientos_json():
-    assert settings.BASE_DIR is not None
-    ruta_archivo = Path(settings.BASE_DIR) / "data" / "requerimientos.json"
-    try:
-        with open(ruta_archivo, "r", encoding="utf-8") as archivo:
-            datos = json.load(archivo)
-            if isinstance(datos, list):
-                return datos
-            return []
-    except FileNotFoundError:
-        logger.error("El archivo requerimientos.json no existe en %s", ruta_archivo)
-        return []
-    except json.JSONDecodeError as err:
-        logger.error("Formato inválido en requerimientos.json: %s", err)
-        return []
-    except Exception as err:
-        logger.error("Error inesperado al leer requerimientos.json: %s", err)
-        return []
-
-
-def guardar_requerimientos_json(lista_requerimientos):
-    ruta_archivo = Path(str(settings.BASE_DIR)) / "data" / "requerimientos.json"
-    try:
-        with open(ruta_archivo, "w", encoding="utf-8") as archivo:
-            json.dump(lista_requerimientos, archivo, ensure_ascii=False, indent=2)
-        return True
-    except Exception as err:
-        logger.error("Error al escribir en requerimientos.json: %s", err)
-        return False
+TIPOS_ENTRADA = opciones_tipos()
 
 
 def _sla_limites():
-    params = cargar_parametros()
+    params = obtener_parametros()
     return params["sla_verde_max_dias"], params["sla_amarillo_max_dias"]
 
 
@@ -110,14 +70,15 @@ def validar_formulario_requerimiento(post):
         errores["email"] = "Si el ticket entra por correo, el e-mail del ciudadano es obligatorio."
     elif valores["email"] and not validar_email(valores["email"]):
         errores["email"] = "Revise el formato del correo (ejemplo: vecino@correo.cl)."
-    if valores["delegacion"] not in DELEGACIONES_OFICIALES:
-        errores["delegacion"] = "Seleccione la delegación (Centro, Rural, La Antena, La Pampa, Av. del Mar o Las Compañías)."
-    canales = cargar_parametros().get("canales_ingreso") or CANALES_INGRESO
-    if canal not in canales:
+    if valores["delegacion"] not in nombres_delegaciones():
+        errores["delegacion"] = (
+            "Seleccione la delegación (Centro, Rural, La Antena, La Pampa, Av. del Mar o Las Compañías)."
+        )
+    if canal not in opciones_canales():
         errores["canal_ingreso"] = "El canal debe ser ventanilla, WhatsApp o correo."
     if valores["tipo_entrada"] not in TIPOS_ENTRADA:
         errores["tipo_entrada"] = "Tipifique el ticket: RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA o FELICITACIÓN."
-    if valores["area_tematica"] not in AREAS_ESTRATEGICAS:
+    if valores["area_tematica"] not in opciones_areas():
         errores["area_tematica"] = "Seleccione el área temática."
     if len(valores["descripcion"]) < 15:
         errores["descripcion"] = "Cuente qué pasó y dónde, en al menos 15 caracteres."
@@ -154,6 +115,13 @@ def asignar_semaforo(item, sla_verde=None, sla_amarillo=None):
     item_copia["semaforo_texto"] = texto
     item_copia["alerta_texto"] = alerta_texto
     return item_copia
+
+
+def _tickets_con_semaforo(qs=None):
+    if qs is None:
+        qs = queryset_requerimientos()
+    sla_verde, sla_amarillo = _sla_limites()
+    return [asignar_semaforo(ticket_a_dict(req), sla_verde, sla_amarillo) for req in qs]
 
 
 def obtener_clima_la_serena():
@@ -204,77 +172,50 @@ def obtener_clima_la_serena():
 
 
 def inicio_view(request):
-    requerimientos_crudos = cargar_requerimientos_json()
-    requerimientos_procesados = [asignar_semaforo(req) for req in requerimientos_crudos]
-    total_casos = len(requerimientos_procesados)
-    casos_resueltos = sum(
-        1 for item in requerimientos_procesados if item.get("estado_proceso") == "Resuelto"
-    )
-    casos_criticos = sum(
-        1 for item in requerimientos_procesados if item.get("semaforo_nivel") == "Rojo"
-    )
-    casos_en_proceso = sum(
-        1 for item in requerimientos_procesados if item.get("estado_proceso") == "En Proceso"
-    )
-    casos_pendientes = sum(
-        1 for item in requerimientos_procesados if item.get("estado_proceso") == "Pendiente"
-    )
-    clima_serena = obtener_clima_la_serena()
+    from control_gestion.panel_personal import construir_panel_personal, perfil_de_request
+
+    panel = construir_panel_personal(perfil_de_request(request))
     contexto = {
-        "total_casos": total_casos,
-        "casos_resueltos": casos_resueltos,
-        "casos_criticos": casos_criticos,
-        "casos_en_proceso": casos_en_proceso,
-        "casos_pendientes": casos_pendientes,
-        "clima": clima_serena,
-        "delegaciones": DELEGACIONES_OFICIALES,
+        "panel": panel,
+        "clima": obtener_clima_la_serena(),
+        "delegaciones": panel["delegaciones"],
     }
     return render(request, "requerimientos/inicio.html", contexto)
 
 
 def lista_requerimientos_view(request):
-    requerimientos_crudos = cargar_requerimientos_json()
-    requerimientos = [asignar_semaforo(req) for req in requerimientos_crudos]
+    qs = queryset_requerimientos()
     filtro_delegacion = request.GET.get("delegacion", "").strip()
+    bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
+    if bloqueo_ambito:
+        return bloqueo_ambito
     filtro_semaforo = request.GET.get("semaforo", "").strip()
     filtro_estado = request.GET.get("estado", "").strip()
-    filtro_busqueda = request.GET.get("busqueda", "").strip().lower()
+    filtro_busqueda = request.GET.get("busqueda", "").strip()
     if filtro_delegacion:
-        requerimientos = [
-            item
-            for item in requerimientos
-            if (item.get("delegacion") or "").lower() == filtro_delegacion.lower()
-        ]
+        qs = qs.filter(delegacion__nombre__iexact=filtro_delegacion)
+    if filtro_estado:
+        qs = qs.filter(estado__iexact=filtro_estado)
+    if filtro_busqueda:
+        qs = qs.filter(
+            Q(codigo__icontains=filtro_busqueda)
+            | Q(vecino__nombre__icontains=filtro_busqueda)
+            | Q(descripcion__icontains=filtro_busqueda)
+            | Q(tipo_gestion__nombre__icontains=filtro_busqueda)
+            | Q(area__nombre__icontains=filtro_busqueda)
+            | Q(asignado_a__icontains=filtro_busqueda)
+            | Q(funcionario__nombre__icontains=filtro_busqueda)
+        ).distinct()
+    requerimientos = _tickets_con_semaforo(qs)
     if filtro_semaforo:
         requerimientos = [
-            item
-            for item in requerimientos
-            if (item.get("semaforo_nivel") or "").lower() == filtro_semaforo.lower()
+            item for item in requerimientos if (item.get("semaforo_nivel") or "").lower() == filtro_semaforo.lower()
         ]
-    if filtro_estado:
-        requerimientos = [
-            item
-            for item in requerimientos
-            if (item.get("estado_proceso") or "").lower() == filtro_estado.lower()
-        ]
-    if filtro_busqueda:
-        requerimientos = [
-            item
-            for item in requerimientos
-            if filtro_busqueda in (item.get("id_ticket") or "").lower()
-            or filtro_busqueda in (item.get("vecino_nombre") or "").lower()
-            or filtro_busqueda in (item.get("descripcion") or "").lower()
-            or filtro_busqueda in (item.get("tipo_entrada") or "").lower()
-            or filtro_busqueda in (item.get("area_tematica") or "").lower()
-            or filtro_busqueda in (item.get("funcionario_asignado") or "").lower()
-        ]
-    filtros_activos = any(
-        [filtro_delegacion, filtro_semaforo, filtro_estado, filtro_busqueda]
-    )
+    filtros_activos = any([filtro_delegacion, filtro_semaforo, filtro_estado, filtro_busqueda])
     contexto = {
         "requerimientos": requerimientos,
         "total_resultados": len(requerimientos),
-        "delegaciones": DELEGACIONES_OFICIALES,
+        "delegaciones": nombres_delegaciones(),
         "niveles_semaforo": ["Verde", "Amarillo", "Rojo"],
         "estados_proceso": ["Pendiente", "En Proceso", "Cuello Botella Central", "Resuelto"],
         "filtro_delegacion": filtro_delegacion,
@@ -290,16 +231,14 @@ def nuevo_requerimiento_view(request):
     bloqueo = requerir_modulo(request, "requerimientos")
     if bloqueo:
         return bloqueo
-    params = cargar_parametros()
-    canales = params.get("canales_ingreso") or CANALES_INGRESO
 
     def contexto_formulario(valores, errores):
         return {
-            "delegaciones": DELEGACIONES_OFICIALES,
-            "areas": AREAS_ESTRATEGICAS,
-            "canales": canales,
+            "delegaciones": nombres_delegaciones(),
+            "areas": opciones_areas(),
+            "canales": opciones_canales(),
             "tipos": TIPOS_ENTRADA,
-            "funcionarios": FUNCIONARIOS_REFERENCIA,
+            "funcionarios": opciones_funcionarios(),
             "valores": valores,
             "errores": errores,
         }
@@ -312,61 +251,28 @@ def nuevo_requerimiento_view(request):
                 "Por favor corrija los campos obligatorios o con formato inválido. Los mensajes aparecen bajo cada campo.",
             )
             return render(request, "requerimientos/registro.html", contexto_formulario(valores, errores))
-        requerimientos = cargar_requerimientos_json()
-        nuevo_numero = 1001 + len(requerimientos)
-        nuevo_id = f"TK-{nuevo_numero}"
-        nuevo_ticket = {
-            "id_ticket": nuevo_id,
-            "vecino_nombre": valores["vecino_nombre"],
-            "telefono_whatsapp": valores["telefono_whatsapp"],
-            "email": valores["email"] if valores["email"] else "no-registra@serena.cl",
-            "delegacion": valores["delegacion"],
-            "canal_ingreso": valores["canal_ingreso"],
-            "tipo_entrada": valores["tipo_entrada"],
-            "area_tematica": valores["area_tematica"],
-            "descripcion": valores["descripcion"],
-            "fecha_ingreso": date.today().strftime("%Y-%m-%d"),
-            "dias_transcurridos": 1,
-            "funcionario_asignado": valores["funcionario_asignado"]
-            if valores["funcionario_asignado"]
-            else "Por Asignar (Jefatura Delegacional)",
-            "estado_proceso": "Pendiente",
-            "evaluacion_satisfaccion": None,
-            "comentario_satisfaccion": "",
-        }
-        requerimientos.insert(0, nuevo_ticket)
-        if guardar_requerimientos_json(requerimientos):
-            messages.success(
-                request,
-                f"Requerimiento {nuevo_id} ingresado exitosamente para {valores['delegacion']}. "
-                "Semáforo asignado: DÍA 1 (NORMAL).",
-            )
-            return redirect("lista_requerimientos")
-        messages.error(request, "Hubo un error al guardar el requerimiento en el archivo JSON.")
-        return render(request, "requerimientos/registro.html", contexto_formulario(valores, {}))
+        nuevo = crear_requerimiento(valores)
+        messages.success(
+            request,
+            f"Requerimiento {nuevo.codigo} ingresado exitosamente para {valores['delegacion']}. "
+            f"Semáforo asignado: DÍA {nuevo.dias_transcurridos} (NORMAL).",
+        )
+        return redirect("lista_requerimientos")
     return render(request, "requerimientos/registro.html", contexto_formulario({}, {}))
 
 
 def detalle_requerimiento_view(request, ticket_id):
-    requerimientos_crudos = cargar_requerimientos_json()
-    indice_encontrado = None
-    for idx, req in enumerate(requerimientos_crudos):
-        if req.get("id_ticket", "").upper() == ticket_id.upper():
-            indice_encontrado = idx
-            break
-    if indice_encontrado is None:
-        messages.error(request, f"No se encontró el requerimiento con ID '{ticket_id}'.")
-        return redirect("lista_requerimientos")
+    requerimiento = get_object_or_404(queryset_requerimientos(), codigo__iexact=ticket_id)
     if request.method == "POST":
         accion = (request.POST.get("accion") or "actualizar").strip()
         if accion == "encuesta":
-            params = cargar_parametros()
+            params = obtener_parametros()
             if not params.get("encuesta_habilitada", True):
                 messages.error(request, "La encuesta de satisfacción está deshabilitada en parámetros.")
-                return redirect("detalle_requerimiento", ticket_id=ticket_id)
-            if requerimientos_crudos[indice_encontrado].get("estado_proceso") != "Resuelto":
+                return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
+            if requerimiento.estado != Requerimiento.Estado.RESUELTO:
                 messages.error(request, "La encuesta solo se aplica cuando el ticket está en estado Resuelto.")
-                return redirect("detalle_requerimiento", ticket_id=ticket_id)
+                return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
             nota_raw = (request.POST.get("evaluacion_satisfaccion") or "").strip()
             comentario = (request.POST.get("comentario_satisfaccion") or "").strip()
             try:
@@ -375,26 +281,20 @@ def detalle_requerimiento_view(request, ticket_id):
                     raise ValueError
             except (TypeError, ValueError):
                 messages.error(request, "Seleccione una nota de satisfacción entre 1 y 5.")
-                return redirect("detalle_requerimiento", ticket_id=ticket_id)
-            requerimientos_crudos[indice_encontrado]["evaluacion_satisfaccion"] = nota
-            requerimientos_crudos[indice_encontrado]["comentario_satisfaccion"] = comentario
-            if guardar_requerimientos_json(requerimientos_crudos):
-                messages.success(
-                    request,
-                    f"Encuesta registrada: {nota} de 5 para el ticket {ticket_id}.",
-                )
-            else:
-                messages.error(request, "No fue posible guardar la encuesta en JSON.")
-            return redirect("detalle_requerimiento", ticket_id=ticket_id)
+                return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
+            requerimiento.evaluacion_satisfaccion = nota
+            requerimiento.comentario_satisfaccion = comentario
+            requerimiento.save(update_fields=["evaluacion_satisfaccion", "comentario_satisfaccion"])
+            messages.success(request, f"Encuesta registrada: {nota} de 5 para el ticket {requerimiento.codigo}.")
+            return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
+
         nuevo_estado = request.POST.get("estado_proceso", "").strip()
         nuevo_funcionario = request.POST.get("funcionario_asignado", "").strip()
         nuevos_dias_raw = request.POST.get("dias_transcurridos", "").strip()
         try:
             nuevos_dias = max(0, int(nuevos_dias_raw))
         except (ValueError, TypeError):
-            nuevos_dias = requerimientos_crudos[indice_encontrado].get(
-                "dias_transcurridos", 1
-            )
+            nuevos_dias = requerimiento.dias_transcurridos
         estados_validos = [
             "Pendiente",
             "En Proceso",
@@ -404,33 +304,33 @@ def detalle_requerimiento_view(request, ticket_id):
         if nuevo_estado not in estados_validos:
             messages.error(request, "Estado de proceso no válido.")
         else:
-            requerimientos_crudos[indice_encontrado]["estado_proceso"] = nuevo_estado
+            requerimiento.estado = nuevo_estado
             if nuevo_funcionario:
-                requerimientos_crudos[indice_encontrado]["funcionario_asignado"] = (
-                    nuevo_funcionario
-                )
-            requerimientos_crudos[indice_encontrado]["dias_transcurridos"] = nuevos_dias
-            if guardar_requerimientos_json(requerimientos_crudos):
-                messages.success(
-                    request,
-                    f"Ticket {ticket_id} actualizado: Estado → {nuevo_estado}, "
-                    f"Días → {nuevos_dias}.",
-                )
-            else:
-                messages.error(request, "Error al guardar los cambios en el archivo JSON.")
-        return redirect("detalle_requerimiento", ticket_id=ticket_id)
-    ticket_encontrado = asignar_semaforo(requerimientos_crudos[indice_encontrado])
+                requerimiento.asignado_a = nuevo_funcionario
+                requerimiento.funcionario = None
+                from cuentas.servicios import funcionario_por_texto
+
+                requerimiento.funcionario = funcionario_por_texto(nuevo_funcionario)
+            requerimiento.fecha_ingreso = timezone.localdate() - timedelta(days=nuevos_dias)
+            requerimiento.save()
+            messages.success(
+                request,
+                f"Ticket {requerimiento.codigo} actualizado: Estado → {nuevo_estado}, Días → {nuevos_dias}.",
+            )
+        return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
+
+    ticket = asignar_semaforo(ticket_a_dict(requerimiento))
     contexto = {
-        "ticket": ticket_encontrado,
+        "ticket": ticket,
         "estados_validos": [
             "Pendiente",
             "En Proceso",
             "Cuello Botella Central",
             "Resuelto",
         ],
-        "funcionarios": FUNCIONARIOS_REFERENCIA,
+        "funcionarios": opciones_funcionarios(ticket.get("funcionario_asignado")),
         "notas_encuesta": [1, 2, 3, 4, 5],
-        "encuesta_habilitada": cargar_parametros().get("encuesta_habilitada", True),
+        "encuesta_habilitada": obtener_parametros().get("encuesta_habilitada", True),
     }
     return render(request, "requerimientos/detalle.html", contexto)
 
@@ -439,15 +339,12 @@ def encuestas_view(request):
     bloqueo = requerir_modulo(request, "encuestas")
     if bloqueo:
         return bloqueo
-    requerimientos = [asignar_semaforo(item) for item in cargar_requerimientos_json()]
+    requerimientos = _tickets_con_semaforo()
     resueltos = [item for item in requerimientos if item.get("estado_proceso") == "Resuelto"]
     con_nota = [item for item in resueltos if item.get("evaluacion_satisfaccion")]
     pendientes = [item for item in resueltos if not item.get("evaluacion_satisfaccion")]
     promedio = (
-        round(
-            sum(int(item.get("evaluacion_satisfaccion") or 0) for item in con_nota) / len(con_nota),
-            1,
-        )
+        round(sum(int(item.get("evaluacion_satisfaccion") or 0) for item in con_nota) / len(con_nota), 1)
         if con_nota
         else 0.0
     )
@@ -459,6 +356,6 @@ def encuestas_view(request):
         "total_resueltos": len(resueltos),
         "total_con_nota": len(con_nota),
         "total_pendientes": len(pendientes),
-        "encuesta_habilitada": cargar_parametros().get("encuesta_habilitada", True),
+        "encuesta_habilitada": obtener_parametros().get("encuesta_habilitada", True),
     }
     return render(request, "requerimientos/encuestas.html", contexto)

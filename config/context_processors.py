@@ -1,29 +1,44 @@
+from datetime import timedelta
+
+from django.utils import timezone
+
 from cuentas.auth import puede_ver, usuario_sesion
-from cuentas.store import cargar_json_seguro
+from control_gestion.models import Notificacion
+from requerimientos.models import Requerimiento
 
 
 def _notificaciones_base():
-    almacenadas = cargar_json_seguro("notificaciones.json", [])
-    tickets = cargar_json_seguro("requerimientos.json", [])
+    almacenadas = [
+        {
+            "id": item.codigo,
+            "titulo": item.titulo,
+            "mensaje": item.mensaje,
+            "tipo": item.tipo,
+            "fecha": item.fecha.isoformat(),
+            "enlace": item.enlace,
+        }
+        for item in Notificacion.objects.all()
+    ]
+    corte = timezone.localdate() - timedelta(days=6)
     automaticas = []
-    for ticket in tickets:
-        try:
-            dias = int(ticket.get("dias_transcurridos") or 0)
-        except (TypeError, ValueError):
-            dias = 0
-        if dias >= 6 and ticket.get("estado_proceso") != "Resuelto":
-            tid = ticket.get("id_ticket")
-            automaticas.append(
-                {
-                    "id": f"AUTO-{tid}",
-                    "titulo": f"Ticket crítico {tid}",
-                    "mensaje": f"{ticket.get('vecino_nombre')} lleva {dias} días en {ticket.get('delegacion')}.",
-                    "tipo": "critico",
-                    "fecha": ticket.get("fecha_ingreso"),
-                    "enlace": f"/requerimientos/{tid}/",
-                }
-            )
-    return list(almacenadas) + automaticas
+    criticos = (
+        Requerimiento.objects.select_related("vecino", "delegacion")
+        .filter(fecha_ingreso__lte=corte)
+        .exclude(estado=Requerimiento.Estado.RESUELTO)
+    )
+    for ticket in criticos:
+        dias = ticket.dias_transcurridos
+        automaticas.append(
+            {
+                "id": f"AUTO-{ticket.codigo}",
+                "titulo": f"Ticket crítico {ticket.codigo}",
+                "mensaje": f"{ticket.vecino.nombre} lleva {dias} días en {ticket.delegacion.nombre}.",
+                "tipo": "critico",
+                "fecha": ticket.fecha_ingreso.isoformat(),
+                "enlace": f"/requerimientos/{ticket.codigo}/",
+            }
+        )
+    return almacenadas + automaticas
 
 
 def sesion_siged(request):

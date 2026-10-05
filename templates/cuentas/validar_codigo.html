@@ -1,0 +1,65 @@
+{% extends 'cuentas/_auth_layout.html' %}
+
+{% block title %}Validar código | Sistema Municipal{% endblock %}
+
+{% block auth_contenido %}
+<p class="login-kicker mb-2" style="color:#8b1524;">Sistema Municipal</p>
+<h2 class="fw-bold text-primary-custom mb-1">Ingresa el código de verificación</h2>
+<p class="text-muted">Hemos enviado un código de 6 dígitos a <strong>{{ correo }}</strong>.</p>
+<form method="post" class="card login-glass p-4" id="form-codigo">
+    {% csrf_token %}
+    <div class="d-flex gap-2 justify-content-center mb-2">
+        {% for i in "123456" %}
+        <input class="form-control text-center fs-4 codigo-digito" style="max-width:3rem;" maxlength="1" inputmode="numeric" pattern="[0-9]" name="d{{ forloop.counter }}" aria-label="Dígito {{ forloop.counter }}" required>
+        {% endfor %}
+    </div>
+    {% if errores.codigo %}<div class="text-danger small text-center mb-2">{{ errores.codigo }}</div>{% endif %}
+    <p class="text-muted small text-center">El código expira en 10 minutos y solo puede usarse una vez. No aparece en esta pantalla.</p>
+    <button type="submit" class="btn btn-primary-custom w-100">Verificar código</button>
+</form>
+<form method="post" class="text-center mt-3">
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="reenviar">
+    <p class="small mb-1">¿No recibiste el código?</p>
+    <button class="btn btn-link p-0" type="submit" id="reenviar" disabled>Reenviar código (<span id="cuenta">00:45</span>)</button>
+</form>
+<div class="text-center mt-2">
+    <a href="{% url 'login' %}">Volver al login</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (() => {
+        const digitos = Array.from(document.querySelectorAll(".codigo-digito"));
+        digitos.forEach((input, indice) => {
+            input.addEventListener("input", () => {
+                input.value = (input.value || "").replace(/\D/g, "").slice(0, 1);
+                if (input.value && digitos[indice + 1]) digitos[indice + 1].focus();
+            });
+            input.addEventListener("keydown", (evento) => {
+                if (evento.key === "Backspace" && !input.value && digitos[indice - 1]) {
+                    digitos[indice - 1].focus();
+                }
+            });
+        });
+        if (digitos[0]) digitos[0].focus();
+        let restante = 45;
+        const etiqueta = document.getElementById("cuenta");
+        const boton = document.getElementById("reenviar");
+        const timer = setInterval(() => {
+            restante -= 1;
+            const minutos = String(Math.floor(restante / 60)).padStart(2, "0");
+            const segundos = String(restante % 60).padStart(2, "0");
+            if (etiqueta) etiqueta.textContent = `${minutos}:${segundos}`;
+            if (restante <= 0) {
+                clearInterval(timer);
+                if (boton) {
+                    boton.disabled = false;
+                    boton.textContent = "Reenviar código";
+                }
+            }
+        }, 1000);
+    })();
+</script>
+{% endblock %}

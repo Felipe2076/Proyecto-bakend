@@ -1,0 +1,45 @@
+{% if panel.ver_delegacion and panel.delegacion %}
+<section class="card card-calculo e3d-tilt border-0 shadow-sm rounded-4 mb-4" aria-label="Mi delegación">
+    <div class="card-body p-4">
+        <h2 class="h5 fw-bold text-primary-custom mb-1">Mi delegación · {{ panel.delegacion.nombre }}</h2>
+        <p class="text-muted small mb-3">{{ panel.delegacion.cifras.total }} tickets · {{ panel.delegacion.cifras.tasa }}% resueltos.</p>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Funcionario</th>
+                        <th>Cargo</th>
+                        <th class="text-end">% logrado</th>
+                        <th>Semáforo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for persona in panel.delegacion.equipo %}
+                    <tr>
+                        <td>{{ persona.nombre }}</td>
+                        <td>{{ persona.cargo }}</td>
+                        <td class="text-end">{{ persona.pct_logrado }}%</td>
+                        <td><span class="badge {{ persona.clase }}">{{ persona.nivel }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-4">No hay funcionarios en esta delegación.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% if panel.ver_global and panel.global %}
+<section class="card card-calculo e3d-tilt border-0 shadow-sm rounded-4 mb-4" aria-label="Vista global">
+    <div class="card-body p-4">
+        <h2 class="h5 fw-bold text-primary-custom mb-3">Vista global</h2>
+        <div class="row g-3">
+            <div class="col-6 col-md-3"><div class="small text-muted">Tickets</div><strong>{{ panel.global.cifras.total }}</strong></div>
+            <div class="col-6 col-md-3"><div class="small text-muted">Resueltos</div><strong>{{ panel.global.cifras.resueltos }}</strong></div>
+            <div class="col-6 col-md-3"><div class="small text-muted">Pendientes</div><strong>{{ panel.global.cifras.pendientes }}</strong></div>
+            <div class="col-6 col-md-3"><div class="small text-muted">Tasa</div><strong>{{ panel.global.cifras.tasa }}%</strong></div>
+        </div>
+    </div>
+</section>
+{% endif %}

@@ -1,123 +1,614 @@
 [
   {
     "id_funcionario": "FUN-001",
-    "nombre": "Elizabeth Rojas Campos",
+    "nombre": "Alba Alamo Herrera",
     "cargo": "Delegada Territorial",
     "delegacion": "Delegación Rural",
     "fecha_ultimo_ingreso": "2026-09-01",
     "items": [
-      {"item": "Supervisión de compromisos vecinales", "ponderador": 30, "meta_trimestre": 90, "avance_actual": 68},
-      {"item": "Reuniones con organizaciones comunitarias", "ponderador": 25, "meta_trimestre": 24, "avance_actual": 18},
-      {"item": "Informes de gestión semanales", "ponderador": 25, "meta_trimestre": 12, "avance_actual": 9},
-      {"item": "Acompañamiento a funcionarios rezagados", "ponderador": 20, "meta_trimestre": 18, "avance_actual": 12}
-    ]
+      {
+        "item": "Supervisión de compromisos vecinales",
+        "ponderador": 30,
+        "meta_trimestre": 90,
+        "avance_actual": 68
+      },
+      {
+        "item": "Reuniones con organizaciones comunitarias",
+        "ponderador": 25,
+        "meta_trimestre": 24,
+        "avance_actual": 18
+      },
+      {
+        "item": "Informes de gestión semanales",
+        "ponderador": 25,
+        "meta_trimestre": 12,
+        "avance_actual": 9
+      },
+      {
+        "item": "Acompañamiento a funcionarios rezagados",
+        "ponderador": 20,
+        "meta_trimestre": 18,
+        "avance_actual": 12
+      }
+    ],
+    "nombres": "Alba",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Herrera",
+    "rut": "33100001-9",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-002",
-    "nombre": "Camila Oyarzún Santander",
+    "nombre": "Bruno Alamo Keller",
     "cargo": "Gestor Social",
     "delegacion": "Delegación Rural",
     "fecha_ultimo_ingreso": "2026-09-11",
     "items": [
-      {"item": "Atenciones sociales (hasta 3 por usuario)", "ponderador": 40, "meta_trimestre": 120, "avance_actual": 75},
-      {"item": "Fichas y ayudas de emergencia", "ponderador": 30, "meta_trimestre": 60, "avance_actual": 38},
-      {"item": "Seguimiento a adultos mayores", "ponderador": 30, "meta_trimestre": 45, "avance_actual": 22}
-    ]
+      {
+        "item": "Atenciones sociales (hasta 3 por usuario)",
+        "ponderador": 40,
+        "meta_trimestre": 120,
+        "avance_actual": 75
+      },
+      {
+        "item": "Fichas y ayudas de emergencia",
+        "ponderador": 30,
+        "meta_trimestre": 60,
+        "avance_actual": 38
+      },
+      {
+        "item": "Seguimiento a adultos mayores",
+        "ponderador": 30,
+        "meta_trimestre": 45,
+        "avance_actual": 22
+      }
+    ],
+    "nombres": "Bruno",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Keller",
+    "rut": "33100002-7",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-003",
-    "nombre": "Pedro Palma Godoy",
+    "nombre": "Celia Alamo Nieto",
     "cargo": "Territorial Organizaciones Comunitarias",
     "delegacion": "Delegación Rural",
     "fecha_ultimo_ingreso": "2026-09-01",
     "items": [
-      {"item": "Visitas a juntas de vecinos", "ponderador": 35, "meta_trimestre": 36, "avance_actual": 31},
-      {"item": "Apoyo a proyectos Fondeve", "ponderador": 35, "meta_trimestre": 18, "avance_actual": 15},
-      {"item": "Actas y registro de organizaciones", "ponderador": 30, "meta_trimestre": 40, "avance_actual": 28}
-    ]
+      {
+        "item": "Visitas a juntas de vecinos",
+        "ponderador": 35,
+        "meta_trimestre": 36,
+        "avance_actual": 31
+      },
+      {
+        "item": "Apoyo a proyectos Fondeve",
+        "ponderador": 35,
+        "meta_trimestre": 18,
+        "avance_actual": 15
+      },
+      {
+        "item": "Actas y registro de organizaciones",
+        "ponderador": 30,
+        "meta_trimestre": 40,
+        "avance_actual": 28
+      }
+    ],
+    "nombres": "Celia",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Nieto",
+    "rut": "33100003-5",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-004",
-    "nombre": "Marisol Tapia Henríquez",
+    "nombre": "Dario Alamo Quilo",
     "cargo": "Apoyo Administrativo",
     "delegacion": "Delegación Rural",
     "fecha_ultimo_ingreso": "2026-08-29",
     "items": [
-      {"item": "Digitación de requerimientos", "ponderador": 40, "meta_trimestre": 200, "avance_actual": 148},
-      {"item": "Archivo y verificadores fotográficos", "ponderador": 30, "meta_trimestre": 90, "avance_actual": 61},
-      {"item": "Atención de mesa de partes", "ponderador": 30, "meta_trimestre": 150, "avance_actual": 96}
-    ]
+      {
+        "item": "Digitación de requerimientos",
+        "ponderador": 40,
+        "meta_trimestre": 200,
+        "avance_actual": 148
+      },
+      {
+        "item": "Archivo y verificadores fotográficos",
+        "ponderador": 30,
+        "meta_trimestre": 90,
+        "avance_actual": 61
+      },
+      {
+        "item": "Atención de mesa de partes",
+        "ponderador": 30,
+        "meta_trimestre": 150,
+        "avance_actual": 96
+      }
+    ],
+    "nombres": "Dario",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Quilo",
+    "rut": "33100004-3",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-005",
-    "nombre": "Rodrigo Santander Díaz",
+    "nombre": "Elena Alamo Toro",
     "cargo": "Supervisor DISERCO",
     "delegacion": "Delegación Rural",
     "fecha_ultimo_ingreso": "2026-08-25",
     "items": [
-      {"item": "Cuadrillas de aseo y alumbrado", "ponderador": 40, "meta_trimestre": 80, "avance_actual": 41},
-      {"item": "Inspección de áreas verdes", "ponderador": 30, "meta_trimestre": 40, "avance_actual": 18},
-      {"item": "Cierre de compromisos DISERCO", "ponderador": 30, "meta_trimestre": 50, "avance_actual": 21}
-    ]
+      {
+        "item": "Cuadrillas de aseo y alumbrado",
+        "ponderador": 40,
+        "meta_trimestre": 80,
+        "avance_actual": 41
+      },
+      {
+        "item": "Inspección de áreas verdes",
+        "ponderador": 30,
+        "meta_trimestre": 40,
+        "avance_actual": 18
+      },
+      {
+        "item": "Cierre de compromisos DISERCO",
+        "ponderador": 30,
+        "meta_trimestre": 50,
+        "avance_actual": 21
+      }
+    ],
+    "nombres": "Elena",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Toro",
+    "rut": "33100005-1",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-006",
-    "nombre": "Valeria Moraga Henríquez",
+    "nombre": "Felix Alamo Castro",
     "cargo": "Coordinadora DISERCO",
     "delegacion": "Delegación Av. del Mar",
     "fecha_ultimo_ingreso": "2026-09-01",
     "items": [
-      {"item": "Coordinación de cuadrillas comunales", "ponderador": 35, "meta_trimestre": 60, "avance_actual": 48},
-      {"item": "Mantención de plazas y borde costero", "ponderador": 35, "meta_trimestre": 45, "avance_actual": 34},
-      {"item": "Respuesta a reclamos de ornato", "ponderador": 30, "meta_trimestre": 90, "avance_actual": 71}
-    ]
+      {
+        "item": "Coordinación de cuadrillas comunales",
+        "ponderador": 35,
+        "meta_trimestre": 60,
+        "avance_actual": 48
+      },
+      {
+        "item": "Mantención de plazas y borde costero",
+        "ponderador": 35,
+        "meta_trimestre": 45,
+        "avance_actual": 34
+      },
+      {
+        "item": "Respuesta a reclamos de ornato",
+        "ponderador": 30,
+        "meta_trimestre": 90,
+        "avance_actual": 71
+      }
+    ],
+    "nombres": "Felix",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Castro",
+    "rut": "33100006-K",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-007",
-    "nombre": "Esteban Barraza Villalobos",
+    "nombre": "Greta Alamo Flores",
     "cargo": "Proyectos y Compras",
     "delegacion": "Delegación Centro",
     "fecha_ultimo_ingreso": "2026-08-28",
     "items": [
-      {"item": "Órdenes de compra territoriales", "ponderador": 40, "meta_trimestre": 30, "avance_actual": 19},
-      {"item": "Seguimiento de proyectos vecinales", "ponderador": 35, "meta_trimestre": 12, "avance_actual": 8},
-      {"item": "Informes de ejecución presupuestaria", "ponderador": 25, "meta_trimestre": 9, "avance_actual": 6}
-    ]
+      {
+        "item": "Órdenes de compra territoriales",
+        "ponderador": 40,
+        "meta_trimestre": 30,
+        "avance_actual": 19
+      },
+      {
+        "item": "Seguimiento de proyectos vecinales",
+        "ponderador": 35,
+        "meta_trimestre": 12,
+        "avance_actual": 8
+      },
+      {
+        "item": "Informes de ejecución presupuestaria",
+        "ponderador": 25,
+        "meta_trimestre": 9,
+        "avance_actual": 6
+      }
+    ],
+    "nombres": "Greta",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Flores",
+    "rut": "33100007-8",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-008",
-    "nombre": "Marcela Cárdenas López",
+    "nombre": "Hugo Alamo Ibanez",
     "cargo": "Planificación y Control",
     "delegacion": "Delegación La Antena",
     "fecha_ultimo_ingreso": "2026-09-01",
     "items": [
-      {"item": "Actualización de la matriz SGR", "ponderador": 40, "meta_trimestre": 90, "avance_actual": 70},
-      {"item": "Reportes de semáforo diario", "ponderador": 30, "meta_trimestre": 60, "avance_actual": 46},
-      {"item": "Levantamiento de cuellos de botella", "ponderador": 30, "meta_trimestre": 24, "avance_actual": 19}
-    ]
+      {
+        "item": "Actualización de la matriz SGR",
+        "ponderador": 40,
+        "meta_trimestre": 90,
+        "avance_actual": 70
+      },
+      {
+        "item": "Reportes de semáforo diario",
+        "ponderador": 30,
+        "meta_trimestre": 60,
+        "avance_actual": 46
+      },
+      {
+        "item": "Levantamiento de cuellos de botella",
+        "ponderador": 30,
+        "meta_trimestre": 24,
+        "avance_actual": 19
+      }
+    ],
+    "nombres": "Hugo",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Ibanez",
+    "rut": "33100008-6",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-009",
-    "nombre": "Gonzalo Pizarro Tapia",
+    "nombre": "Iris Alamo Lago",
     "cargo": "Gestor de Seguridad",
     "delegacion": "Delegación Las Compañías",
     "fecha_ultimo_ingreso": "2026-08-31",
     "items": [
-      {"item": "Patrullajes preventivos", "ponderador": 40, "meta_trimestre": 90, "avance_actual": 58},
-      {"item": "Rondas con juntas de vecinos", "ponderador": 30, "meta_trimestre": 24, "avance_actual": 16},
-      {"item": "Alertas y coordinación con Carabineros", "ponderador": 30, "meta_trimestre": 40, "avance_actual": 27}
-    ]
+      {
+        "item": "Patrullajes preventivos",
+        "ponderador": 40,
+        "meta_trimestre": 90,
+        "avance_actual": 58
+      },
+      {
+        "item": "Rondas con juntas de vecinos",
+        "ponderador": 30,
+        "meta_trimestre": 24,
+        "avance_actual": 16
+      },
+      {
+        "item": "Alertas y coordinación con Carabineros",
+        "ponderador": 30,
+        "meta_trimestre": 40,
+        "avance_actual": 27
+      }
+    ],
+    "nombres": "Iris",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Lago",
+    "rut": "33100009-4",
+    "es_simulacion": true
   },
   {
     "id_funcionario": "FUN-010",
-    "nombre": "Juan Carlos Pérez Muñoz",
+    "nombre": "Julio Alamo Olmo",
     "cargo": "Supervisor DISERCO",
     "delegacion": "Delegación La Pampa",
     "fecha_ultimo_ingreso": "2026-08-20",
     "items": [
-      {"item": "Retiro de microbasurales", "ponderador": 40, "meta_trimestre": 70, "avance_actual": 32},
-      {"item": "Poda y riego de áreas verdes", "ponderador": 35, "meta_trimestre": 40, "avance_actual": 17},
-      {"item": "Cierre de tickets de ornato", "ponderador": 25, "meta_trimestre": 55, "avance_actual": 21}
-    ]
+      {
+        "item": "Retiro de microbasurales",
+        "ponderador": 40,
+        "meta_trimestre": 70,
+        "avance_actual": 32
+      },
+      {
+        "item": "Poda y riego de áreas verdes",
+        "ponderador": 35,
+        "meta_trimestre": 40,
+        "avance_actual": 17
+      },
+      {
+        "item": "Cierre de tickets de ornato",
+        "ponderador": 25,
+        "meta_trimestre": 55,
+        "avance_actual": 21
+      }
+    ],
+    "nombres": "Julio",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Olmo",
+    "rut": "33100010-8",
+    "es_simulacion": true
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-011",
+    "nombre": "Kael Alamo Rios",
+    "nombres": "Kael",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Rios",
+    "rut": "33100011-6",
+    "es_simulacion": true,
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación Centro",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-012",
+    "nombre": "Luna Alamo Bravo",
+    "nombres": "Luna",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Bravo",
+    "rut": "33100012-4",
+    "es_simulacion": true,
+    "cargo": "Delegada Territorial",
+    "delegacion": "Delegación Centro",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-013",
+    "nombre": "Milo Alamo Diaz",
+    "nombres": "Milo",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Diaz",
+    "rut": "33100013-2",
+    "es_simulacion": true,
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación Centro",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-014",
+    "nombre": "Nora Alamo Guerra",
+    "nombres": "Nora",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Guerra",
+    "rut": "33100014-0",
+    "es_simulacion": true,
+    "cargo": "Apoyo Administrativo",
+    "delegacion": "Delegación Centro",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-015",
+    "nombre": "Omar Alamo Jara",
+    "nombres": "Omar",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Jara",
+    "rut": "33100015-9",
+    "es_simulacion": true,
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación Rural",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-016",
+    "nombre": "Pia Alamo Mora",
+    "nombres": "Pia",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Mora",
+    "rut": "33100016-7",
+    "es_simulacion": true,
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación La Antena",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-017",
+    "nombre": "Quique Alamo Paz",
+    "nombres": "Quique",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Paz",
+    "rut": "33100017-5",
+    "es_simulacion": true,
+    "cargo": "Delegada Territorial",
+    "delegacion": "Delegación La Antena",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-018",
+    "nombre": "Rita Alamo Solis",
+    "nombres": "Rita",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Solis",
+    "rut": "33100018-3",
+    "es_simulacion": true,
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación La Antena",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-019",
+    "nombre": "Sael Alamo Bravo",
+    "nombres": "Sael",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Bravo",
+    "rut": "33100019-1",
+    "es_simulacion": true,
+    "cargo": "Apoyo Administrativo",
+    "delegacion": "Delegación La Antena",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-020",
+    "nombre": "Tomas Alamo Espinosa",
+    "nombres": "Tomas",
+    "apellido_paterno": "Alamo",
+    "apellido_materno": "Espinosa",
+    "rut": "33100020-5",
+    "es_simulacion": true,
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación La Pampa",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-021",
+    "nombre": "Alba Bravo Herrera",
+    "nombres": "Alba",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Herrera",
+    "rut": "33100021-3",
+    "es_simulacion": true,
+    "cargo": "Delegada Territorial",
+    "delegacion": "Delegación La Pampa",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-022",
+    "nombre": "Bruno Bravo Keller",
+    "nombres": "Bruno",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Keller",
+    "rut": "33100022-1",
+    "es_simulacion": true,
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación La Pampa",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-023",
+    "nombre": "Celia Bravo Nieto",
+    "nombres": "Celia",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Nieto",
+    "rut": "33100023-K",
+    "es_simulacion": true,
+    "cargo": "Apoyo Administrativo",
+    "delegacion": "Delegación La Pampa",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-024",
+    "nombre": "Dario Bravo Quilo",
+    "nombres": "Dario",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Quilo",
+    "rut": "33100024-8",
+    "es_simulacion": true,
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación Av. del Mar",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-025",
+    "nombre": "Elena Bravo Toro",
+    "nombres": "Elena",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Toro",
+    "rut": "33100025-6",
+    "es_simulacion": true,
+    "cargo": "Delegada Territorial",
+    "delegacion": "Delegación Av. del Mar",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-026",
+    "nombre": "Felix Bravo Castro",
+    "nombres": "Felix",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Castro",
+    "rut": "33100026-4",
+    "es_simulacion": true,
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación Av. del Mar",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-027",
+    "nombre": "Greta Bravo Flores",
+    "nombres": "Greta",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Flores",
+    "rut": "33100027-2",
+    "es_simulacion": true,
+    "cargo": "Apoyo Administrativo",
+    "delegacion": "Delegación Av. del Mar",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-028",
+    "nombre": "Hugo Bravo Ibanez",
+    "nombres": "Hugo",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Ibanez",
+    "rut": "33100028-0",
+    "es_simulacion": true,
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación Las Compañías",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-029",
+    "nombre": "Iris Bravo Lago",
+    "nombres": "Iris",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Lago",
+    "rut": "33100029-9",
+    "es_simulacion": true,
+    "cargo": "Delegada Territorial",
+    "delegacion": "Delegación Las Compañías",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-030",
+    "nombre": "Julio Bravo Olmo",
+    "nombres": "Julio",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Olmo",
+    "rut": "33100030-2",
+    "es_simulacion": true,
+    "cargo": "Gestor Social",
+    "delegacion": "Delegación Las Compañías",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-031",
+    "nombre": "Kael Bravo Rios",
+    "nombres": "Kael",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Rios",
+    "rut": "33100031-0",
+    "es_simulacion": true,
+    "cargo": "Apoyo Administrativo",
+    "delegacion": "Delegación Las Compañías",
+    "fecha_ultimo_ingreso": null
+  },
+  {
+    "items": [],
+    "id_funcionario": "FUN-032",
+    "nombre": "Luna Bravo Alamo",
+    "nombres": "Luna",
+    "apellido_paterno": "Bravo",
+    "apellido_materno": "Alamo",
+    "rut": "33100032-9",
+    "es_simulacion": true,
+    "cargo": "Administrador del sistema",
+    "delegacion": "Delegación Centro",
+    "fecha_ultimo_ingreso": null
   }
 ]

@@ -60,10 +60,23 @@ class Cargo(models.Model):
 
 
 class Funcionario(models.Model):
-    """Funcionario municipal medido en la Matriz SGR."""
+    """Persona trabajadora: RUT, nombre y delegación viven en esta fila.
+
+    ``nombre`` se conserva como texto compuesto para las pantallas actuales.
+    El identificador de acceso es ``rut`` (normalizado, sin puntos).
+    """
 
     codigo = models.CharField("código", max_length=20, unique=True, help_text="Ej: FUN-001")
+    rut = models.CharField(
+        "RUT",
+        max_length=10,
+        help_text="Normalizado, sin puntos. Ejemplo visible: 33.100.001-9.",
+    )
+    nombres = models.CharField(max_length=60)
+    apellido_paterno = models.CharField("apellido paterno", max_length=60)
+    apellido_materno = models.CharField("apellido materno", max_length=60, null=True, blank=True)
     nombre = models.CharField(max_length=120)
+    es_simulacion = models.BooleanField("dato de simulación", default=False)
     cargo = models.ForeignKey(Cargo, on_delete=models.PROTECT, related_name="funcionarios")
     delegacion = models.ForeignKey(Delegacion, on_delete=models.PROTECT, related_name="funcionarios",
                                    verbose_name="delegación")
@@ -74,9 +87,73 @@ class Funcionario(models.Model):
         verbose_name = "funcionario"
         verbose_name_plural = "funcionarios"
         ordering = ["codigo"]
+        constraints = [
+            models.UniqueConstraint(fields=["rut"], name="uq_funcionario_rut"),
+        ]
+        indexes = [
+            models.Index(
+                fields=["delegacion", "apellido_paterno", "nombres"],
+                name="idx_fun_deleg_apellido",
+            ),
+        ]
 
     def __str__(self):
-        return f"{self.nombre} ({self.codigo})"
+        return f"{self.nombre_mostrado} ({self.codigo})"
+
+    @property
+    def nombre_completo(self):
+        """Nombre compuesto que se guarda, sin la marca de simulación."""
+        from cuentas.simulacion import nombre_almacenado
+
+        return nombre_almacenado(self.nombres, self.apellido_paterno, self.apellido_materno or "")
+
+    @property
+    def nombre_mostrado(self):
+        from cuentas.simulacion import con_marca
+
+        return con_marca(self.nombre, self.es_simulacion)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE, MENSAJE_RUT, normalizar_rut, validar_nombre, validar_rut
+
+        self.rut = normalizar_rut(self.rut or "")
+        if not validar_rut(self.rut):
+            raise ValidationError({"rut": MENSAJE_RUT})
+        self.nombres = " ".join((self.nombres or "").split())
+        self.apellido_paterno = " ".join((self.apellido_paterno or "").split())
+        if self.apellido_materno:
+            self.apellido_materno = " ".join(self.apellido_materno.split()) or None
+        errores = {}
+        for campo in ("nombres", "apellido_paterno", "apellido_materno"):
+            valor = getattr(self, campo) or ""
+            if valor and not validar_nombre(valor):
+                errores[campo] = MENSAJE_NOMBRE
+        if self.nombre and not validar_nombre(" ".join(self.nombre.replace("(ficticio)", "").split())):
+            errores["nombre"] = MENSAJE_NOMBRE
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
+        if not (self.nombres or "").strip() and self.nombre:
+            limpio = self.nombre.replace("(ficticio)", "").strip()
+            partes = limpio.split()
+            self.nombres = (partes[0] if partes else "Sin")[:60]
+            self.apellido_paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
+            if len(partes) > 2 and not self.apellido_materno:
+                self.apellido_materno = " ".join(partes[2:])[:60]
+        if (self.nombres or "").strip() and (self.apellido_paterno or "").strip():
+            self.nombre = self.nombre_completo[:120]
+        else:
+            self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())[:120]
+        if "(" in (self.nombre or "") or ")" in (self.nombre or ""):
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
+        super().save(*args, **kwargs)
 
 
 class Usuario(models.Model):
@@ -93,8 +170,7 @@ class Usuario(models.Model):
     cargo = models.ForeignKey(Cargo, on_delete=models.SET_NULL, null=True, blank=True, related_name="usuarios")
     delegacion = models.ForeignKey(Delegacion, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name="usuarios", verbose_name="delegación")
-    funcionario = models.OneToOneField(Funcionario, on_delete=models.SET_NULL, null=True, blank=True,
-                                       related_name="usuario")
+    funcionario = models.OneToOneField(Funcionario, on_delete=models.PROTECT, related_name="usuario")
     estado = models.CharField(max_length=10, choices=EstadoRegistro.choices, default=EstadoRegistro.ACTIVO)
     creado = models.DateTimeField(auto_now_add=True)
 
@@ -104,11 +180,29 @@ class Usuario(models.Model):
         ordering = ["nombre"]
 
     def __str__(self):
-        return f"{self.nombre} ({self.username})"
+        return f"{self.nombre_mostrado} ({self.username})"
+
+    @property
+    def nombre_mostrado(self):
+        """La marca sale del funcionario. Esta tabla no tiene columna propia."""
+        from cuentas.simulacion import con_marca
+
+        es_simulacion = bool(self.funcionario_id and self.funcionario.es_simulacion)
+        return con_marca(self.nombre, es_simulacion)
 
     @property
     def activo(self):
         return self.estado == EstadoRegistro.ACTIVO
+
+    def save(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        from core.validaciones import MENSAJE_NOMBRE
+
+        self.nombre = " ".join((self.nombre or "").replace("(ficticio)", "").split())[:120]
+        if "(" in self.nombre or ")" in self.nombre:
+            raise ValidationError({"nombre": MENSAJE_NOMBRE})
+        super().save(*args, **kwargs)
 
 
 class ParametroSistema(models.Model):
@@ -130,3 +224,54 @@ class ParametroSistema(models.Model):
 
     def __str__(self):
         return self.nombre_sistema
+
+
+class CodigoUnUso(models.Model):
+    """Código de un solo uso. En la base solo está el HMAC-SHA256, nunca el valor."""
+
+    PROPOSITO_RECUPERAR = "RECUPERAR_CLAVE"
+    CANAL_CORREO = "CORREO"
+    MAX_INTENTOS = 5
+    VIGENCIA_MINUTOS = 10
+
+    proposito = models.CharField(max_length=20)
+    usuario = models.ForeignKey(
+        Usuario,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="codigos_un_uso",
+        db_index=False,
+    )
+    cuenta_vecino_id = models.PositiveBigIntegerField(null=True, blank=True)
+    codigo_hash = models.CharField(max_length=64)
+    canal = models.CharField(max_length=10, default=CANAL_CORREO)
+    destino_mascara = models.CharField(max_length=80, null=True, blank=True)
+    expira_en = models.DateTimeField()
+    intentos = models.PositiveSmallIntegerField(default=0)
+    usado_en = models.DateTimeField(null=True, blank=True)
+    anulado_en = models.DateTimeField(null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    ip_origen = models.CharField(max_length=45, null=True, blank=True)
+
+    class Meta:
+        db_table = "codigo_un_uso"
+        verbose_name = "código de un solo uso"
+        verbose_name_plural = "códigos de un solo uso"
+        ordering = ["-creado_en"]
+        indexes = [
+            models.Index(fields=["usuario", "proposito", "creado_en"], name="idx_codigo_dueno"),
+            models.Index(fields=["cuenta_vecino_id", "proposito", "creado_en"], name="idx_codigo_vecino"),
+            models.Index(fields=["expira_en"], name="idx_codigo_expira"),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(intentos__lte=5), name="ck_codigo_intentos"),
+            models.CheckConstraint(
+                condition=models.Q(proposito__in=["RECUPERAR_CLAVE", "MFA_EMAIL", "LOGIN_VECINO", "VERIFICAR_CORREO"]),
+                name="ck_codigo_proposito",
+            ),
+            models.CheckConstraint(condition=models.Q(canal__in=["CORREO", "SMS"]), name="ck_codigo_canal"),
+        ]
+
+    def __str__(self):
+        return f"{self.proposito} usuario {self.usuario_id}"

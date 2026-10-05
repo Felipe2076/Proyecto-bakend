@@ -1,0 +1,31 @@
+<section class="card card-calculo e3d-tilt border-0 shadow-sm rounded-4 mb-4" aria-label="Mi semáforo de avance">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h2 class="h5 fw-bold text-primary-custom mb-1">Mi semáforo de avance</h2>
+                <p class="text-muted small mb-0">{{ panel.semaforo.periodo }} · día {{ panel.semaforo.dias_avance }} de {{ panel.semaforo.dias_totales }}.</p>
+            </div>
+            <span class="badge {{ panel.semaforo.clase }}">{{ panel.semaforo.nivel }}</span>
+        </div>
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="small text-muted">% esperado</div>
+                <strong>{{ panel.semaforo.pct_esperado }}%</strong>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="small text-muted">% logrado</div>
+                <strong>{{ panel.semaforo.pct_logrado }}%</strong>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="small text-muted">Respecto de lo esperado</div>
+                <strong>{{ panel.semaforo.ratio }}%</strong>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="small text-muted">Actividades de hoy</div>
+                <strong>{{ panel.semaforo.asistencia_hoy }}</strong>
+                <div class="small text-muted">Última: {% if panel.semaforo.ultima_actividad %}{{ panel.semaforo.ultima_actividad|date:"d-m-Y" }}{% else %}sin registro{% endif %}</div>
+            </div>
+        </div>
+        <p class="small text-muted mb-0 mt-3">{{ panel.semaforo.texto }}. Rojo bajo 60 %, ámbar desde 60 % y verde desde 100 % de lo esperado.</p>
+    </div>
+</section>

@@ -6,12 +6,13 @@ Prototipo web de la **Primera Entrega** del Proyecto Integrado.
 Municipalidad de La Serena · 6 delegaciones territoriales  
 Profesor: Jorge Cortés
 
-El mockup cubre la rúbrica §7.2 (template funcional en Git): navegación por módulos, formularios con validación y persistencia **JSON local**. No se conecta MySQL ni APIs de negocio.
+El sistema cubre la navegación por módulos, los formularios con validación y la persistencia en **MySQL** (Django ORM). Los JSON de `data/` son la fuente para sembrar la base, no el almacén en tiempo de ejecución.
 
 ## Stack
 
 - Python 3.12+ y Django 6.1
-- Datos en `data/*.json` (sesión mock en cookie firmada; no hay que correr `migrate`)
+- MySQL 8.4 (utf8mb4, InnoDB). La suite puede usar `SIGED_DB=sqlite` si no hay servidor MySQL
+- `DEBUG` sale del entorno y queda **apagado** si no se define. Secretos (`SECRET_KEY`, `SIGED_CODE_HMAC_KEY`, `DB_*`) van en `.env`, que no se versiona. `SIGED_CODE_HMAC_KEY` es la clave del HMAC de los códigos de un solo uso; si no está, se usa `SECRET_KEY`
 - Bootstrap 5.3 + íconos locales (layout; la identidad visual no es una plantilla genérica)
 - Paleta municipal **roja**, tipografía display Fraunces (OFL) + Source Sans 3 (OFL)
 - Motion gratis: Lottie original self-hosted, Lordicon *wired/outline* FREE, Lenis (jsDelivr)
@@ -26,7 +27,7 @@ cd Proyecto-bakend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-Copy-Item .env.example .env      # completar SECRET_KEY, DEBUG=True, ALLOWED_HOSTS y DB_* (MySQL local)
+Copy-Item .env.example .env      # completar SECRET_KEY, ALLOWED_HOSTS y DB_* (DEBUG queda False)
 python manage.py migrate
 python manage.py loaddata 01_catalogos 02_datos_sistema
 python manage.py importar_json
@@ -48,23 +49,48 @@ Requiere MySQL 8.4+ con la base creada (ver *Backend con MySQL* más abajo). Abr
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env             # completar SECRET_KEY, DEBUG=True, ALLOWED_HOSTS y DB_*
+cp .env.example .env             # completar SECRET_KEY, ALLOWED_HOSTS y DB_* (DEBUG queda False)
 python manage.py migrate
 python manage.py loaddata 01_catalogos 02_datos_sistema
 python manage.py importar_json
 python manage.py runserver
 ```
 
-## Quién entra (demo)
+## Quién entra (simulación)
 
-| Usuario | Clave | Rol |
-| --- | --- | --- |
-| `admin` | `admin123` | Administración (ve todo) |
-| `jefatura` | `jefatura123` | Jefatura / control de gestión |
-| `funcionario` | `funcionario123` | Equipo territorial |
-| `ventanilla` | `ventanilla123` | Atención en ventanilla |
+El ingreso es **RUT + clave**. Cada cuenta es un funcionario ficticio, con correo `@siged.test`. La marca `(ficticio)` no se guarda en el nombre: sale en pantalla cuando `es_simulacion` es verdadero. Hay al menos una cuenta por cada rol (`administrador`, `jefatura`, `funcionario`, `ventanilla`) en cada una de las seis delegaciones, más un administrador global (`USR-025`).
 
-Las claves están a la vista a propósito: es un prototipo de curso.
+Las claves no están en el repositorio. `data/usuarios.json` no trae clave, y el fixture y `D003` dejan `auth_user.password` en `!` (inutilizable). `importar_json` genera una clave distinta por cuenta, no la imprime, y la escribe solo en `.demo_credentials.local` (ignorado por Git, modo 0600). `SIGED_DEMO_PASSWORD` es opcional y solo para pruebas locales: si está definida, esa ejecución usa ese único valor y tampoco lo muestra. Con `DEBUG=True` el login lista los RUT, sin la clave.
+
+| RUT | Rol | Delegación | Código |
+| --- | --- | --- | --- |
+| `33100024-8` | administrador | Delegación Av. del Mar | USR-017 |
+| `33100026-4` | funcionario | Delegación Av. del Mar | USR-019 |
+| `33100025-6` | jefatura | Delegación Av. del Mar | USR-018 |
+| `33100027-2` | ventanilla | Delegación Av. del Mar | USR-020 |
+| `33100011-6` | administrador | Delegación Centro | USR-001 |
+| `33100032-9` | administrador (global) | Delegación Centro | USR-025 |
+| `33100013-2` | funcionario | Delegación Centro | USR-006 |
+| `33100012-4` | jefatura | Delegación Centro | USR-005 |
+| `33100014-0` | ventanilla | Delegación Centro | USR-007 |
+| `33100016-7` | administrador | Delegación La Antena | USR-009 |
+| `33100018-3` | funcionario | Delegación La Antena | USR-011 |
+| `33100017-5` | jefatura | Delegación La Antena | USR-010 |
+| `33100019-1` | ventanilla | Delegación La Antena | USR-012 |
+| `33100020-5` | administrador | Delegación La Pampa | USR-013 |
+| `33100022-1` | funcionario | Delegación La Pampa | USR-015 |
+| `33100021-3` | jefatura | Delegación La Pampa | USR-014 |
+| `33100023-K` | ventanilla | Delegación La Pampa | USR-016 |
+| `33100028-0` | administrador | Delegación Las Compañías | USR-021 |
+| `33100030-2` | funcionario | Delegación Las Compañías | USR-023 |
+| `33100029-9` | jefatura | Delegación Las Compañías | USR-022 |
+| `33100031-0` | ventanilla | Delegación Las Compañías | USR-024 |
+| `33100015-9` | administrador | Delegación Rural | USR-008 |
+| `33100002-7` | funcionario | Delegación Rural | USR-003 |
+| `33100001-9` | jefatura | Delegación Rural | USR-002 |
+| `33100004-3` | ventanilla | Delegación Rural | USR-004 |
+
+Al entrar, `/` abre **Mi panel**: el administrador ve la vista global, la jefatura ve su delegación y funcionario o ventanilla ven solo su panel personal.
 
 ## Pantallas ↔ casos de uso
 
@@ -90,8 +116,11 @@ Tipificación de ticket: **RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA, FELICITACI�
 
 ## Pruebas
 
-```powershell
-python tests_siged.py
+Con MySQL local (variables `DB_*` en `.env`) o, si no hay servidor, con SQLite solo para la suite:
+
+```bash
+SIGED_DB=sqlite SECRET_KEY=clave-de-prueba DEBUG=False python manage.py test
+SIGED_DB=sqlite SECRET_KEY=clave-de-prueba DEBUG=False python tests_siged.py
 ```
 
 ## Documentación de contexto
@@ -101,128 +130,68 @@ python tests_siged.py
 
 ## Backend con MySQL (Evaluación Sumativa 2)
 
-Desde la rama `backend-mysql` los datos viven en **MySQL** (Django ORM + Django Admin). Los `data/*.json` quedan solo como origen para migrar los datos.
+Los datos de trabajo viven en **MySQL** (Django ORM + Django Admin). Los `data/*.json` quedan como origen para sembrar; el login no los lee.
 
-1. Copiar `.env.example` como `.env` y completar `SECRET_KEY`, `ALLOWED_HOSTS` y las variables `DB_*` (el `.env` no se sube a GitHub).
-2. Crear la base de datos vacía (`CREATE DATABASE gestion_muni CHARACTER SET utf8mb4;`). Las tablas deben ser **InnoDB** (ya se fuerza en `settings.py`).
-3. Instalar y migrar:
-
-```bash
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py loaddata 01_catalogos 02_datos_sistema   # roles, delegaciones, tipos, datos migrados del JSON
-python manage.py importar_json                            # (opcional) re-lee data/*.json y crea usuarios Django con clave hasheada
-python manage.py createsuperuser                          # acceso a /admin/
-python manage.py collectstatic                            # solo en el servidor (EC2)
-```
+1. Copiar `.env.example` como `.env` y completar `SECRET_KEY`, `ALLOWED_HOSTS` y las variables `DB_*` (el `.env` no se sube a GitHub). `DEBUG` no se define, o se deja en `False`.
+2. Crear la base vacía (`CREATE DATABASE gestion_muni CHARACTER SET utf8mb4;`). Las tablas son **InnoDB** (se fuerza en `settings.py`).
+3. Seguir *Aplicar en un MySQL local* (respaldo con `mysqldump` si la base ya tiene datos).
 
 - `fixtures/01_catalogos.json`: roles, delegaciones, tipos de gestión, tipos/sub atención, canales, metas y parámetros.
-- `fixtures/02_datos_sistema.json`: todo lo migrado desde `data/*.json` más vecinos y atenciones de ejemplo del mockup (sin contraseñas).
-- `python manage.py importar_json [--sin-auth]`: comando idempotente que migra los JSON a la base de datos.
+- `fixtures/02_datos_sistema.json`: funcionarios, vecinos y cuentas de simulación. Las claves de `auth.user` van hasheadas.
+- `python manage.py importar_json [--sin-auth]`: relee `data/*.json`. Si el JSON no trae clave, usa la convención de simulación y la guarda hasheada.
 
-## Despliegue en AWS EC2
+## Aplicar en un MySQL local
 
-Servidor: Amazon Linux 2023, IP pública `54.205.69.94`.
-Arquitectura: Apache (puerto 80) sirve phpMyAdmin en `/phpmyadmin` y los estáticos en `/static/`, y reenvía el resto a Gunicorn (`127.0.0.1:8000`), que ejecuta Django. La base es MySQL 8.4 LTS en la misma instancia.
+No mezclar los dos caminos sobre la misma base: o Django crea el esquema, o se aplican los scripts a mano y después se marcan las migraciones como hechas.
 
-### 1. Conectarse por SSH
+1. Respaldo antes de tocar datos existentes:
+
 ```bash
-ssh -i Gestion_muni_nueva.pem ec2-user@54.205.69.94
+mysqldump -u "$DB_USER" -p --single-transaction --routines gestion_muni > backups/gestion_muni_antes.sql
 ```
 
-### 2. Paquetes del sistema
-```bash
-sudo dnf install -y git gcc python3.14 python3.14-devel
-```
+2. Camino recomendado (base nueva o la de desarrollo):
 
-### 3. MySQL 8.4 LTS (Django 6.1 exige MySQL 8.4 o superior)
-```bash
-mysqldump -uroot -p --all-databases > ~/backup_mysql80.sql      # respaldo previo
-sudo systemctl stop mysqld
-sudo dnf install -y https://dev.mysql.com/get/mysql84-community-release-el9-1.noarch.rpm
-sudo dnf config-manager --disable mysql80-community
-sudo dnf config-manager --enable mysql-8.4-lts-community
-sudo dnf upgrade -y 'mysql-community-*'
-sudo systemctl start mysqld
-```
-
-### 4. Base de datos y usuario propio para Django (no se usa root)
-```sql
-CREATE DATABASE gestion_muni CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;  -- motor InnoDB
-CREATE USER 'django_muni'@'localhost' IDENTIFIED BY '<clave>';
-GRANT ALL PRIVILEGES ON gestion_muni.* TO 'django_muni'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-### 5. Código y entorno virtual
-```bash
-git clone -b backend-mysql https://github.com/Felipe2076/Proyecto-bakend app
-cd app
-python3.14 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt gunicorn
-cp .env.example .env    # completar SECRET_KEY, DEBUG=False, ALLOWED_HOSTS con la IP, CSRF_TRUSTED_ORIGINS y DB_*
-chmod 600 .env
-```
-
-### 6. Migraciones y datos
 ```bash
 python manage.py migrate
 python manage.py loaddata 01_catalogos 02_datos_sistema
 python manage.py importar_json
-python manage.py createsuperuser
-python manage.py collectstatic --noinput
 ```
 
-### 7. Gunicorn como servicio (`/etc/systemd/system/gunicorn_muni.service`)
-```ini
-[Unit]
-Description=Gunicorn Django gestion_muni (Proyecto-bakend)
-After=network.target mysqld.service
+`importar_json` reemplaza la clave de cada cuenta de simulación y reescribe `.demo_credentials.local`. Hay que ejecutarlo después de `loaddata` o de `D003`: sin ese paso las cuentas quedan con clave inutilizable. El código de recuperación se envía por correo (consola del proceso si `DEBUG=True`). En `codigo_un_uso` (`V019`) solo queda el HMAC-SHA256, de un solo uso. La clave de ese HMAC es `SIGED_CODE_HMAC_KEY` (si falta, `SECRET_KEY`).
 
-[Service]
-User=ec2-user
-Group=ec2-user
-WorkingDirectory=/home/ec2-user/app
-ExecStart=/home/ec2-user/app/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8000 config.wsgi:application
-Restart=always
+3. Base que **ya tiene filas** (EC2, WAMP u otra copia). Primero un ensayo sobre una copia, no sobre la base real. No usar `loaddata`: el fixture choca con correos que ya existen.
 
-[Install]
-WantedBy=multi-user.target
-```
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now gunicorn_muni
+mysqldump -u "$DB_USER" -p --single-transaction --routines gestion_muni > backups/gestion_muni_antes.sql
+mysql -u "$DB_USER" -p -e "CREATE DATABASE gestion_muni_ensayo CHARACTER SET utf8mb4"
+mysql -u "$DB_USER" -p gestion_muni_ensayo < backups/gestion_muni_antes.sql
 ```
 
-### 8. Apache como proxy inverso (`/etc/httpd/conf.d/django.conf`)
-```apache
-Alias /static/ /home/ec2-user/app/staticfiles/
-<Directory /home/ec2-user/app/staticfiles>
-    Require all granted
-</Directory>
-ProxyPreserveHost On
-ProxyPass /phpmyadmin !
-ProxyPass /static/ !
-ProxyPass / http://127.0.0.1:8000/
-ProxyPassReverse / http://127.0.0.1:8000/
-```
-```bash
-chmod o+x /home/ec2-user /home/ec2-user/app
-chmod -R o+rX /home/ec2-user/app/staticfiles
-sudo apachectl configtest && sudo systemctl reload httpd
-```
+Apuntar `DB_NAME` a `gestion_muni_ensayo` y ejecutar:
 
-### 9. Actualizar después de un cambio en GitHub
 ```bash
-cd ~/app && git pull && source .venv/bin/activate
-pip install -r requirements.txt
 python manage.py migrate
-python manage.py collectstatic --noinput
-sudo systemctl restart gunicorn_muni
+python manage.py importar_json
+mysql -u "$DB_USER" -p gestion_muni_ensayo < sql/verificacion/B7__rut_simulacion.sql
 ```
 
-### URLs
-- App: http://54.205.69.94/
-- Django Admin: http://54.205.69.94/admin/
-- phpMyAdmin: http://54.205.69.94/phpmyadmin/
+Cada consulta de `sql/verificacion/B7__rut_simulacion.sql` tiene que devolver 0. Mide que no quede un RUT fuera de 33.xxx.xxx en funcionarios, usuarios ni vecinos, sin importar el id (el vecino 22 y `FUN-DEMO-ADMIN` entran igual que el resto). Si alguna no da 0, no seguir con la base real. Si todas dan 0, repetir `migrate` e `importar_json` sobre la base de trabajo y volver a correr B7. Repetir ese par no duplica personas.
+
+`importar_json` reconoce cada cuenta por su código (`USR-001`), no por el funcionario que tenga en ese momento. Si los enlaces vienen corridos (USR-001 en `FUN-DEMO-ADMIN` y USR-005 en `FUN-011`, como en el WAMP) o si solo existen los cuatro alias `admin`, `jefatura`, `funcionario` y `ventanilla` (como en EC2), los alinea con `data/usuarios.json` dentro de la misma transacción. `USR-001` queda en `FUN-011`. `FUN-DEMO-ADMIN` sigue como funcionario de simulación, sin cuenta: no se duplica una persona y el alias `admin` deja de entrar. Esos alias, y la clave que tenían, quedan inutilizables.
+
+4. Camino manual, equivalente, sobre un esquema que ya tiene las tablas de `0001`:
+
+```bash
+mysql gestion_muni < sql/migraciones/V017__funcionario_rut_nombres.sql
+mysql gestion_muni < sql/datos/D003__datos_simulacion.sql
+mysql gestion_muni < sql/migraciones/V018__rut_obligatorio.sql
+mysql gestion_muni < sql/migraciones/V019__codigo_un_uso.sql
+python manage.py importar_json
+mysql gestion_muni < sql/verificacion/B7__rut_simulacion.sql
+python manage.py migrate --fake
+```
+
+`D003` actualiza el catálogo por código (`FUN-001`…`FUN-032`) y, al final, cualquier otra fila que siga fuera del rango. Detalle en [`sql/README.md`](sql/README.md).
+
+El usuario MySQL de la aplicación solo necesita permisos sobre `gestion_muni` para el trabajo de Django (consultar, insertar, actualizar, borrar y, al migrar, alterar). La clave va en `.env`, no en este archivo. Host, llaves y consolas de administración del servidor no se documentan en el repositorio.

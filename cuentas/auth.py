@@ -1,4 +1,4 @@
-"""Autenticación mock y permisos por rol (sin base de datos)."""
+"""Permisos por rol. El rol llega en la sesión desde Usuario.rol; la clave vive en User."""
 
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -80,7 +80,7 @@ def requerir_modulo(request, modulo):
 
 
 def public_user(usuario):
-    """Copia segura para la sesión (sin mutar el JSON original)."""
+    """Copia del perfil de sesión, sin la contraseña."""
     if not usuario:
         return {}
     copia = dict(usuario)

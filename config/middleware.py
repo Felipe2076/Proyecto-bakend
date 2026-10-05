@@ -1,10 +1,26 @@
 from django.shortcuts import redirect
 
 
-RUTAS_PREFIJO_LIBRES = ("/static/", "/admin/")
-# Sitio público (app publico): portada y secciones informativas.
-RUTAS_PUBLICAS = {"/", "/municipio/", "/servicios/", "/tramites/", "/delegaciones/", "/noticias/", "/transparencia/", "/contacto/", "/creditos/"}
-RUTAS_EXACTAS_LIBRES = {"/login/", "/logout/"} | RUTAS_PUBLICAS
+RUTAS_PREFIJO_LIBRES = ("/static/", "/admin/", "/recuperar")
+# Sitio público (app publico). /recuperar cubre /recuperar/, /recuperar/codigo/ y /recuperar/nueva/.
+RUTAS_PUBLICAS = {
+    "/",
+    "/municipio/",
+    "/servicios/",
+    "/tramites/",
+    "/delegaciones/",
+    "/noticias/",
+    "/transparencia/",
+    "/contacto/",
+    "/creditos/",
+}
+RUTAS_EXACTAS_LIBRES = {
+    "/login/",
+    "/logout/",
+    "/recuperar/",
+    "/recuperar/codigo/",
+    "/recuperar/nueva/",
+} | RUTAS_PUBLICAS
 
 
 class AutenticacionMockMiddleware:

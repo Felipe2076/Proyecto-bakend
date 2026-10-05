@@ -25,7 +25,14 @@ def env_obligatoria(nombre):
 # Único valor con respaldo seguro: si no se define, DEBUG queda apagado.
 DEBUG = os.getenv("DEBUG", "False").strip().lower() in ("1", "true", "yes", "si", "sí")
 
+# La aplicación usa MySQL. SIGED_DB=sqlite existe solo para la suite de pruebas
+# cuando no hay un servidor MySQL (no es el motor de la demostración ni de EC2).
+_USAR_SQLITE = os.getenv("SIGED_DB", "").strip().lower() == "sqlite"
+
+# Siempre desde el entorno. No hay clave de respaldo en el código.
 SECRET_KEY = env_obligatoria("SECRET_KEY")
+# HMAC de codigo_un_uso. Vacío: se usa SECRET_KEY al calcular el hash.
+SIGED_CODE_HMAC_KEY = os.getenv("SIGED_CODE_HMAC_KEY", "").strip()
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
@@ -76,22 +83,30 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# MySQL 8.x (WAMP en local, MySQL/MariaDB en EC2). Driver: PyMySQL (ver config/__init__.py).
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": env_obligatoria("DB_NAME"),
-        "USER": env_obligatoria("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "3306"),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            # InnoDB obligatorio: WAMP trae MyISAM por defecto (sin llaves foráneas).
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB",
-        },
+if _USAR_SQLITE:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.getenv("SIGED_SQLITE_PATH", str(BASE_DIR / "db.sqlite3")),
+        }
     }
-}
+else:
+    # MySQL 8.x (WAMP en local, MySQL en el servidor). Driver: PyMySQL (ver config/__init__.py).
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": env_obligatoria("DB_NAME"),
+            "USER": env_obligatoria("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+            "PORT": os.getenv("DB_PORT", "3306"),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                # InnoDB obligatorio: WAMP trae MyISAM por defecto (sin llaves foráneas).
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB",
+            },
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -120,3 +135,16 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 FIXTURE_DIRS = [BASE_DIR / "fixtures"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# El código de recuperación sale por correo. Con DEBUG se imprime en la consola
+# del proceso, nunca en el HTML. En pruebas se sustituye por el backend locmem.
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False").strip().lower() in ("1", "true", "yes", "si", "sí")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "siged@localhost")

@@ -30,11 +30,15 @@ class TipoGestionAdmin(admin.ModelAdmin):
 
 @admin.register(Vecino)
 class VecinoAdmin(admin.ModelAdmin):
-    list_display = ("id", "nombre", "rut", "direccion", "telefono", "territorio", "tipo_gestion", "estado")
+    list_display = ("id", "nombre_visible", "rut", "direccion", "telefono", "territorio", "tipo_gestion", "estado")
     search_fields = ("nombre", "rut", "direccion", "telefono", "correo")
     list_filter = ("estado", "tipo_gestion", "territorio", "delegacion")
     autocomplete_fields = ("tipo_gestion", "delegacion")
     inlines = [RequerimientoInline, AtencionInline]
+
+    @admin.display(description="nombre")
+    def nombre_visible(self, obj):
+        return obj.nombre_mostrado
 
 
 @admin.register(TipoAtencion)
