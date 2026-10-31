@@ -17,6 +17,8 @@ def funcionario_base(fun):
         "items": [
             {
                 "item": item.meta.nombre,
+                "codigo": item.codigo,
+                "codigo_meta": item.meta.codigo,
                 "ponderador": item.ponderador,
                 "meta_trimestre": item.meta_trimestre,
                 "avance_actual": item.avance_actual,

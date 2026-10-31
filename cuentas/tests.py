@@ -125,12 +125,11 @@ PERFILES_DEMO = (
 )
 
 
-class PortadaPublicaTests(TestCase):
-    def test_portada_publica_y_dashboard_privado(self):
+class EntradaSistemaTests(TestCase):
+    def test_entrada_al_login_y_dashboard_privado(self):
         anon = Client()
         portada = anon.get("/")
-        self.assertEqual(portada.status_code, 200)
-        self.assertContains(portada, "Ingresar")
+        self.assertRedirects(portada, "/login/", fetch_redirect_response=False)
         tablero = anon.get("/control/")
         self.assertEqual(tablero.status_code, 302)
         self.assertIn("/login/", tablero["Location"])

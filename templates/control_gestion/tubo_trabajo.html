@@ -18,6 +18,7 @@
             <p class="text-muted small mb-0">Tubo de trabajo: ingresado, pendiente, en proceso y realizado. Meta de cumplimiento 80%.</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+            <a download href="{% url 'exportar_tubo_excel' %}?{{ consulta_tubo }}" class="btn btn-success">Exportar trabajo a Excel</a>
             <a href="{% url 'compromiso_nuevo' %}" class="btn btn-warning text-dark fw-semibold">Nuevo compromiso</a>
             <a href="{% url 'agenda' %}" class="btn btn-outline-primary">Ver agenda</a>
             <span class="badge text-bg-success fs-6 py-2">{{ pct_realizado }}% realizado</span>
@@ -25,9 +26,12 @@
         </div>
     </div>
 
+    {% include 'componentes/_paginador.html' %}
+
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
+                <div class="col-12"><label class="form-label small fw-semibold" for="buscar-tubo">Búsqueda inteligente</label><input id="buscar-tubo" class="form-control" name="q" value="{{ q }}" placeholder="Código, RUT, vecino, funcionario o compromiso"></div>
                 <div class="col-md-4">
                     <label for="delegacion" class="form-label small fw-semibold">Delegación</label>
                     <select class="form-select" id="delegacion" name="delegacion">

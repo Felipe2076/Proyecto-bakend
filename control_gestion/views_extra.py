@@ -163,7 +163,12 @@ def actividades_diarias_view(request):
     bloqueo = requerir_modulo(request, "actividades")
     if bloqueo:
         return bloqueo
-    funcionarios = [funcionario_base(item) for item in queryset_funcionarios()]
+    from control_gestion.reportes import perfil_acceso,ambito
+    from core.busqueda import buscar
+    perfil,error=perfil_acceso(request,'actividades')
+    if error is not None: return error
+    funcionarios_qs=ambito(queryset_funcionarios(),perfil)
+    funcionarios = [funcionario_base(item) for item in funcionarios_qs]
     errores = {}
     valores = {}
     if request.method == "POST":
@@ -176,7 +181,7 @@ def actividades_diarias_view(request):
             "fecha_actividad": request.POST.get("fecha_actividad", ""),
             "imagen_verificadora": request.POST.get("imagen_verificadora", ""),
         }
-        if not id_funcionario:
+        if not id_funcionario or not funcionarios_qs.filter(codigo=id_funcionario).exists():
             errores["id_funcionario"] = "Seleccione el funcionario que registra la actividad."
             messages.error(request, "Seleccione un funcionario para registrar la actividad.")
         else:
@@ -193,14 +198,17 @@ def actividades_diarias_view(request):
                 )
                 return redirect("actividades_diarias")
 
-    actividades_qs = queryset_actividades()
+    actividades_qs = ambito(queryset_actividades(),perfil)
+    actividades_qs = buscar(actividades_qs,request.GET.get('q',''),['codigo','servicio','contacto','meta__nombre','funcionario__nombre','funcionario__rut','delegacion__nombre','codigo_verificador'])
     filtro_delegacion = request.GET.get("delegacion", "").strip()
     filtro_funcionario = request.GET.get("funcionario", "").strip()
     if filtro_delegacion:
         actividades_qs = actividades_qs.filter(delegacion__nombre=filtro_delegacion)
     if filtro_funcionario:
         actividades_qs = actividades_qs.filter(funcionario__codigo=filtro_funcionario)
-    actividades = [actividad_a_dict(item) for item in actividades_qs]
+    from core.paginacion import paginar
+    pagina_actividades,paginacion=paginar(request,actividades_qs)
+    actividades = [actividad_a_dict(item) for item in pagina_actividades]
     items_por_funcionario = {
         item.get("id_funcionario"): [meta.get("item") for meta in item.get("items", [])] for item in funcionarios
     }
@@ -214,7 +222,9 @@ def actividades_diarias_view(request):
         "valores": valores,
         "items_por_funcionario": items_por_funcionario,
         "fecha_hoy": timezone.localdate().strftime("%Y-%m-%d"),
-        "total": len(actividades),
+        "total": paginacion["paginator"].count,
+        **paginacion,
+        "q": request.GET.get("q", ""),
     }
     return render(request, "control_gestion/actividades.html", contexto)
 

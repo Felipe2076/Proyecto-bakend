@@ -2,15 +2,18 @@
 
 from django.core.validators import MaxValueValidator
 from django.db import models
+from core.codigos import CodigoAutomaticoMixin
 from django.utils import timezone
 
 from cuentas.models import Delegacion, Funcionario
 from requerimientos.models import Vecino
 
 
-class Meta(models.Model):
+class Meta(CodigoAutomaticoMixin, models.Model):
     """Meta o ítem de gestión (mantenedor Metas del mockup; también ítems de la Matriz SGR)."""
 
+    prefijo_codigo = "META-"
+    codigo = models.CharField("código", max_length=20, unique=True, null=True, blank=True, editable=False)
     nombre = models.CharField(max_length=150, unique=True)
     descripcion = models.CharField("descripción", max_length=255, blank=True)
 
@@ -23,9 +26,11 @@ class Meta(models.Model):
         return self.nombre
 
 
-class ItemFuncionario(models.Model):
+class ItemFuncionario(CodigoAutomaticoMixin, models.Model):
     """Meta asignada a un funcionario en el trimestre (ex funcionarios.json -> items)."""
 
+    prefijo_codigo = "ITEM-"
+    codigo = models.CharField("código", max_length=20, unique=True, null=True, blank=True, editable=False)
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, related_name="items")
     meta = models.ForeignKey(Meta, on_delete=models.PROTECT, related_name="items_funcionario")
     ponderador = models.PositiveSmallIntegerField("ponderador (%)", validators=[MaxValueValidator(100)])
@@ -48,9 +53,10 @@ class ItemFuncionario(models.Model):
         return round(self.avance_actual * 100 / self.meta_trimestre, 1) if self.meta_trimestre else 0
 
 
-class Actividad(models.Model):
+class Actividad(CodigoAutomaticoMixin, models.Model):
     """Actividad diaria con verificador (ex actividades.json)."""
 
+    prefijo_codigo = "ACT-"
     codigo = models.CharField("código", max_length=20, unique=True, help_text="Ej: ACT-001")
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, related_name="actividades")
     delegacion = models.ForeignKey(Delegacion, on_delete=models.PROTECT, related_name="actividades",
@@ -72,7 +78,7 @@ class Actividad(models.Model):
         return f"{self.codigo} - {self.servicio}"
 
 
-class Compromiso(models.Model):
+class Compromiso(CodigoAutomaticoMixin, models.Model):
     """Compromiso del tubo de trabajo (ex tubo_trabajo.json)."""
 
     class Estado(models.TextChoices):
@@ -81,6 +87,7 @@ class Compromiso(models.Model):
         EN_PROCESO = "EN PROCESO", "En proceso"
         REALIZADO = "REALIZADO", "Realizado"
 
+    prefijo_codigo = "TUB-"
     codigo = models.CharField("código", max_length=20, unique=True, help_text="Ej: TUB-001")
     descripcion = models.CharField("descripción", max_length=255)
     vecino = models.ForeignKey(Vecino, on_delete=models.PROTECT, related_name="compromisos")
@@ -100,9 +107,10 @@ class Compromiso(models.Model):
         return f"{self.codigo} - {self.descripcion}"
 
 
-class EventoAgenda(models.Model):
+class EventoAgenda(CodigoAutomaticoMixin, models.Model):
     """Evento de la agenda colectiva (ex agenda.json)."""
 
+    prefijo_codigo = "AG-"
     codigo = models.CharField("código", max_length=20, unique=True, help_text="Ej: AG-001")
     titulo = models.CharField("título", max_length=150)
     tipo = models.CharField(max_length=60)
@@ -123,9 +131,11 @@ class EventoAgenda(models.Model):
         return f"{self.fecha} {self.hora:%H:%M} - {self.titulo}"
 
 
-class Medicion(models.Model):
+class Medicion(CodigoAutomaticoMixin, models.Model):
     """Periodo de medición trimestral de la Matriz SGR (ex medicion.json)."""
 
+    prefijo_codigo = "MED-"
+    codigo = models.CharField("código", max_length=20, unique=True, null=True, blank=True, editable=False)
     periodo = models.CharField(max_length=80, unique=True)
     delegacion_piloto = models.ForeignKey(Delegacion, on_delete=models.PROTECT, related_name="mediciones",
                                           verbose_name="delegación piloto")
@@ -145,7 +155,7 @@ class Medicion(models.Model):
         return self.periodo
 
 
-class Notificacion(models.Model):
+class Notificacion(CodigoAutomaticoMixin, models.Model):
     """Aviso interno del sistema (ex notificaciones.json)."""
 
     class Tipo(models.TextChoices):
@@ -153,6 +163,7 @@ class Notificacion(models.Model):
         AVISO = "aviso", "Aviso"
         AGENDA = "agenda", "Agenda"
 
+    prefijo_codigo = "NTF-"
     codigo = models.CharField("código", max_length=20, unique=True, help_text="Ej: NTF-001")
     titulo = models.CharField("título", max_length=150)
     mensaje = models.TextField()

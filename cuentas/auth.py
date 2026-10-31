@@ -65,8 +65,11 @@ def etiqueta_rol(rol):
 def puede_ver(usuario, modulo):
     if not usuario:
         return False
-    rol = usuario.get("rol")
-    return modulo in MODULOS_POR_ROL.get(rol, set())
+    permiso = 'cuentas.acceso_' + modulo
+    if isinstance(usuario, dict):
+        return permiso in usuario.get('permisos', [])
+    user = getattr(usuario, 'user', usuario)
+    return bool(user and user.is_active and user.has_perm(permiso))
 
 
 def requerir_modulo(request, modulo):

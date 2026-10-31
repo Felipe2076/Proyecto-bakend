@@ -2,6 +2,7 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import SetPasswordForm
 
 from core.validaciones import MENSAJE_RUT, normalizar_rut, validar_rut
 from cuentas.models import Delegacion, Rol, Usuario
@@ -86,14 +87,7 @@ class UsuarioForm(FormularioBootstrap):
         self.fields["username"].help_text = "Se completa con el RUT del funcionario. Puede dejarlo en blanco."
         self.fields["funcionario"].required = True
         self.fields["funcionario"].help_text = "Persona con RUT. El acceso usa ese RUT."
-        if self.instance.pk is None:
-            self.fields["password"].required = True
-            self.fields["password"].widget.attrs["required"] = "required"
-            self.fields["password"].help_text = (
-                "Mínimo 8 caracteres, con mayúscula, minúscula, número y un símbolo."
-            )
-        else:
-            self.fields["password"].help_text = "Déjela en blanco para mantener la contraseña actual."
+        self.fields.pop("password", None)
 
     def clean_username(self):
         return (self.cleaned_data.get("username") or "").strip()
@@ -197,3 +191,16 @@ class NuevaContrasenaForm(forms.Form):
         if password and confirmacion and password != confirmacion:
             self.add_error("confirmacion", "Las contraseñas no coinciden.")
         return cleaned
+
+
+class RestablecerEnlaceForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        aplicar_bootstrap(self)
+
+    def clean_new_password1(self):
+        password=self.cleaned_data.get('new_password1','')
+        errores=errores_clave(password)
+        if errores:
+            raise forms.ValidationError(errores)
+        return password

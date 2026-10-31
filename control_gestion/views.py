@@ -62,6 +62,7 @@ def cargar_periodo_medicion():
     pct_esperado = round((dias_avance / dias_totales) * 100, 1) if dias_totales else 0.0
     return {
         "periodo": periodo_nombre,
+        "codigo": medicion.codigo if medicion else "",
         "delegacion_piloto": piloto,
         "fecha_inicio": fecha_inicio.strftime("%Y-%m-%d"),
         "fecha_termino": fecha_termino.strftime("%Y-%m-%d"),
@@ -232,31 +233,8 @@ def dashboard_cuellos_botella_view(request):
 
 
 def kanban_view(request):
-    requerimientos = _tickets()
-    pendientes, en_proceso, cuello_botella, resueltos = [], [], [], []
-    for req in requerimientos:
-        estado = req.get("estado_proceso", "")
-        dias = req.get("dias_transcurridos", 0)
-        if estado == "Resuelto":
-            resueltos.append(req)
-        elif estado == "Cuello Botella Central" or dias >= 6:
-            cuello_botella.append(req)
-        elif estado == "En Proceso":
-            en_proceso.append(req)
-        else:
-            pendientes.append(req)
-    contexto = {
-        "pendientes": pendientes,
-        "en_proceso": en_proceso,
-        "cuello_botella": cuello_botella,
-        "resueltos": resueltos,
-        "total_pendientes": len(pendientes),
-        "total_en_proceso": len(en_proceso),
-        "total_cuello_botella": len(cuello_botella),
-        "total_resueltos": len(resueltos),
-        "total_general": len(requerimientos),
-    }
-    return render(request, "control_gestion/kanban.html", contexto)
+    from control_gestion.kanban import tablero
+    return tablero(request)
 
 
 def areas_soporte_view(request):
@@ -338,6 +316,9 @@ def semaforo_sgr_view(request):
 
 
 def tubo_trabajo_view(request):
+    from control_gestion.reportes import perfil_acceso,tubo_filtrado
+    perfil,error=perfil_acceso(request,'compromisos')
+    if error is not None: return error
     if request.method == "POST":
         id_compromiso = request.POST.get("id_compromiso", "").strip()
         nuevo_estado = request.POST.get("estado", "").strip().upper()
@@ -346,7 +327,7 @@ def tubo_trabajo_view(request):
         else:
             from control_gestion.models import Compromiso
 
-            actualizado = Compromiso.objects.filter(codigo=id_compromiso).update(estado=nuevo_estado)
+            actualizado = tubo_filtrado(request,perfil,filtrar=False).filter(codigo=id_compromiso).update(estado=nuevo_estado)
             if actualizado:
                 messages.success(request, f"Compromiso {id_compromiso} actualizado a {nuevo_estado}.")
             else:
@@ -355,14 +336,12 @@ def tubo_trabajo_view(request):
 
     filtro_delegacion = request.GET.get("delegacion", "").strip()
     filtro_estado = request.GET.get("estado", "").strip().upper()
-    qs = queryset_compromisos()
-    if filtro_delegacion:
-        qs = qs.filter(delegacion__nombre=filtro_delegacion)
-    if filtro_estado:
-        qs = qs.filter(estado=filtro_estado)
+    qs = tubo_filtrado(request,perfil)
     compromisos = [compromiso_a_dict(item) for item in qs]
+    from core.paginacion import paginar
+    pagina_compromisos,paginacion=paginar(request,compromisos)
     columnas = {estado: [] for estado in ESTADOS_TUBO}
-    for item in compromisos:
+    for item in pagina_compromisos:
         estado = (item.get("estado") or "INGRESADO").upper()
         if estado not in columnas:
             estado = "INGRESADO"
@@ -374,11 +353,11 @@ def tubo_trabajo_view(request):
         "REALIZADO": "border-success",
     }
     columnas_lista = [
-        {"estado": estado, "items": columnas[estado], "total": len(columnas[estado]), "borde": bordes[estado]}
+        {"estado": estado, "items": columnas[estado], "total": sum((i.get("estado") or "INGRESADO").upper()==estado for i in compromisos), "borde": bordes[estado]}
         for estado in ESTADOS_TUBO
     ]
     total = len(compromisos)
-    realizados = len(columnas["REALIZADO"])
+    realizados = sum((i.get("estado") or "").upper()=="REALIZADO" for i in compromisos)
     pct_realizado = round((realizados / total) * 100, 1) if total else 0.0
     pct_pendiente = round(100 - pct_realizado, 1) if total else 0.0
     meta_tubo = obtener_parametros()["meta_tubo_porcentaje"] or META_TUBO_PORCENTAJE
@@ -408,11 +387,14 @@ def tubo_trabajo_view(request):
         "delegaciones": nombres_delegaciones(),
         "filtro_delegacion": filtro_delegacion,
         "filtro_estado": filtro_estado,
+        "q": request.GET.get("q", ""),
+        "consulta_tubo": request.GET.urlencode(),
         "total_compromisos": total,
         "pct_realizado": pct_realizado,
         "pct_pendiente": pct_pendiente,
         "ranking": ranking,
         "meta_tubo": meta_tubo,
+        **paginacion,
     }
     return render(request, "control_gestion/tubo_trabajo.html", contexto)
 

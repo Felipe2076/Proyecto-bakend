@@ -1,0 +1,12 @@
+.kanban-cards-container { min-height: 16rem; transition: background-color .15s, outline-color .15s; border-radius: 0 0 1rem 1rem; }
+.kanban-ticket { cursor: grab; transition: opacity .15s, box-shadow .15s; }
+.kanban-ticket a, .kanban-ticket select, .kanban-ticket button { cursor: pointer; }
+.kanban-ticket:focus-within { outline: 2px solid #9b1530; outline-offset: 2px; }
+.kanban-ticket.is-dragging { opacity: .45; cursor: grabbing; }
+.kanban-ticket.is-saving { opacity: .6; cursor: progress; }
+.kanban-column.is-over .kanban-cards-container { background: #fff0f2; outline: 2px dashed #9b1530; outline-offset: -4px; }
+.kanban-grip { font-size: 1.3rem; }
+.kanban-feedback { padding: .75rem 1rem; border-radius: .75rem; background: #f1f4f8; font-size: .9rem; }
+.kanban-feedback.is-error { background: #fbe9ec; color: #842029; }
+.kanban-feedback.is-success { background: #e8f5ef; color: #145c3a; }
+@media (prefers-reduced-motion: reduce) { .kanban-ticket, .kanban-cards-container { transition: none; } }

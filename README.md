@@ -1,25 +1,27 @@
 # SIGED-SGR Delegaciones La Serena
 
-Prototipo web de la **Primera Entrega** del Proyecto Integrado.
+Sistema de gestión de delegaciones municipales: atención ciudadana, tickets, actividad y evidencia, compromisos, agenda e indicadores. Equipo Los watones PC: Felipe, Aixa y Gabriel.
 
-**Equipo Los watones PC** — Felipe, Aixa y Gabriel  
-Municipalidad de La Serena · 6 delegaciones territoriales  
-Profesor: Jorge Cortés
+## Evaluación Sumativa 3
 
-El sistema cubre la navegación por módulos, los formularios con validación y la persistencia en **MySQL** (Django ORM). Los JSON de `data/` son la fuente para sembrar la base, no el almacén en tiempo de ejecución.
+Se conservan los requisitos originales y se completan grupos y permisos de Django, recuperación mediante enlace seguro y administración desde Django Templates. Las operaciones de la revisión se realizan en las pantallas municipales y no dependen de Django Admin.
 
-## Stack
+- RUT y contraseña, cierre de sesión y vistas protegidas.
+- Administrador, Jefatura/Supervisor, Funcionario y Ventanilla/Administrativo, con grupos y paneles diferenciados.
+- Administración propia de usuarios, asignación de grupos y permisos.
+- Recuperación por correo con token de Django, caducidad de diez minutos y confirmación del cambio. Se conserva el código de respaldo.
+- Las nuevas cuentas reciben una invitación en su propio correo y definen su contraseña.
+- Mantenedores: delegaciones, usuarios, roles, metas, tipos de atención, subatenciones, tipos de gestión y vecinos.
+- Transacciones: tickets y asignación, atenciones relacionadas y compromisos ciudadanos.
+- Se conservan búsquedas, códigos automáticos, Kanban, Excel y paginadores superiores.
 
-- Python 3.12+ y Django 6.1
-- MySQL 8.4 (utf8mb4, InnoDB). La suite puede usar `SIGED_DB=sqlite` si no hay servidor MySQL
-- `DEBUG` sale del entorno y queda **apagado** si no se define. Secretos (`SECRET_KEY`, `SIGED_CODE_HMAC_KEY`, `DB_*`) van en `.env`, que no se versiona. `SIGED_CODE_HMAC_KEY` es la clave del HMAC de los códigos de un solo uso; si no está, se usa `SECRET_KEY`
-- Bootstrap 5.3 + íconos locales (layout; la identidad visual no es una plantilla genérica)
-- Paleta municipal **roja**, tipografía display Fraunces (OFL) + Source Sans 3 (OFL)
-- Motion gratis: Lottie original self-hosted, Lordicon *wired/outline* FREE, Lenis (jsDelivr)
-- `requests` solo para el clima de demostración (Open-Meteo), con fallback
-- Licencias y lista de íconos: [`docs/ASSETS_LIBRES.md`](docs/ASSETS_LIBRES.md)
+Alcance, perfiles, seguridad y guion presencial: [docs/SUMATIVA3.md](docs/SUMATIVA3.md).
 
-## Cómo ejecutarlo en Windows (PowerShell)
+## Tecnología
+
+Python y Django según `requirements.txt`, MySQL 8.4/InnoDB, Django ORM, formularios Django, Bootstrap 5.3 e identidad municipal existente. Producción en AWS EC2 con Docker, Gunicorn, Apache y HTTPS. SQLite se usa exclusivamente en pruebas aisladas.
+
+## Instalación local
 
 ```powershell
 git clone https://github.com/Felipe2076/Proyecto-bakend.git
@@ -27,171 +29,63 @@ cd Proyecto-bakend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-Copy-Item .env.example .env      # completar SECRET_KEY, ALLOWED_HOSTS y DB_* (DEBUG queda False)
-python manage.py migrate
-python manage.py loaddata 01_catalogos 02_datos_sistema
-python manage.py importar_json
-python manage.py runserver
+Copy-Item .env.example .env
 ```
 
-Si PowerShell no deja activar el entorno:
+Completar una `SECRET_KEY` propia, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` y `ALLOWED_HOSTS` en `.env`. Mantener `DEBUG=False`. Crear una base MySQL vacía con utf8mb4 e InnoDB.
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\venv\Scripts\Activate.ps1
+python manage.py migrate
 ```
 
-Requiere MySQL 8.4+ con la base creada (ver *Backend con MySQL* más abajo). Abrir http://127.0.0.1:8000/
+Solo para una base **nueva de demostración**:
 
-### Linux / macOS
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env             # completar SECRET_KEY, ALLOWED_HOSTS y DB_* (DEBUG queda False)
-python manage.py migrate
+```powershell
 python manage.py loaddata 01_catalogos 02_datos_sistema
 python manage.py importar_json
 python manage.py runserver
 ```
 
-## Quién entra (simulación)
+`importar_json` genera claves de simulación en `.demo_credentials.local`, que no se versiona. No ejecutarlo para actualizar una base de producción con contraseñas y cuentas de trabajo.
 
-El ingreso es **RUT + clave**. Cada cuenta es un funcionario ficticio, con correo `@siged.test`. La marca `(ficticio)` no se guarda en el nombre: sale en pantalla cuando `es_simulacion` es verdadero. Hay al menos una cuenta por cada rol (`administrador`, `jefatura`, `funcionario`, `ventanilla`) en cada una de las seis delegaciones, más un administrador global (`USR-025`).
+Si la base ya existe, respaldarla y aplicar solamente las migraciones pendientes. Las migraciones de esta evaluación vinculan roles con grupos; no reemplazan las claves ni eliminan registros de negocio.
 
-Las claves no están en el repositorio. `data/usuarios.json` no trae clave, y el fixture y `D003` dejan `auth_user.password` en `!` (inutilizable). `importar_json` genera una clave distinta por cuenta, no la imprime, y la escribe solo en `.demo_credentials.local` (ignorado por Git, modo 0600). `SIGED_DEMO_PASSWORD` es opcional y solo para pruebas locales: si está definida, esa ejecución usa ese único valor y tampoco lo muestra. Con `DEBUG=True` el login lista los RUT, sin la clave.
+## Correo y recuperación
 
-| RUT | Rol | Delegación | Código |
-| --- | --- | --- | --- |
-| `33100024-8` | administrador | Delegación Av. del Mar | USR-017 |
-| `33100026-4` | funcionario | Delegación Av. del Mar | USR-019 |
-| `33100025-6` | jefatura | Delegación Av. del Mar | USR-018 |
-| `33100027-2` | ventanilla | Delegación Av. del Mar | USR-020 |
-| `33100011-6` | administrador | Delegación Centro | USR-001 |
-| `33100032-9` | administrador (global) | Delegación Centro | USR-025 |
-| `33100013-2` | funcionario | Delegación Centro | USR-006 |
-| `33100012-4` | jefatura | Delegación Centro | USR-005 |
-| `33100014-0` | ventanilla | Delegación Centro | USR-007 |
-| `33100016-7` | administrador | Delegación La Antena | USR-009 |
-| `33100018-3` | funcionario | Delegación La Antena | USR-011 |
-| `33100017-5` | jefatura | Delegación La Antena | USR-010 |
-| `33100019-1` | ventanilla | Delegación La Antena | USR-012 |
-| `33100020-5` | administrador | Delegación La Pampa | USR-013 |
-| `33100022-1` | funcionario | Delegación La Pampa | USR-015 |
-| `33100021-3` | jefatura | Delegación La Pampa | USR-014 |
-| `33100023-K` | ventanilla | Delegación La Pampa | USR-016 |
-| `33100028-0` | administrador | Delegación Las Compañías | USR-021 |
-| `33100030-2` | funcionario | Delegación Las Compañías | USR-023 |
-| `33100029-9` | jefatura | Delegación Las Compañías | USR-022 |
-| `33100031-0` | ventanilla | Delegación Las Compañías | USR-024 |
-| `33100015-9` | administrador | Delegación Rural | USR-008 |
-| `33100002-7` | funcionario | Delegación Rural | USR-003 |
-| `33100001-9` | jefatura | Delegación Rural | USR-002 |
-| `33100004-3` | ventanilla | Delegación Rural | USR-004 |
+Configurar `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` y `DEFAULT_FROM_EMAIL` en el entorno privado. Para Gmail se utiliza smtp.gmail.com, puerto 587, TLS y una contraseña de aplicación del remitente. Nunca guardar una contraseña o clave SMTP en Git.
 
-Al entrar, `/` abre **Mi panel**: el administrador ve la vista global, la jefatura ve su delegación y funcionario o ventanilla ven solo su panel personal.
+En `/recuperar/` se solicita el enlace. El correo lleva a `/recuperar/enlace/<uid>/<token>/`, donde se establece y confirma la nueva contraseña. El token vence en diez minutos y no se puede reutilizar tras el cambio. `/recuperar/codigo/` conserva la alternativa de seis dígitos. Probar la recepción con un correo real autorizado antes de presentar.
 
-## Pantallas ↔ casos de uso
+## Rutas principales
 
-| Módulo | Pantalla | CU |
-| --- | --- | --- |
-| Ingreso | Login | CU-E01 |
-| Atención ciudadana | Ingresar ticket (ventanilla / WhatsApp / correo) | CU-E02 |
-| Atención ciudadana | Listado de tickets + semáforo | CU-E03 |
-| Atención ciudadana | Ficha del ticket | CU-E04 |
-| Atención ciudadana | Tablero Kanban | CU-E05 |
-| Gestión interna | Actividad diaria | CU-E06 |
-| Gestión interna | Evidencia (upload simulado) | CU-E07 |
-| Gestión interna | Compromisos (CRUD) | CU-E08 |
-| Gestión interna | Agenda colectiva | CU-E09 |
-| Desempeño | Semáforo, indicadores y metas | CU-E10 |
-| Administración | Usuarios, cargos, parámetros | CU-E11 |
-| Atención / avisos | Encuesta 1–5 y notificaciones | CU-E12 |
-
-Detalle para el informe: [`docs/TRAZABILIDAD.md`](docs/TRAZABILIDAD.md).
-
-Delegaciones de demo: **Centro, Rural, La Antena, La Pampa, Av. del Mar, Las Compañías**.  
-Tipificación de ticket: **RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA, FELICITACIÓN**.
+- `/login/` y `/logout/`: ingreso y cierre.
+- `/`: panel según el perfil; sin sesión comienza por el login.
+- `/administracion/usuarios/`: creación y estado de cuentas.
+- `/administracion/grupos/`: grupos, permisos y asignación.
+- `/mantenedores/`: CRUD propio con formularios Django.
+- `/lista/`, `/control/kanban/`: tickets y seguimiento.
+- `/control/actividades/`, `/control/tubo-trabajo/`, `/control/agenda/`: gestión interna.
+- `/control/semaforo-sgr/`: desempeño e indicadores.
 
 ## Pruebas
 
-Con MySQL local (variables `DB_*` en `.env`) o, si no hay servidor, con SQLite solo para la suite:
+Las pruebas crean una base temporal y no deben apuntarse a los datos de producción.
 
-```bash
-SIGED_DB=sqlite SECRET_KEY=clave-de-prueba DEBUG=False python manage.py test
-SIGED_DB=sqlite SECRET_KEY=clave-de-prueba DEBUG=False python tests_siged.py
+```powershell
+$env:SIGED_DB='sqlite'
+$env:SIGED_SQLITE_PATH=':memory:'
+$env:SECRET_KEY='solo-para-pruebas'
+python manage.py test --noinput
 ```
 
-## Documentación de contexto
+Incluyen autenticación, grupos, accesos directos, revocación de permisos, invitaciones, recuperación por enlace/código, tokens alterados o caducados, CRUD, ámbito territorial, Excel, Kanban y paginación. Las importaciones de prueba usan archivos temporales de claves.
 
-- `Documentacion_SIGED_LaSerena.pdf` / `.docx` (si el equipo las adjunta en la entrega)
-- Marca propia abstracta (faro + costa), no el escudo municipal con copyright. Ver [`docs/ASSETS_LIBRES.md`](docs/ASSETS_LIBRES.md).
+## Publicación y evidencias
 
-## Backend con MySQL (Evaluación Sumativa 2)
+Instancia `Gestion_municipalidad_delegaciones`, en us-east-1. [Login publicado](https://54.205.69.94/login/). La sesión del laboratorio de AWS Academy y la instancia deben estar activas durante la revisión.
 
-Los datos de trabajo viven en **MySQL** (Django ORM + Django Admin). Los `data/*.json` quedan como origen para sembrar; el login no los lee.
+Antes de desplegar: respaldar código y MySQL, verificar migraciones, construir la imagen, ejecutar pruebas y cambiar a la versión sana. Conservar la anterior para recuperación. Variables privadas y claves SSH no forman parte de Git ni de los documentos.
 
-1. Copiar `.env.example` como `.env` y completar `SECRET_KEY`, `ALLOWED_HOSTS` y las variables `DB_*` (el `.env` no se sube a GitHub). `DEBUG` no se define, o se deja en `False`.
-2. Crear la base vacía (`CREATE DATABASE gestion_muni CHARACTER SET utf8mb4;`). Las tablas son **InnoDB** (se fuerza en `settings.py`).
-3. Seguir *Aplicar en un MySQL local* (respaldo con `mysqldump` si la base ya tiene datos).
+Para tres integrantes se requieren seis mantenedores y tres transacciones. El sistema dispone de módulos para demostrarlos; el guion debe realizar las operaciones y comprobar su persistencia.
 
-- `fixtures/01_catalogos.json`: roles, delegaciones, tipos de gestión, tipos/sub atención, canales, metas y parámetros.
-- `fixtures/02_datos_sistema.json`: funcionarios, vecinos y cuentas de simulación. Las claves de `auth.user` van hasheadas.
-- `python manage.py importar_json [--sin-auth]`: relee `data/*.json`. Si el JSON no trae clave, usa la convención de simulación y la guarda hasheada.
-
-## Aplicar en un MySQL local
-
-No mezclar los dos caminos sobre la misma base: o Django crea el esquema, o se aplican los scripts a mano y después se marcan las migraciones como hechas.
-
-1. Respaldo antes de tocar datos existentes:
-
-```bash
-mysqldump -u "$DB_USER" -p --single-transaction --routines gestion_muni > backups/gestion_muni_antes.sql
-```
-
-2. Camino recomendado (base nueva o la de desarrollo):
-
-```bash
-python manage.py migrate
-python manage.py loaddata 01_catalogos 02_datos_sistema
-python manage.py importar_json
-```
-
-`importar_json` reemplaza la clave de cada cuenta de simulación y reescribe `.demo_credentials.local`. Hay que ejecutarlo después de `loaddata` o de `D003`: sin ese paso las cuentas quedan con clave inutilizable. El código de recuperación se envía por correo (consola del proceso si `DEBUG=True`). En `codigo_un_uso` (`V019`) solo queda el HMAC-SHA256, de un solo uso. La clave de ese HMAC es `SIGED_CODE_HMAC_KEY` (si falta, `SECRET_KEY`).
-
-3. Base que **ya tiene filas** (EC2, WAMP u otra copia). Primero un ensayo sobre una copia, no sobre la base real. No usar `loaddata`: el fixture choca con correos que ya existen.
-
-```bash
-mysqldump -u "$DB_USER" -p --single-transaction --routines gestion_muni > backups/gestion_muni_antes.sql
-mysql -u "$DB_USER" -p -e "CREATE DATABASE gestion_muni_ensayo CHARACTER SET utf8mb4"
-mysql -u "$DB_USER" -p gestion_muni_ensayo < backups/gestion_muni_antes.sql
-```
-
-Apuntar `DB_NAME` a `gestion_muni_ensayo` y ejecutar:
-
-```bash
-python manage.py migrate
-python manage.py importar_json
-mysql -u "$DB_USER" -p gestion_muni_ensayo < sql/verificacion/B7__rut_simulacion.sql
-```
-
-Cada consulta de `sql/verificacion/B7__rut_simulacion.sql` tiene que devolver 0. Mide que no quede un RUT fuera de 33.xxx.xxx en funcionarios, usuarios ni vecinos, sin importar el id (el vecino 22 y `FUN-DEMO-ADMIN` entran igual que el resto). Si alguna no da 0, no seguir con la base real. Si todas dan 0, repetir `migrate` e `importar_json` sobre la base de trabajo y volver a correr B7. Repetir ese par no duplica personas.
-
-`importar_json` reconoce cada cuenta por su código (`USR-001`), no por el funcionario que tenga en ese momento. Si los enlaces vienen corridos (USR-001 en `FUN-DEMO-ADMIN` y USR-005 en `FUN-011`, como en el WAMP) o si solo existen los cuatro alias `admin`, `jefatura`, `funcionario` y `ventanilla` (como en EC2), los alinea con `data/usuarios.json` dentro de la misma transacción. `USR-001` queda en `FUN-011`. `FUN-DEMO-ADMIN` sigue como funcionario de simulación, sin cuenta: no se duplica una persona y el alias `admin` deja de entrar. Esos alias, y la clave que tenían, quedan inutilizables.
-
-4. Camino manual, equivalente, sobre un esquema que ya tiene las tablas de `0001`:
-
-```bash
-mysql gestion_muni < sql/migraciones/V017__funcionario_rut_nombres.sql
-mysql gestion_muni < sql/datos/D003__datos_simulacion.sql
-mysql gestion_muni < sql/migraciones/V018__rut_obligatorio.sql
-mysql gestion_muni < sql/migraciones/V019__codigo_un_uso.sql
-python manage.py importar_json
-mysql gestion_muni < sql/verificacion/B7__rut_simulacion.sql
-python manage.py migrate --fake
-```
-
-`D003` actualiza el catálogo por código (`FUN-001`…`FUN-032`) y, al final, cualquier otra fila que siga fuera del rango. Detalle en [`sql/README.md`](sql/README.md).
-
-El usuario MySQL de la aplicación solo necesita permisos sobre `gestion_muni` para el trabajo de Django (consultar, insertar, actualizar, borrar y, al migrar, alterar). La clave va en `.env`, no en este archivo. Host, llaves y consolas de administración del servidor no se documentan en el repositorio.
+Licencias: [docs/ASSETS_LIBRES.md](docs/ASSETS_LIBRES.md). Los documentos de etapas anteriores se conservan como referencia y no sustituyen las evidencias actuales de Sumativa 3.

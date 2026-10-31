@@ -2,14 +2,22 @@ import re
 from datetime import date
 
 from django.conf import settings
+from django.core import signing
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.views import PasswordResetConfirmView
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.shortcuts import redirect, render
+from django.db import transaction
+from smtplib import SMTPException
 
 from core.validaciones import MENSAJE_NOMBRE, MENSAJE_RUT, formatear_rut, rut_normalizado_valido, validar_nombre
 from cuentas.auth import requerir_modulo, usuario_sesion
-from cuentas.forms import NuevaContrasenaForm
+from cuentas.forms import NuevaContrasenaForm, RestablecerEnlaceForm
 from cuentas.models import Cargo, Delegacion, EstadoRegistro, Funcionario, ParametroSistema, Rol, Usuario
 from cuentas.recuperacion import emitir_codigo, enviar_codigo, verificar_codigo
 from cuentas.servicios import (
@@ -123,13 +131,31 @@ def _usuario_en_recuperacion(request):
     return usuario, datos
 
 
+def _correo_habilitado():
+    backend = settings.EMAIL_BACKEND
+    return backend == 'django.core.mail.backends.locmem.EmailBackend' or (
+        backend == 'django.core.mail.backends.smtp.EmailBackend'
+        and settings.EMAIL_HOST not in ('', 'localhost', '127.0.0.1', '::1')
+    )
+
+
 def _emitir_y_enviar(request, usuario):
-    ip = (request.META.get("REMOTE_ADDR") or "")[:45]
-    codigo = emitir_codigo(usuario, ip=ip)
-    enviar_codigo(usuario, codigo)
+    try:
+        with transaction.atomic():
+            codigo = emitir_codigo(usuario, ip=(request.META.get('REMOTE_ADDR') or '')[:45])
+            uid=urlsafe_base64_encode(force_bytes(usuario.user_id))
+            token=default_token_generator.make_token(usuario.user)
+            enlace=request.build_absolute_uri(reverse('recuperar_enlace',kwargs={'uidb64':uid,'token':token}))
+            enviar_codigo(usuario, codigo, enlace=enlace)
+        return True
+    except (OSError, SMTPException, RuntimeError):
+        messages.error(request, 'No se pudo enviar el correo. Inténtelo más tarde o contacte al administrador.')
+        return False
 
 
 def recuperar_contrasena_view(request):
+    if not _correo_habilitado():
+        return render(request, 'cuentas/recuperar.html', {'errores': {}, 'correo': '', 'correo_no_disponible': True})
     errores = {}
     correo = ""
     if request.method == "POST":
@@ -145,12 +171,13 @@ def recuperar_contrasena_view(request):
             if usuario is None or usuario.user_id is None:
                 errores["correo"] = "No encontramos un usuario activo con ese correo."
             else:
-                _emitir_y_enviar(request, usuario)
+                if not _emitir_y_enviar(request, usuario):
+                    return redirect("recuperar_contrasena")
                 _sesion_recuperacion(request, usuario, verificado=False)
                 messages.success(
                     request,
-                    "Enviamos un código de 6 dígitos a su correo. "
-                    "Vence en 10 minutos y solo puede usarse una vez.",
+                    "Enviamos un enlace seguro y un código de respaldo a su correo. "
+                    "Vencen en 10 minutos. Puede abrir el enlace para crear su nueva contraseña.",
                 )
                 return redirect("validar_codigo")
     return render(request, "cuentas/recuperar.html", {"errores": errores, "correo": correo})
@@ -164,7 +191,8 @@ def validar_codigo_view(request):
     errores = {}
     if request.method == "POST":
         if (request.POST.get("accion") or "") == "reenviar":
-            _emitir_y_enviar(request, usuario)
+            if not _correo_habilitado() or not _emitir_y_enviar(request, usuario):
+                return redirect("recuperar_contrasena")
             _sesion_recuperacion(request, usuario, verificado=False)
             messages.success(
                 request,
@@ -226,6 +254,8 @@ def _usuario_a_fila(usuario):
         "rol": usuario.rol.nombre if usuario.rol_id else "",
         "cargo": usuario.cargo.nombre if usuario.cargo_id else "",
         "activo": usuario.activo,
+        "delegacion": usuario.delegacion.nombre if usuario.delegacion_id else "",
+        "codigo": usuario.codigo,
     }
 
 
@@ -256,7 +286,6 @@ def administracion_usuarios_view(request):
             return redirect("admin_usuarios")
 
         rut_ingresado = (request.POST.get("rut") or "").strip()
-        password = (request.POST.get("password") or "").strip()
         nombre = (request.POST.get("nombre") or "").strip()
         email = (request.POST.get("email") or "").strip()
         rol_codigo = (request.POST.get("rol") or "").strip()
@@ -277,13 +306,14 @@ def administracion_usuarios_view(request):
             errores["rut"] = MENSAJE_RUT
         elif Funcionario.objects.filter(rut=rut).exists() or Usuario.objects.filter(username=rut).exists():
             errores["rut"] = "Ese RUT ya está registrado."
-        fallas_clave = errores_clave(password)
-        if fallas_clave:
-            errores["password"] = " ".join(fallas_clave)
         if len(nombre) < 5:
             errores["nombre"] = "Ingrese el nombre completo (mínimo 5 caracteres)."
         elif not validar_nombre(nombre):
             errores["nombre"] = MENSAJE_NOMBRE
+        if not email:
+            errores["email"] = "Ingrese el correo del usuario para enviar su activación."
+        if not _correo_habilitado():
+            errores["email"] = "El envío de correo no está configurado. No se creó la cuenta."
         if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
             errores["email"] = "Ingrese un correo válido."
         if email and Usuario.objects.filter(correo__iexact=email).exists():
@@ -302,62 +332,76 @@ def administracion_usuarios_view(request):
         if errores:
             messages.error(request, "Revise los campos marcados antes de guardar el usuario.")
         else:
-            delegacion, _ = Delegacion.objects.get_or_create(
-                nombre=delegacion_nombre, defaults={"comuna": "La Serena"}
-            )
-            partes = [p for p in nombre.split() if p]
-            nombres = partes[0][:60]
-            paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
-            materno = (" ".join(partes[2:])[:60] or None) if len(partes) > 2 else None
-            if nombres == "Registro":
-                gen_n, gen_p, gen_m = identidad(Funcionario.objects.count() + 1)
-                nombres, paterno, materno = gen_n, gen_p, gen_m
-            visible = nombre_almacenado(nombres, paterno, materno or "")
-            if funcionario is None:
-                funcionario = Funcionario(
-                    codigo=siguiente_codigo(Funcionario, "codigo", "FUN-", 3),
-                    cargo=cargo,
-                    delegacion=delegacion,
-                    estado=EstadoRegistro.ACTIVO,
-                )
-            funcionario.rut = rut
-            funcionario.nombres = nombres
-            funcionario.apellido_paterno = paterno
-            funcionario.apellido_materno = materno
-            funcionario.nombre = visible[:120]
-            funcionario.cargo = cargo
-            funcionario.delegacion = delegacion
-            funcionario.es_simulacion = False
-            funcionario.save()
-            correo = email or f"{funcionario.codigo.lower()}@siged.test"
-            from django.contrib.auth import get_user_model
+            try:
+                with transaction.atomic():
+                    delegacion, _ = Delegacion.objects.get_or_create(
+                        nombre=delegacion_nombre, defaults={"comuna": "La Serena"}
+                    )
+                    partes = [p for p in nombre.split() if p]
+                    nombres = partes[0][:60]
+                    paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
+                    materno = (" ".join(partes[2:])[:60] or None) if len(partes) > 2 else None
+                    if nombres == "Registro":
+                        gen_n, gen_p, gen_m = identidad(Funcionario.objects.count() + 1)
+                        nombres, paterno, materno = gen_n, gen_p, gen_m
+                    visible = nombre_almacenado(nombres, paterno, materno or "")
+                    if funcionario is None:
+                        funcionario = Funcionario(
+                            codigo=siguiente_codigo(Funcionario, "codigo", "FUN-", 3),
+                            cargo=cargo,
+                            delegacion=delegacion,
+                            estado=EstadoRegistro.ACTIVO,
+                        )
+                    funcionario.rut = rut
+                    funcionario.nombres = nombres
+                    funcionario.apellido_paterno = paterno
+                    funcionario.apellido_materno = materno
+                    funcionario.nombre = visible[:120]
+                    funcionario.cargo = cargo
+                    funcionario.delegacion = delegacion
+                    funcionario.es_simulacion = False
+                    funcionario.save()
+                    correo = email or f"{funcionario.codigo.lower()}@siged.test"
+                    from django.contrib.auth import get_user_model
 
-            User = get_user_model()
-            user = User(username=rut, email=correo, is_active=True)
-            user.first_name = nombres[:150]
-            user.last_name = paterno[:150]
-            user.set_password(password)
-            user.save()
-            Usuario.objects.create(
-                codigo=siguiente_codigo(Usuario, "codigo", "USR-", 3),
-                user=user,
-                username=rut,
-                nombre=funcionario.nombre,
-                correo=correo,
-                rol=rol,
-                cargo=cargo,
-                delegacion=delegacion,
-                funcionario=funcionario,
-                estado=EstadoRegistro.ACTIVO,
-            )
-            messages.success(request, f"Usuario {formatear_rut(rut)} creado.")
-            return redirect("admin_usuarios")
+                    User = get_user_model()
+                    user = User(username=rut, email=correo, is_active=True)
+                    user.first_name = nombres[:150]
+                    user.last_name = paterno[:150]
+                    user.set_unusable_password()
+                    user.save()
+                    creado = Usuario.objects.create(
+                        codigo=siguiente_codigo(Usuario, "codigo", "USR-", 3),
+                        user=user,
+                        username=rut,
+                        nombre=funcionario.nombre,
+                        correo=correo,
+                        rol=rol,
+                        cargo=cargo,
+                        delegacion=delegacion,
+                        funcionario=funcionario,
+                        estado=EstadoRegistro.ACTIVO,
+                    )
+                    codigo = emitir_codigo(creado, ip=(request.META.get('REMOTE_ADDR') or '')[:45])
+                    token = signing.dumps({'usuario': creado.pk}, salt='siged-activar-cuenta')
+                    enlace = request.build_absolute_uri(reverse('activar_cuenta')) + '?token=' + token
+                    enviar_codigo(creado, codigo, enlace=enlace, activacion=True)
 
+            except (OSError, SMTPException, RuntimeError):
+                messages.error(request, 'No se pudo enviar la invitación. No se creó el usuario; revise el correo e intente nuevamente.')
+            else:
+                messages.success(request, f'Usuario {formatear_rut(rut)} creado. Invitación enviada a {email}; el usuario definirá su contraseña.')
+                return redirect('admin_usuarios')
+
+    from control_gestion.reportes import usuarios_filtrados
+    listado_usuarios = usuarios_filtrados(request)
+    from core.paginacion import paginar
+    pagina_usuarios,paginacion=paginar(request,listado_usuarios)
     roles = list(Rol.objects.order_by("nombre").values_list("codigo", "nombre")) or ROLES_DISPONIBLES
     contexto = {
         "usuarios": [
             _usuario_a_fila(item)
-            for item in Usuario.objects.select_related("rol", "cargo").order_by("nombre")
+            for item in pagina_usuarios
         ],
         "funcionarios": [
             {"id_funcionario": fun.codigo, "nombre": fun.nombre_mostrado}
@@ -369,6 +413,9 @@ def administracion_usuarios_view(request):
         "errores": errores,
         "valores": valores,
         "seccion": "usuarios",
+        "q": request.GET.get("q", ""),
+        "consulta_usuarios": request.GET.urlencode(),
+        **paginacion,
     }
     return render(request, "cuentas/usuarios.html", contexto)
 
@@ -527,3 +574,45 @@ def administracion_parametros_view(request):
         "seccion": "parametros",
     }
     return render(request, "cuentas/parametros.html", contexto)
+
+
+def activar_cuenta_view(request):
+    try:
+        datos = signing.loads(request.GET.get('token', ''), salt='siged-activar-cuenta', max_age=600)
+        usuario = Usuario.objects.select_related('user').get(pk=datos['usuario'], estado=EstadoRegistro.ACTIVO, user__is_active=True)
+        if usuario.user.has_usable_password():
+            raise ValueError('Cuenta ya activada')
+    except (signing.BadSignature, Usuario.DoesNotExist, KeyError, ValueError, TypeError):
+        messages.error(request, 'La invitación no es válida o expiró. Solicite un código nuevo en Recuperar contraseña.')
+        return redirect('recuperar_contrasena')
+    request.session.cycle_key()
+    _sesion_recuperacion(request, usuario, verificado=False)
+    messages.info(request, 'Ingrese el código de 6 dígitos recibido por correo para crear su contraseña.')
+    return redirect('validar_codigo')
+
+
+class RestablecerEnlaceView(PasswordResetConfirmView):
+    template_name='cuentas/restablecer_enlace.html'
+    form_class=RestablecerEnlaceForm
+    post_reset_login=False
+
+    def get_user(self, uidb64):
+        user=super().get_user(uidb64)
+        if user is None or not user.is_active:
+            return None
+        if not Usuario.objects.filter(user=user,estado=EstadoRegistro.ACTIVO).exists():
+            return None
+        return user
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            response=super().form_valid(form)
+            from cuentas.models import CodigoUnUso
+            from django.utils import timezone
+            CodigoUnUso.objects.filter(usuario__user=self.user,usado_en__isnull=True,anulado_en__isnull=True).update(anulado_en=timezone.now())
+        self.request.session.pop('recuperacion',None)
+        messages.success(self.request,'Su contraseña fue actualizada. Ya puede ingresar con su nueva contraseña.')
+        return response
+
+    def get_success_url(self):
+        return reverse('login')

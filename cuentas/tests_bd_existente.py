@@ -1,6 +1,7 @@
 """Secuencia migrate → importar_json sobre una base vacía y sobre una con filas viejas."""
 
 import os
+import json
 import subprocess
 import sys
 import tempfile
@@ -29,8 +30,16 @@ def _entorno(ruta):
 
 
 def _manage(entorno, *args):
+    argumentos=list(args)
+    if argumentos and argumentos[0]=='importar_json':
+        # Los ensayos de importación nunca sobrescriben las claves locales reales.
+        archivo=str(Path(entorno['SIGED_SQLITE_PATH']).with_suffix('.claves.local'))
+        codigo=("from cuentas import simulacion; from django.core.management import call_command; "
+            + 'simulacion.ARCHIVO_CLAVES_LOCAL='+repr(archivo)+'; '
+            + 'call_command('+repr('importar_json')+', '+', '.join(repr(x) for x in argumentos[1:])+')')
+        argumentos=['shell','-c',codigo]
     resultado = subprocess.run(
-        [sys.executable, "manage.py", *args],
+        [sys.executable, "manage.py", *argumentos],
         cwd=RAIZ,
         env=entorno,
         check=False,
@@ -45,7 +54,11 @@ def _manage(entorno, *args):
 
 SEMILLA = r"""
 from django.db import connection
-from cuentas.models import Cargo, Delegacion, Rol
+from django.db.migrations.executor import MigrationExecutor
+historicos=MigrationExecutor(connection).loader.project_state([('cuentas','0002_funcionario_rut'),('requerimientos','0002_vecino_es_simulacion'),('control_gestion','0001_initial')]).apps
+Cargo=historicos.get_model('cuentas','Cargo')
+Delegacion=historicos.get_model('cuentas','Delegacion')
+Rol=historicos.get_model('cuentas','Rol')
 from cuentas.vocabulario import DELEGACIONES_OFICIALES
 for nombre in DELEGACIONES_OFICIALES:
     Delegacion.objects.get_or_create(nombre=nombre, defaults={"comuna": "La Serena"})
@@ -303,7 +316,7 @@ class SecuenciaDatosPreviosTests(SimpleTestCase):
             entorno = _entorno(ruta)
             _manage(entorno, "migrate", "cuentas", "0002", "--skip-checks")
             _manage(entorno, "migrate", "requerimientos", "0002", "--skip-checks")
-            _manage(entorno, "migrate", "control_gestion", "--skip-checks")
+            _manage(entorno, "migrate", "control_gestion", "0001", "--skip-checks")
             _manage(entorno, "shell", "-c", SEMILLA)
             _manage(entorno, "migrate", "--skip-checks")
             _manage(entorno, "importar_json", "--skip-checks")

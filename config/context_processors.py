@@ -42,12 +42,26 @@ def _notificaciones_base():
 
 
 def sesion_siged(request):
+    from cuentas.mantenedores import MANTENEDORES
+    from django.urls import reverse
     usuario = usuario_sesion(request)
+    presentacion={
+        'delegaciones':('Delegaciones','geo-alt'), 'usuarios':('Usuarios','people'),
+        'roles':('Roles','person-badge'), 'metas':('Metas','bullseye'),
+        'tipos-atencion':('Tipo de Atención','heart-pulse'),
+        'sub-atenciones':('Sub Atención','diagram-2'), 'atenciones':('Atenciones','clipboard2-pulse'),
+        'tipos-gestion':('Tipo de Gestión','signpost-split'), 'vecinos':('Vecinos','houses'),
+    }
     leidas = set(request.session.get("notificaciones_leidas") or [])
     notificaciones = _notificaciones_base()
     pendientes = [item for item in notificaciones if item.get("id") not in leidas]
     return {
         "usuario_actual": usuario,
+        "mantenedores_autorizados": [
+            {'nombre':m.nombre,'titulo':presentacion[m.ruta][0],'icono':presentacion[m.ruta][1],'url':reverse(m.nombre)}
+            for m in MANTENEDORES if request.user.is_authenticated and request.user.has_perm(
+                f'{m.modelo._meta.app_label}.view_{m.modelo._meta.model_name}')
+        ],
         "puede_requerimientos": puede_ver(usuario, "requerimientos"),
         "puede_matriz_sgr": puede_ver(usuario, "matriz_sgr"),
         "puede_control_gestion": puede_ver(usuario, "control_gestion"),

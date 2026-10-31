@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.db import models
+from core.codigos import CodigoAutomaticoMixin
 
 
 class EstadoRegistro(models.TextChoices):
@@ -16,11 +17,30 @@ class Rol(models.Model):
                               help_text="Clave usada por el sistema (ej: administrador).")
     nombre = models.CharField(max_length=80, unique=True)
     descripcion = models.CharField("descripción", max_length=255, blank=True)
+    grupo = models.OneToOneField('auth.Group', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='rol_municipal', verbose_name='grupo de permisos')
 
     class Meta:
         verbose_name = "rol"
         verbose_name_plural = "roles"
         ordering = ["nombre"]
+        permissions = [
+            ('acceso_requerimientos', 'Acceder a Atención ciudadana y tickets'),
+            ('acceso_matriz_sgr', 'Acceder a Indicadores y metas'),
+            ('acceso_control_gestion', 'Acceder a Panel de gestión'),
+            ('acceso_actividades', 'Acceder a Actividad y evidencia'),
+            ('acceso_agenda', 'Acceder a Agenda colectiva'),
+            ('acceso_compromisos', 'Acceder a Compromisos ciudadanos'),
+            ('acceso_notificaciones', 'Acceder a Avisos'),
+            ('acceso_encuestas', 'Acceder a Encuestas'),
+            ('acceso_administracion', 'Acceder a Administración del sistema'),
+            ('acceso_mantenedores', 'Acceder a Mantenedores autorizados'),
+        ]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from cuentas.perfiles import asegurar_grupo
+        asegurar_grupo(self, self._state.db)
 
     def __str__(self):
         return self.nombre
@@ -42,9 +62,10 @@ class Delegacion(models.Model):
         return self.nombre
 
 
-class Cargo(models.Model):
+class Cargo(CodigoAutomaticoMixin, models.Model):
     """Cargo o función de un funcionario municipal."""
 
+    prefijo_codigo = "CARGO-"
     codigo = models.CharField("código", max_length=20, unique=True, null=True, blank=True)
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.CharField("descripción", max_length=255, blank=True)
@@ -59,13 +80,14 @@ class Cargo(models.Model):
         return self.nombre
 
 
-class Funcionario(models.Model):
+class Funcionario(CodigoAutomaticoMixin, models.Model):
     """Persona trabajadora: RUT, nombre y delegación viven en esta fila.
 
     ``nombre`` se conserva como texto compuesto para las pantallas actuales.
     El identificador de acceso es ``rut`` (normalizado, sin puntos).
     """
 
+    prefijo_codigo = "FUN-"
     codigo = models.CharField("código", max_length=20, unique=True, help_text="Ej: FUN-001")
     rut = models.CharField(
         "RUT",
@@ -203,6 +225,8 @@ class Usuario(models.Model):
         if "(" in self.nombre or ")" in self.nombre:
             raise ValidationError({"nombre": MENSAJE_NOMBRE})
         super().save(*args, **kwargs)
+        from cuentas.perfiles import sincronizar_usuario
+        sincronizar_usuario(self)
 
 
 class ParametroSistema(models.Model):
@@ -275,3 +299,8 @@ class CodigoUnUso(models.Model):
 
     def __str__(self):
         return f"{self.proposito} usuario {self.usuario_id}"
+
+
+class SecuenciaCodigo(models.Model):
+    clave = models.CharField(max_length=150, unique=True)
+    ultimo = models.PositiveBigIntegerField(default=0)

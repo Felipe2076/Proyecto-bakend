@@ -40,7 +40,7 @@
                             <tbody>
                                 {% for item in funcionario.items %}
                                 <tr>
-                                    <td>{{ item.item }}</td>
+                                    <td><code>{{ item.codigo }} · {{ item.codigo_meta }}</code><br>{{ item.item }}</td>
                                     <td>{{ item.ponderador }}%</td>
                                     <td>{{ item.meta_trimestre|floatformat:0 }}</td>
                                     <td>{{ item.avance_actual|floatformat:0 }}</td>

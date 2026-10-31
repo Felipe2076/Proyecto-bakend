@@ -30,15 +30,8 @@ def errores_clave(password):
 
 def siguiente_codigo(modelo, campo, prefijo, ancho=3, minimo=0):
     """Siguiente código con prefijo (USR-001, TK-1001, ACT-001)."""
-    patron = re.compile(rf"^{re.escape(prefijo)}(\d+)$")
-    maximo = minimo
-    for valor in modelo.objects.values_list(campo, flat=True):
-        if not valor:
-            continue
-        coincidencia = patron.match(str(valor))
-        if coincidencia:
-            maximo = max(maximo, int(coincidencia.group(1)))
-    return f"{prefijo}{maximo + 1:0{ancho}d}"
+    from core.codigos import siguiente
+    return siguiente(modelo,campo,prefijo,ancho,minimo)
 
 
 def obtener_parametros():
@@ -145,6 +138,8 @@ def sesion_desde_usuario(usuario):
         "delegacion": delegacion,
         "id_funcionario": id_funcionario,
         "activo": usuario.activo,
+        "grupo": usuario.rol.grupo.name if usuario.rol_id and usuario.rol.grupo_id else "",
+        "permisos": sorted(usuario.user.get_all_permissions()) if usuario.user_id and usuario.activo and usuario.user.is_active else [],
     }
 
 

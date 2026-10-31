@@ -64,7 +64,7 @@ class ValidacionRutTests(SimpleTestCase):
                 "--input-type=module",
                 "-e",
                 (
-                    f"import * as v from '{script.as_posix()}';"
+                    f"import * as v from '{script.as_uri()}';"
                     "const casos = ['33.100.001-9','33100006-k','33.100.001-0',''];"
                     "const salida = casos.map((rut) => v.validarRut(rut));"
                     "if (v.dvRut('33100006') !== 'K') process.exit(2);"

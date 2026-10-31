@@ -100,6 +100,8 @@ class VecinoForm(NombreMinimoMixin, FormularioBootstrap):
 
 
 class AtencionForm(FormularioBootstrap):
+    busqueda_vecino = forms.CharField(label='Buscar vecino por RUT o nombre', required=False,
+        widget=forms.TextInput(attrs={'data-buscar-vecino':'','placeholder':'RUT con o sin puntos, o nombre','autocomplete':'off'}))
     fecha = forms.DateTimeField(
         label="Fecha",
         widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
@@ -109,6 +111,7 @@ class AtencionForm(FormularioBootstrap):
     class Meta:
         model = Atencion
         fields = [
+            "busqueda_vecino",
             "vecino",
             "tipo_atencion",
             "sub_atencion",
@@ -131,6 +134,7 @@ class AtencionForm(FormularioBootstrap):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["vecino"].widget.attrs["data-selector-vecino"] = ""
         if self.is_bound:
             return
         from django.utils import timezone

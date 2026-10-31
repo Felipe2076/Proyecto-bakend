@@ -74,18 +74,24 @@ def emitir_codigo(usuario, ip: str | None = None) -> str:
     return codigo
 
 
-def enviar_codigo(usuario, codigo) -> None:
+def enviar_codigo(usuario, codigo, enlace=None, activacion=False) -> None:
     """Envía el código. Con DEBUG el backend de consola lo escribe en la salida del servidor."""
-    send_mail(
+    enviados = send_mail(
         subject="Código de recuperación SIGED-SGR",
         message=(
             f"Su código de recuperación es {codigo}. "
             f"Vence en {CodigoUnUso.VIGENCIA_MINUTOS} minutos y solo puede usarse una vez."
+            + (("\n\nPara activar su cuenta y crear su contraseña, abra este enlace:\n" if activacion else
+                "\n\nPara restablecer su contraseña, abra este enlace seguro:\n") + enlace if enlace else "")
+            + "\n\nSi usted no hizo esta solicitud, ignore este correo."
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[usuario.correo],
         fail_silently=False,
     )
+
+    if enviados != 1:
+        raise RuntimeError("El servidor de correo no aceptó el mensaje.")
 
 
 def verificar_codigo(usuario, ingresado) -> str:

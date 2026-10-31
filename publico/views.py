@@ -3,28 +3,20 @@
 Cada sección espeja una sección de https://laserena.cl/; las funciones reales
 (pagos, trámites, transparencia, noticias completas) se enlazan al sitio oficial.
 """
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 from cuentas.vocabulario import DELEGACIONES_OFICIALES
 from publico import contenido as c
 
 
 def portada_view(request):
-    """Visitante anónimo: portada pública. Con sesión: tablero de siempre."""
+    """El acceso al sistema comienza en el login; con sesión muestra el tablero."""
     if request.session.get("usuario"):
         from requerimientos.views import inicio_view
 
         return inicio_view(request)
-    return render(request, "publico/portada.html", {
-        "tramites": c.TRAMITES,
-        "servicios": c.SERVICIOS[:3],
-        "noticias": c.NOTICIAS[:3],
-        "agenda": c.AGENDA,
-        "accesos": c.ACCESOS,
-        "delegaciones": DELEGACIONES_OFICIALES,
-        "url_noticias": c.URL_NOTICIAS,
-        "seccion": "inicio",
-    })
+    return redirect("login")
+
 
 
 def municipio_view(request):

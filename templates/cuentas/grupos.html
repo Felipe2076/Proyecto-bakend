@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Grupos y permisos | SIGED-SGR{% endblock %}
+{% block content %}
+<div class="container">
+<h2 class="fw-bold text-primary-custom mb-3">Grupos y permisos</h2>
+{% include 'cuentas/_admin_tabs.html' %}
+<div class="row g-4">
+<div class="col-lg-5"><div class="card border-0 shadow-sm rounded-4 p-4">
+<h5>Perfiles municipales</h5><p class="small text-muted">Jefatura corresponde a Supervisor; Ventanilla, a Administrativo. Los grupos de Django aplican sus permisos.</p>
+{% for rol in roles_grupos %}<a class="btn btn-outline-primary text-start mb-2" href="{% url 'admin_grupo' rol.pk %}">{{ rol.nombre }} <small class="d-block">{{ rol.grupo.name }} · {{ rol.usuarios.count }} usuario(s)</small></a>{% endfor %}
+</div><div class="card border-0 shadow-sm rounded-4 p-4 mt-4"><h5>Asignar grupo a usuario</h5>
+<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="asignar">
+{% for field in form_asignacion %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+<button class="btn btn-primary-custom">Asignar grupo</button></form></div></div>
+<div class="col-lg-7"><div class="card border-0 shadow-sm rounded-4 p-4">
+{% if rol_grupo %}<h5>{{ rol_grupo.nombre }}</h5>
+{% if rol_grupo.codigo == 'administrador' %}<p>El administrador conserva el acceso completo. Sus permisos se muestran para consulta.</p>
+<ul class="small">{% for permiso in rol_grupo.grupo.permissions.all %}<li>{{ permiso.name }}</li>{% endfor %}</ul>
+{% else %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="permisos">{{ form_permisos.non_field_errors }}{{ form_permisos.permisos.errors }}
+<div class="small mb-3">{{ form_permisos.permisos }}</div><button class="btn btn-primary-custom">Guardar permisos</button></form>{% endif %}
+{% else %}<p class="mb-0">Seleccione un perfil para consultar o ajustar sus permisos.</p>{% endif %}
+</div></div></div></div>
+{% endblock %}

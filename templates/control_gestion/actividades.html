@@ -2,9 +2,10 @@
 
 {% block title %}Actividad y evidencia | SIGED-SGR{% endblock %}
 {% block topbar_title %}Actividad y evidencia{% endblock %}
-{% block topbar_sub %}CU-E06 / E07 · registro diario del funcionario{% endblock %}
+{% block topbar_sub %}registro diario del funcionario{% endblock %}
 
 {% block content %}
+<form method="get" class="d-flex gap-2 mb-3"><input type="hidden" name="delegacion" value="{{ filtro_delegacion }}"><input type="hidden" name="funcionario" value="{{ filtro_funcionario }}"><input class="form-control" name="q" value="{{ q }}" aria-label="Buscar actividades" placeholder="Código, RUT, funcionario, actividad o evidencia"><button class="btn btn-outline-primary">Buscar</button><a href="{% url 'actividades_diarias' %}" class="btn btn-outline-secondary">Limpiar</a></form>
 <div class="container">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
@@ -20,6 +21,8 @@
         </div>
         <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total }} registro(s)</span>
     </div>
+
+    {% include 'componentes/_paginador.html' %}
 
     <div class="row g-4">
         <div class="col-lg-4">
@@ -123,7 +126,7 @@
                         <tbody>
                             {% for act in actividades %}
                             <tr>
-                                <td class="font-monospace small">{{ act.fecha_actividad }}</td>
+                                <td class="font-monospace small">{{ act.fecha_actividad }}<br><code>{{ act.id_actividad }}</code></td>
                                 <td>
                                     <a href="{% url 'detalle_funcionario' act.id_funcionario %}">{{ act.funcionario_nombre }}</a>
                                     <div class="small text-muted">{{ act.delegacion }}</div>

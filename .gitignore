@@ -10,10 +10,17 @@ db.sqlite3
 .DS_Store
 Thumbs.db
 _doc_evidencias.html
+_informe_sumativa2.html
 _generar_evidencias_docx.py
 *.zip
 
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*PRIVADO*
+respaldos_locales/
 staticfiles/
 
 # Respaldos de MySQL (nunca se versionan; el de D003 queda solo fuera del repo).

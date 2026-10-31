@@ -1,0 +1,22 @@
+{% extends 'cuentas/_auth_layout.html' %}
+{% block title %}Restablecer contraseña | SIGED-SGR{% endblock %}
+{% block auth_contenido %}
+<p class="login-kicker mb-2" style="color:#8b1524;">Sistema Municipal</p>
+<h2 class="fw-bold text-primary-custom mb-3">Restablecer contraseña</h2>
+{% if validlink %}
+<p>Elige tu nueva contraseña. Usa al menos ocho caracteres, mayúscula, minúscula, número y un carácter especial.</p>
+<form method="post" class="card login-glass p-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+    <div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+    {% endfor %}
+    <button class="btn btn-primary-custom w-100">Guardar contraseña</button>
+</form>
+{% else %}
+<div class="alert alert-warning">Este enlace venció, ya se utilizó o no es válido. Solicita uno nuevo.</div>
+<a class="btn btn-primary-custom" href="{% url 'recuperar_contrasena' %}">Solicitar otro enlace</a>
+{% endif %}
+<div class="text-center mt-3"><a href="{% url 'login' %}">Volver al login</a></div>
+{% endblock %}

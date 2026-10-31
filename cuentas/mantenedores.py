@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.core.exceptions import FieldDoesNotExist
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
@@ -81,30 +82,62 @@ class Mantenedor:
         self.select_related = select_related
         self.al_eliminar = al_eliminar
 
-    def _qs(self):
+    def _qs(self, request=None):
         qs = self.modelo.objects.all()
         if self.select_related:
             qs = qs.select_related(*self.select_related)
+        if request is not None and request._perfil_siged.rol.codigo != 'administrador':
+            try:
+                self.modelo._meta.get_field('delegacion')
+            except FieldDoesNotExist:
+                pass
+            else:
+                qs=qs.filter(delegacion_id=request._perfil_siged.delegacion_id) if request._perfil_siged.delegacion_id else qs.none()
         return qs
 
+    def permiso(self, request, accion):
+        return request.user.has_perm(f'{self.modelo._meta.app_label}.{accion}_{self.modelo._meta.model_name}')
+
+    def bloqueo(self, request, accion):
+        if self.permiso(request,accion):
+            return None
+        messages.error(request,'Su perfil no tiene acceso a esta operación.')
+        return redirect('inicio')
+
+    def formulario(self, request, instance=None):
+        form=self.form_class(request.POST or None,instance=instance)
+        perfil=request._perfil_siged
+        if perfil.rol.codigo!='administrador':
+            for nombre in ('delegacion','vecino','usuario','funcionario'):
+                campo=form.fields.get(nombre)
+                if campo is None or not hasattr(campo,'queryset'):
+                    continue
+                if nombre=='delegacion':
+                    campo.queryset=campo.queryset.filter(pk=perfil.delegacion_id)
+                elif nombre=='usuario':
+                    campo.queryset=campo.queryset.filter(pk=perfil.pk)
+                else:
+                    campo.queryset=campo.queryset.filter(delegacion_id=perfil.delegacion_id)
+        return form
+
     def lista(self, request):
-        bloqueo = requerir_modulo(request, "administracion")
+        bloqueo = self.bloqueo(request, 'view')
         if bloqueo:
             return bloqueo
         q = (request.GET.get("q") or "").strip()
-        qs = self._qs()
-        if q:
-            filtro = Q()
-            for campo in self.campos_busqueda:
-                filtro |= Q(**{f"{campo}__icontains": q})
-            qs = qs.filter(filtro).distinct()
+        qs = self._qs(request)
+        from core.busqueda import buscar
+        qs = buscar(qs,q,self.campos_busqueda)
+
+        from core.paginacion import paginar
+        pagina,paginacion=paginar(request,qs)
         filas = []
-        for obj in qs:
+        for obj in pagina:
             filas.append(
                 {
                     "celdas": [_valor(obj, spec) for _, spec in self.columnas],
-                    "editar": reverse(f"{self.nombre}_editar", args=[obj.pk]),
-                    "eliminar": reverse(f"{self.nombre}_eliminar", args=[obj.pk]),
+                    "editar": reverse(f"{self.nombre}_editar", args=[obj.pk]) if self.permiso(request,'change') else None,
+                    "eliminar": reverse(f"{self.nombre}_eliminar", args=[obj.pk]) if self.permiso(request,'delete') else None,
                 }
             )
         contexto = {
@@ -113,17 +146,21 @@ class Mantenedor:
             "placeholder": self.placeholder,
             "encabezados": [titulo for titulo, _ in self.columnas],
             "filas": filas,
-            "total": len(filas),
-            "url_crear": reverse(f"{self.nombre}_crear"),
+            "total": paginacion["paginator"].count,
+            **paginacion,
+            "exportar_usuarios": self.modelo is Usuario,
+            "url_crear": reverse(f"{self.nombre}_crear") if self.permiso(request,'add') else None,
             "url_lista": reverse(self.nombre),
         }
         return render(request, "mantenedores/lista.html", contexto)
 
     def crear(self, request):
-        bloqueo = requerir_modulo(request, "administracion")
+        bloqueo = self.bloqueo(request, 'add')
         if bloqueo:
             return bloqueo
-        form = self.form_class(request.POST or None)
+        if self.modelo is Usuario:
+            return redirect("admin_usuarios")
+        form = self.formulario(request)
         if request.method == "POST":
             if form.is_valid():
                 obj = form.save()
@@ -142,11 +179,11 @@ class Mantenedor:
         )
 
     def editar(self, request, pk):
-        bloqueo = requerir_modulo(request, "administracion")
+        bloqueo = self.bloqueo(request, 'change')
         if bloqueo:
             return bloqueo
-        obj = get_object_or_404(self._qs(), pk=pk)
-        form = self.form_class(request.POST or None, instance=obj)
+        obj = get_object_or_404(self._qs(request), pk=pk)
+        form = self.formulario(request, instance=obj)
         if request.method == "POST":
             if form.is_valid():
                 obj = form.save()
@@ -166,10 +203,10 @@ class Mantenedor:
         )
 
     def eliminar(self, request, pk):
-        bloqueo = requerir_modulo(request, "administracion")
+        bloqueo = self.bloqueo(request, 'delete')
         if bloqueo:
             return bloqueo
-        obj = get_object_or_404(self.modelo, pk=pk)
+        obj = get_object_or_404(self._qs(request), pk=pk)
         if request.method == "POST":
             try:
                 with transaction.atomic():
@@ -263,6 +300,7 @@ def _armar():
             form_class=MetaForm,
             campos_busqueda=("nombre", "descripcion"),
             columnas=[
+                ("Código", "codigo"),
                 ("Nombre", "nombre"),
                 ("Descripción", "descripcion"),
             ],
@@ -306,6 +344,7 @@ def _armar():
             form_class=AtencionForm,
             campos_busqueda=(
                 "vecino__nombre",
+                "vecino__rut",
                 "tipo_atencion__nombre",
                 "sub_atencion__nombre",
                 "delegacion__nombre",
@@ -314,6 +353,7 @@ def _armar():
             ),
             columnas=[
                 ("Vecino", "vecino__nombre"),
+                ("RUT vecino", "vecino__rut"),
                 ("Tipo", "tipo_atencion__nombre"),
                 ("Sub atención", "sub_atencion__nombre"),
                 ("Delegación", "delegacion__nombre"),

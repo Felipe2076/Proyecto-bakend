@@ -1,10 +1,12 @@
 from django.urls import path
-from . import views, views_extra
+from . import views, views_extra, kanban, reportes
 
 urlpatterns = [
+    path("tubo-trabajo/excel/", reportes.exportar_tubo, name="exportar_tubo_excel"),
     path("", views.dashboard_cuellos_botella_view, name="dashboard"),
     path("dashboard/", views.dashboard_cuellos_botella_view),
     path("kanban/", views.kanban_view, name="kanban"),
+    path("kanban/<str:ticket_id>/mover/", kanban.mover_ticket, name="kanban_mover"),
     path("areas/", views.areas_soporte_view, name="areas_soporte"),
     path("semaforo-sgr/", views.semaforo_sgr_view, name="semaforo_sgr"),
     path("tubo-trabajo/", views.tubo_trabajo_view, name="tubo_trabajo"),
