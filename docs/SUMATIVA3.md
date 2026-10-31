@@ -54,3 +54,15 @@ El despliegue mantiene EC2, Docker, Gunicorn y Apache con HTTPS. Las credenciale
 Solicitud del usuario: implementar únicamente lo exigido por la evaluación sobre los requisitos originales del sistema municipal.
 
 Apoyo aplicado: comparación de la pauta con el código, integración de grupos y permisos de Django, enlace seguro de recuperación, pruebas de permisos y tokens, preparación del despliegue y documentación de los cambios. La evidencia debe identificar herramienta, solicitudes, respuestas y el código o resultado donde se aplicaron. No se deben adjuntar contraseñas, claves de aplicación, archivos privados ni conversaciones completas que contengan secretos.
+
+## Validación realizada el 31 de octubre de 2026
+
+- Suite local completa: 99 pruebas aprobadas en base aislada.
+- Imagen Linux: 65 pruebas aprobadas de regresión y seguridad.
+- MySQL de AWS: migraciones aplicadas; imagen `siged-app:20261031-sumativa3` publicada tras respaldar datos y código.
+- Sitio HTTPS operativo y revisión de los perfiles Administrador, Jefatura y Ventanilla.
+- Invitación real recibida; el titular confirmó activación de la cuenta de prueba e ingreso.
+- Flujo completo de recuperación por enlace probado automáticamente con una cuenta aislada. La demostración presencial se realiza con un enlace nuevo y el titular introduce la contraseña.
+- Código publicado en la rama `sumativa-3`, commit `2b3c418`.
+
+El [documento técnico en PDF](Documento_Tecnico_Sumativa3.pdf) reúne arquitectura, relaciones ORM, permisos, validaciones y [capturas reales](evidencias-sumativa3/). La actualización de código local incluye las migraciones; estas no se han aplicado a la base WAMP en esta revisión.

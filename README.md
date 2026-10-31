@@ -17,6 +17,8 @@ Se conservan los requisitos originales y se completan grupos y permisos de Djang
 
 Alcance, perfiles, seguridad y guion presencial: [docs/SUMATIVA3.md](docs/SUMATIVA3.md).
 
+Documento técnico con modelo de datos y capturas reales: [PDF de Sumativa 3](docs/Documento_Tecnico_Sumativa3.pdf).
+
 ## Tecnología
 
 Python y Django según `requirements.txt`, MySQL 8.4/InnoDB, Django ORM, formularios Django, Bootstrap 5.3 e identidad municipal existente. Producción en AWS EC2 con Docker, Gunicorn, Apache y HTTPS. SQLite se usa exclusivamente en pruebas aisladas.
@@ -24,7 +26,7 @@ Python y Django según `requirements.txt`, MySQL 8.4/InnoDB, Django ORM, formula
 ## Instalación local
 
 ```powershell
-git clone https://github.com/Felipe2076/Proyecto-bakend.git
+git clone --branch sumativa-3 https://github.com/Felipe2076/Proyecto-bakend.git
 cd Proyecto-bakend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
