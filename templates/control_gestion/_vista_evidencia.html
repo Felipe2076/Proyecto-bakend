@@ -1,0 +1,7 @@
+{# Evidencia de una actividad: miniatura (foto) o ícono (PDF); al tocarla se abre en la ventana de evidencias. #}
+{% with es_pdf=nombre|lower|slice:"-4:" %}
+<a class="evid-mini text-decoration-none" href="{{ url }}" target="_blank" rel="noopener" data-ver-evidencia="{{ url }}" data-pdf="{% if es_pdf == '.pdf' %}1{% else %}0{% endif %}" data-titulo="{{ nombre }}" title="Ver evidencia: {{ nombre }}">
+    {% if es_pdf == '.pdf' %}<span class="evid-mini__pdf"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF</span>{% else %}<img src="{{ url }}" alt="Evidencia {{ nombre }}" loading="lazy" width="56" height="42">{% endif %}
+    <span class="evid-mini__nombre text-break">{{ nombre }}</span>
+</a>
+{% endwith %}

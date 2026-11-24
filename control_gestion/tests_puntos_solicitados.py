@@ -109,7 +109,10 @@ class PuntosSolicitadosTests(TestCase):
 
     def test_excel_usuarios_restringido_a_administracion(self):
         self.autenticar(self.funcionario)
-        self.assertEqual(self.client.get('/administracion/usuarios/excel/').status_code,403)
+        # Sin permiso no se entrega el archivo: vuelve al inicio con un mensaje (antes, 403 en texto plano).
+        respuesta=self.client.get('/administracion/usuarios/excel/')
+        self.assertEqual(respuesta.status_code,302)
+        self.assertNotIn('spreadsheet',respuesta.get('Content-Type',''))
 
     def test_busqueda_usuarios_por_rut_y_palabras(self):
         self.autenticar()
@@ -201,3 +204,18 @@ class PuntosSolicitadosTests(TestCase):
         self.autenticar()
         response=self.client.get('/administracion/usuarios/',{'q':'sin-resultados-abcdefg'})
         self.assertContains(response,'0</strong> resultados')
+
+    def test_excel_funcionario_excluye_colegas_de_su_misma_delegacion(self):
+        from cuentas.fabrica_pruebas import crear_cuenta
+        colega=crear_cuenta(codigo='USR-COLEGA',rut='33500002-1',password='SoloPrueba123!',rol_codigo='funcionario',correo='colega@siged.test',nombre='Colega de la misma delegación',delegacion=self.centro)
+        Compromiso.objects.create(descripcion='Trabajo exclusivo colega',vecino=self.vecino,funcionario=colega.funcionario,delegacion=self.centro,fecha_compromiso=timezone.localdate(),estado='PENDIENTE')
+        Actividad.objects.create(funcionario=colega.funcionario,delegacion=self.centro,meta=self.meta,servicio='Evidencia exclusiva colega')
+        ItemFuncionario.objects.create(funcionario=colega.funcionario,meta=self.meta,ponderador=50,meta_trimestre=10)
+        self.autenticar(self.funcionario)
+        resultado=hojas(self.client.get('/control/tubo-trabajo/excel/',{'funcionario':colega.funcionario.codigo,'page':2,'per_page':10}))
+        self.assertNotIn('exclusiv',str(resultado))
+        self.assertNotIn(colega.funcionario.codigo,str(resultado))
+        self.assertEqual(len(resultado['Tubo de trabajo']),2)
+        self.assertEqual(dict(resultado['Resumen'][1:])['Alcance'],'Solo mi trabajo')
+        self.autenticar()
+        self.assertIn('Trabajo exclusivo colega',str(hojas(self.client.get('/control/tubo-trabajo/excel/'))))

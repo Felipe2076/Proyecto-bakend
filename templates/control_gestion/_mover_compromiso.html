@@ -1,0 +1,13 @@
+<form method="post" action="{{ request.get_full_path }}" data-form-mover>
+    {% csrf_token %}
+    <input type="hidden" name="estado_anterior" value="{{ item.estado }}">
+    <input type="hidden" name="id_compromiso" value="{{ item.id_compromiso }}">
+    <div class="input-group input-group-sm">
+        <select name="estado" class="form-select" aria-label="Estado de {{ item.id_compromiso }}">
+            {% for est in estados %}{% if est != 'INGRESADO' or not item.es_atencion %}
+            <option value="{{ est }}" {% if item.estado == est %}selected{% endif %}>{{ est }}</option>
+            {% endif %}{% endfor %}
+        </select>
+        <button class="btn btn-outline-primary" type="submit">Mover</button>
+    </div>
+</form>

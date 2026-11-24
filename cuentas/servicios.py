@@ -34,8 +34,25 @@ def siguiente_codigo(modelo, campo, prefijo, ancho=3, minimo=0):
     return siguiente(modelo,campo,prefijo,ancho,minimo)
 
 
+import contextvars
+
+# Memoria de la petición en curso: la abre y la cierra el middleware. Fuera de una
+# petición (comandos, pruebas que llaman funciones directamente) no se guarda nada.
+CACHE_PETICION = contextvars.ContextVar("siged_cache_peticion", default=None)
+
+
 def obtener_parametros():
-    """Equivalente ORM de la antigua lectura de parametros.json."""
+    """Parámetros del sistema (ParametroSistema + canales activos), leídos una vez por petición."""
+    memoria = CACHE_PETICION.get()
+    if memoria is not None and "parametros" in memoria:
+        return dict(memoria["parametros"])
+    datos = _leer_parametros()
+    if memoria is not None:
+        memoria["parametros"] = datos
+    return dict(datos)
+
+
+def _leer_parametros():
     params = ParametroSistema.objects.order_by("pk").first()
     canales = list(
         CanalIngreso.objects.filter(activo=True).order_by("nombre").values_list("nombre", flat=True)
@@ -84,10 +101,8 @@ def funcionario_por_texto(texto):
     limpio = re.sub(r"\(.*?\)", "", texto).strip()
     if not limpio or limpio.lower().startswith("por asignar"):
         return None
-    return (
-        Funcionario.objects.filter(nombre__iexact=limpio).first()
-        or Funcionario.objects.filter(nombre__istartswith=limpio).first()
-    )
+    # Solo coincidencia exacta: un prefijo podía asignar a otra persona.
+    return Funcionario.objects.filter(nombre__iexact=limpio).first()
 
 
 _HASH_FICTICIO = None

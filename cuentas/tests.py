@@ -20,7 +20,7 @@ class RolesMantenedorTests(TestCase):
             codigo="USR-001",
             rut="33100011-6",
             password="Admin123!",
-            rol_codigo="administrador",
+            rol_codigo="superusuario",
             correo="usr-001@siged.test",
             nombre="Admin Prueba",
             delegacion=delegacion,

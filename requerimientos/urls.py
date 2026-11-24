@@ -1,9 +1,8 @@
 from django.urls import path
-from . import views, listado
+from . import views, listado, encuesta_vecinal
 
 urlpatterns = [
     path("lista/exportar/", listado.exportar, name="exportar_tickets_excel"),
-    path("", views.inicio_view, name="inicio"),
     path("lista/", listado.lista, name="lista_requerimientos"),
     path("requerimientos/", listado.lista),
     path("requerimientos/nuevo/", views.nuevo_requerimiento_view, name="nuevo_requerimiento"),
@@ -12,5 +11,6 @@ urlpatterns = [
         views.detalle_requerimiento_view,
         name="detalle_requerimiento",
     ),
+    path("encuestas/responder/<str:token>/", encuesta_vecinal.responder, name="encuesta_vecinal"),
     path("encuestas/", views.encuestas_view, name="encuestas"),
 ]

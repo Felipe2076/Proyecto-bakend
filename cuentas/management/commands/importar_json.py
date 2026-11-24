@@ -47,6 +47,8 @@ class Command(BaseCommand):
     help = "Importa los archivos data/*.json del mockup a la base de datos (idempotente)."
 
     def add_arguments(self, parser):
+        from core.seguridad import agregar_bandera_demo
+        agregar_bandera_demo(parser)
         parser.add_argument("--sin-auth", action="store_true",
                             help="No crear ni enlazar usuarios de django.contrib.auth.")
         parser.add_argument("--data-dir", default=None, help="Carpeta con los JSON (por defecto BASE_DIR/data).")
@@ -510,6 +512,8 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ main
     def handle(self, *args, **opciones):
+        from core.seguridad import exigir_modo_demo
+        exigir_modo_demo(opciones, "importar_json")
         self.data_dir = Path(opciones["data_dir"] or Path(settings.BASE_DIR) / "data")
         if not self.data_dir.is_dir():
             raise CommandError(f"No existe la carpeta {self.data_dir}")

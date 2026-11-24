@@ -91,3 +91,30 @@ def cuerpo_en_rango_ficticio(rut: str) -> bool:
         return False
     cuerpo = int(normal.split("-")[0])
     return 33_000_000 <= cuerpo <= 33_999_999
+
+
+def rut_canonico(rut: str):
+    """RUT tolerante al tipeo: acepta puntos, espacios, guion opcional y «k» minúscula.
+
+    Devuelve ``cuerpo-DV`` (p. ej. ``33200032-2``) si el módulo 11 calza, o ``None``.
+    """
+    limpio = re.sub(r"[.\s-]", "", (rut or "")).upper()
+    if not re.fullmatch(r"\d{7,8}[\dK]", limpio):
+        return None
+    cuerpo, dv = limpio[:-1], limpio[-1]
+    return f"{cuerpo}-{dv}" if dv_rut(cuerpo) == dv else None
+
+
+def motivo_rut_invalido(rut: str):
+    """Texto que explica por qué un RUT no sirve, o ``None`` si es válido."""
+    texto = (rut or "").strip()
+    if not texto:
+        return "Ingrese el RUT; el campo está vacío."
+    if rut_canonico(texto):
+        return None
+    limpio = re.sub(r"[.\s-]", "", texto).upper()
+    if re.fullmatch(r"\d{7,8}[\dK]", limpio):
+        cuerpo = limpio[:-1]
+        correcto = formatear_rut(f"{cuerpo}-{dv_rut(cuerpo)}")
+        return f"El dígito verificador no corresponde: con ese número el RUT correcto sería {correcto}."
+    return "El RUT tiene un formato inválido. Use 7 u 8 dígitos y el verificador, por ejemplo 33.100.001-9."

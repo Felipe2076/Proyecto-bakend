@@ -1,0 +1,64 @@
+.siged-analitica { width: min(100%, 360px); height: auto; }
+.siged-orden .btn, .siged-admin-nav .nav-link { border-radius: 999px; padding: .45rem .9rem; }
+.siged-admin-nav { padding: .5rem; background: #f7f2f3; border-radius: 1rem; }
+.siged-admin-nav .nav-link:not(.active) { color: #821628; background: #fff; }
+.siged-lupa { position: relative; }
+.siged-lupa-texto { position: absolute; top: 100%; left: 0; z-index: 5; max-width: min(100%, 28rem); padding: .8rem 1rem; border-radius: .85rem; background: #411421; color: #fff; opacity: 0; visibility: hidden; box-shadow: 0 .4rem 1.2rem #260b1938; }
+.siged-lupa:hover .siged-lupa-texto, .siged-lupa:focus-within .siged-lupa-texto { opacity: 1; visibility: visible; }
+.siged-organizaciones { min-width: 53rem; }
+.siged-organizaciones th:nth-child(2), .siged-organizaciones td:nth-child(2) { white-space: nowrap; }
+.siged-organizaciones td:nth-child(3) { min-width: 12rem; overflow-wrap: anywhere; }
+.siged-organizaciones th:last-child { min-width: 13rem; }
+.siged-descripcion { white-space: pre-wrap; overflow-wrap: anywhere; }
+.calendar-table { min-width: 55rem; table-layout: fixed; }
+.calendar-table thead th { --bs-table-bg: #54121d; color: #fff; }
+.siged-dia { display: inline-grid; place-items: center; min-width: 1.65rem; min-height: 1.65rem; border-radius: 50%; background: #821628; color: #fff; font-weight: 700; font-size: .8rem; margin-bottom: .4rem; }
+.siged-evento { margin-bottom: .4rem; overflow-wrap: anywhere; }
+.siged-evento .badge { line-height: 1.35; }
+.siged-mover-fecha { font-size: .8rem; padding: .1rem .25rem; }
+[data-mover][draggable="true"] { cursor: grab; }
+.siged-arrastrando { opacity: .5; cursor: grabbing; }
+.siged-destino-activo { outline: 2px dashed #9b1b38; outline-offset: -3px; background-color: #fff1f4 !important; }
+
+.siged-sidebar .siged-brand { gap: .5rem; padding-inline: .75rem; }
+.siged-sidebar .logo-siged { gap: .35rem; flex-shrink: 0; }
+.siged-sidebar .logo-siged__mark { width: 32px; height: 36px; }
+.siged-sidebar .logo-siged__text { font-size: .82rem; white-space: nowrap; }
+.siged-sidebar .siged-brand__meta { min-width: 0; }
+.siged-sidebar .siged-brand__meta strong { font-size: .76rem; overflow-wrap: anywhere; }
+.siged-sidebar .siged-brand__meta small { font-size: .52rem; overflow-wrap: anywhere; }
+.siged-paginacion { background: #fff; }
+.siged-paginacion .form-select, .siged-paginacion .form-control { min-height: 28px; height: auto; border-radius: .5rem; padding-top: .2rem; padding-bottom: .2rem; }
+.siged-paginacion .page-link { padding: .25rem .5rem; }
+
+/* ---- 2026-11-22: piezas comunes de siged-ui.js ---- */
+.siged-sidebar-fondo { display: none; }
+@media (max-width: 991.98px) {
+    .siged-sidebar-fondo.is-visible {
+        display: block; position: fixed; inset: 0; z-index: 1039;
+        background: rgba(15, 23, 42, .45);
+    }
+}
+.siged-resumen-errores ul { padding-left: 1.1rem; }
+.siged-resumen-errores:focus { outline: 3px solid rgba(220, 53, 69, .35); outline-offset: 2px; }
+.siged-saltar { position: absolute; top: .5rem; left: .5rem; z-index: 3000; background: #fff; padding: .5rem .75rem; border-radius: .5rem; }
+.login-pie { color: #f0d7a0; }
+.siged-avatar { width: 2.25rem; height: 2.25rem; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.siged-avatar--lg { width: 7.5rem; height: 7.5rem; }
+.siged-avatar-iniciales {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--bs-primary-bg-subtle, #e7eefc); color: var(--bs-primary-text-emphasis, #1e3a8a);
+    font-weight: 700; text-transform: uppercase;
+}
+.siged-avatar--lg.siged-avatar-iniciales { font-size: 2.4rem; }
+fieldset.siged-seccion { border: 1px solid var(--bs-border-color); border-radius: 1rem; padding: 1.25rem 1.25rem .5rem; margin-bottom: 1.25rem; }
+fieldset.siged-seccion legend { float: none; width: auto; padding: 0 .5rem; font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+
+/* Teléfono: la barra superior no debe cortarse ni desbordar. */
+@media (max-width: 767.98px) {
+    .siged-topbar { flex-wrap: wrap; gap: .5rem; }
+    .siged-topbar__sub { display: none; }
+    .siged-topbar__title { font-size: 1rem; line-height: 1.2; }
+    .siged-user { flex-wrap: wrap; justify-content: flex-end; gap: .4rem; }
+    [data-trimestre-barra] { padding: .15rem .6rem !important; }
+}

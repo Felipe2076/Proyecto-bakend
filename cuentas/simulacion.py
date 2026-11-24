@@ -36,7 +36,9 @@ APELLIDOS = (
     "Keller", "Lago", "Mora", "Nieto", "Olmo", "Paz", "Quilo", "Rios", "Solis", "Toro",
 )
 
-CODIGO_ADMIN_GLOBAL = "USR-025"
+# Cuenta que no se puede desactivar ni quitar de grupos. Configurable por entorno para
+# no depender de un código fijo de la simulación (antes siempre «USR-025»).
+CODIGO_ADMIN_GLOBAL = os.environ.get("SIGED_CUENTA_PROTEGIDA", "USR-025").strip()
 
 
 def rut_de(base: int, indice: int) -> str:

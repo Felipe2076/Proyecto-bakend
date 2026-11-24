@@ -14,7 +14,7 @@
 <button class="btn btn-primary-custom">Asignar grupo</button></form></div></div>
 <div class="col-lg-7"><div class="card border-0 shadow-sm rounded-4 p-4">
 {% if rol_grupo %}<h5>{{ rol_grupo.nombre }}</h5>
-{% if rol_grupo.codigo == 'administrador' %}<p>El administrador conserva el acceso completo. Sus permisos se muestran para consulta.</p>
+{% if rol_grupo.codigo == 'superusuario' %}<p>El superusuario conserva el acceso completo. Sus permisos se muestran para consulta.</p>
 <ul class="small">{% for permiso in rol_grupo.grupo.permissions.all %}<li>{{ permiso.name }}</li>{% endfor %}</ul>
 {% else %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="permisos">{{ form_permisos.non_field_errors }}{{ form_permisos.permisos.errors }}
 <div class="small mb-3">{{ form_permisos.permisos }}</div><button class="btn btn-primary-custom">Guardar permisos</button></form>{% endif %}

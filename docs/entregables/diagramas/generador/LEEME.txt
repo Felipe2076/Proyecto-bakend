@@ -1,0 +1,13 @@
+Generador de los diagramas SIGED-SGR (draw.io)
+
+Regenerar los .drawio (desde esta carpeta, con Python 3):
+    python build.py ..
+
+- drawio.py     formas UML/SysML y escritura del archivo .drawio
+- ruteo.py      trazado ortogonal de conectores que esquiva las cajas
+- contenido_*.py  catálogo de requerimientos y casos de uso
+- gen_*.py      una página o grupo de páginas por tipo de diagrama
+
+Exportar a PNG (opcional): python servidor_local.py .. ../png 8765
+y abrir http://127.0.0.1:8765/visor.html?f=03_Diagrama_de_Clases_SIGED.drawio&escala=2
+(usa el modo embed oficial de diagrams.net en el navegador).

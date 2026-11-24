@@ -34,6 +34,12 @@ DELEGACIONES = (
 )
 
 
+import unittest as _unittest
+from pathlib import Path as _Path
+
+MOTIVO_SIN_DATOS = "Requiere web/data/*.json de la simulación, que no viene en esta copia."
+SIN_DATOS = not (_Path(__file__).resolve().parents[1] / "data" / "funcionarios.json").exists()
+
 class ValidacionRutTests(SimpleTestCase):
     def test_digito_verificador_de_los_ejemplos_del_plan(self):
         self.assertEqual(dv_rut("33100001"), "9")
@@ -94,6 +100,15 @@ class PanelPorRolTests(TestCase):
                 nombre="Admin Rural",
                 delegacion=self.rural,
             ),
+            "superusuario": crear_cuenta(
+                codigo="USR-S",
+                rut="33100903-2",
+                password="ClaveRol1!",
+                rol_codigo="superusuario",
+                correo="rol-super@siged.test",
+                nombre="Super Centro",
+                delegacion=self.centro,
+            ),
             "jefatura": crear_cuenta(
                 codigo="USR-J",
                 rut="33100902-4",
@@ -130,12 +145,19 @@ class PanelPorRolTests(TestCase):
         self.assertEqual(respuesta["Location"], "/")
         return cliente
 
-    def test_administrador_ve_la_vista_global(self):
-        cliente = self._entrar("33100901-6")
+    def test_superusuario_ve_la_vista_global(self):
+        cliente = self._entrar("33100903-2")
         panel = cliente.get("/")
         self.assertContains(panel, "Vista global")
         self.assertNotContains(panel, "Mi delegación")
-        self.assertEqual(cliente.session["usuario"]["rol"], "administrador")
+        self.assertEqual(cliente.session["usuario"]["rol"], "superusuario")
+
+    def test_administrador_queda_en_su_delegacion(self):
+        cliente = self._entrar("33100901-6")
+        panel = cliente.get("/")
+        self.assertContains(panel, "Mi delegación ·")
+        self.assertContains(panel, "Delegación Rural")
+        self.assertNotContains(panel, "Vista global")
 
     def test_jefatura_ve_su_delegacion(self):
         cliente = self._entrar("33.100.902-4")
@@ -153,16 +175,16 @@ class PanelPorRolTests(TestCase):
             self.assertNotContains(panel, "Vista global")
             self.assertNotContains(panel, "Mi delegación ·")
 
-    def test_otra_delegacion_por_url_se_niega_salvo_al_administrador(self):
-        jefatura = self._entrar("33100902-4")
-        negada = jefatura.get("/lista/", {"delegacion": "Delegación Centro"})
-        self.assertEqual(negada.status_code, 302)
-        self.assertEqual(negada["Location"], "/")
-        admin = self._entrar("33100901-6")
-        permitida = admin.get("/lista/", {"delegacion": "Delegación Centro"})
+    def test_otra_delegacion_por_url_se_niega_salvo_al_superusuario(self):
+        for rut in ("33100902-4", "33100901-6"):  # jefatura y administrador de delegación
+            negada = self._entrar(rut).get("/lista/", {"delegacion": "Delegación Centro"})
+            self.assertEqual(negada.status_code, 302, rut)
+            self.assertEqual(negada["Location"], "/", rut)
+        permitida = self._entrar("33100903-2").get("/lista/", {"delegacion": "Delegación Centro"})
         self.assertEqual(permitida.status_code, 200)
 
 
+@_unittest.skipIf(SIN_DATOS, MOTIVO_SIN_DATOS)
 class DatosSimulacionTests(SimpleTestCase):
     def test_usuarios_json_sin_clave_en_claro_y_con_cobertura(self):
         usuarios = json.loads((RAIZ / "data" / "usuarios.json").read_text(encoding="utf-8"))

@@ -1,0 +1,25 @@
+SIGED · Usuarios de PRUEBA LOCAL (datos ficticios, NO son de producción)
+==========================================================================
+Sirven en tu PC (web http://localhost:8765) y en la app de prueba local.
+Contraseña de todas:  PruebaLocal#2026
+
+Rol             RUT            Nombre (ficticio)            Delegación
+superusuario    33.100.011-6   Sofía Superusuaria           Centro (ficticia)
+administrador   33.100.013-2   Andrés Administrador         Centro (ficticia)
+jefatura        33.100.021-3   Julia Jefatura               Centro (ficticia)
+funcionario     33.100.032-9   Felipe Funcionario           Centro (ficticia)  ← tiene 5 actividades y asistencia
+ventanilla      33.100.045-0   Valentina Ventanilla         Rural (ficticia)
+
+Datos para probar lo nuevo (23-11-2026):
+  · Búsqueda inteligente (barra de arriba, o tecla «/»): escriba «gonsales» → encuentra a María José González.
+  · Autocompletar: en «Ingresar ticket» escriba el RUT 33.500.001-3 → se llenan nombre, teléfono, correo y delegación.
+  · Avisos automáticos: entre como funcionario → campana: «Compromiso vencido TUB-005».
+    Como administrador → además «Directiva vencida / por vencer» de 2 organizaciones ficticias.
+  · App: botón «Registrar actividad» (ítem, tipo y fecha ya vienen elegidos).
+
+Cómo levantarlo:
+  1) Crear o reiniciar la base:  C:\Users\aixav\gestion_municipal_serena\venv\Scripts\python.exe pruebas_locales\crear_demo.py
+  2) Servidor:                   C:\Users\aixav\gestion_municipal_serena\venv\Scripts\python.exe pruebas_locales\servidor.py
+  3) Teléfono por USB:           adb reverse tcp:8765 tcp:8765   (y usar una APK compilada con -PsigedTestUrl=http://127.0.0.1:8765)
+
+En AWS (producción) entran los funcionarios reales con su RUT y su propia contraseña.

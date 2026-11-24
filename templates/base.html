@@ -8,15 +8,16 @@
     <link rel="icon" type="image/svg+xml" href="{% static 'img/laserena/favicon.svg' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/laserena/favicon-32.png' %}">
     <link rel="apple-touch-icon" href="{% static 'img/laserena/apple-touch-icon.png' %}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.css">
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20261123d">
+    <link rel="stylesheet" href="{% static 'css/interacciones-siged.css' %}?v=20261122b">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-<div id="sigedLoader" class="siged-loader" data-lottie="{% static 'lottie/siged-ticket-loader.json' %}" aria-hidden="true" role="status">
+<a class="visually-hidden-focusable siged-saltar" href="#contenido">Saltar al contenido</a>
+<div id="sigedLoader" class="siged-loader" data-lottie="{% static 'lottie/siged-ticket-loader.json' %}" aria-hidden="true">
     <div class="siged-loader__box">
         <div id="sigedLoaderStage" class="siged-loader__stage"></div>
         <p class="siged-loader__label mb-0">Cargando ticket y gestión…</p>
@@ -29,7 +30,7 @@
     <div class="siged-main">
         <header class="siged-topbar">
             <div class="d-flex align-items-center gap-3">
-                <button class="btn btn-outline-primary btn-sm sidebar-toggle" type="button" data-bs-toggle="offcanvas" data-siged-toggle aria-label="Abrir menú">
+                <button class="btn btn-outline-primary btn-sm sidebar-toggle" type="button" data-siged-toggle aria-label="Abrir menú">
                     <i class="bi bi-list"></i>
                 </button>
                 <div>
@@ -37,8 +38,25 @@
                     <div class="siged-topbar__sub">{% block topbar_sub %}Portal municipal · atención ciudadana y semáforo de compromisos{% endblock %}</div>
                 </div>
             </div>
+            {% if usuario_actual %}
+            <div class="buscador mx-3 d-none d-lg-block" data-buscador="{% url 'buscador' %}" role="search">
+                <i class="bi bi-search buscador__icono" aria-hidden="true"></i>
+                <input type="search" class="form-control" placeholder="Buscar tickets, vecinos, organizaciones…  ( / )" aria-label="Búsqueda inteligente" autocomplete="off" aria-expanded="false" maxlength="80">
+                <div class="buscador__panel" data-buscador-panel hidden></div>
+            </div>
+            {% endif %}
             <div class="siged-user">
-                <img class="e3d-topbar-logo d-none d-lg-block" src="{% static 'img/laserena/logo-horizontal-color.svg' %}" alt="Ilustre Municipalidad de La Serena" width="124" height="34">
+                {% if trimestre_vigente %}
+                <a class="d-flex align-items-center gap-2 border border-primary-subtle rounded-pill px-3 py-1 text-decoration-none text-body" href="{% url 'inicio' %}" data-trimestre-barra
+                   title="{{ trimestre_vigente.periodo }}: {{ trimestre_vigente.inicio }} al {{ trimestre_vigente.termino }} · día {{ trimestre_vigente.dia }} de {{ trimestre_vigente.dias_total }} · {% if trimestre_vigente.restantes %}faltan {{ trimestre_vigente.restantes }} días{% else %}último día{% endif %}">
+                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                    <span class="small fw-semibold text-nowrap d-none d-md-inline">{{ trimestre_vigente.periodo }}</span>
+                    <span class="progress d-none d-lg-flex" style="width:64px;height:6px" role="progressbar" aria-label="Avance del trimestre" aria-valuenow="{{ trimestre_vigente.porcentaje }}" aria-valuemin="0" aria-valuemax="100">
+                        <span class="progress-bar" style="width:{{ trimestre_vigente.porcentaje|ancho }}%"></span>
+                    </span>
+                    <span class="small text-nowrap">{{ trimestre_vigente.porcentaje }}%<span class="d-none d-xl-inline text-muted"> · día {{ trimestre_vigente.dia }}/{{ trimestre_vigente.dias_total }}</span></span>
+                </a>
+                {% endif %}
                 {% if puede_notificaciones %}
                 <a class="btn btn-outline-primary btn-sm position-relative" href="{% url 'notificaciones' %}" title="Avisos">
                     <i class="bi bi-bell"></i>
@@ -52,8 +70,14 @@
                     <div class="fw-semibold small">{{ usuario_actual.nombre }}</div>
                     <div class="siged-topbar__sub">{{ usuario_actual.rol_etiqueta }} · {{ usuario_actual.delegacion }}</div>
                 </div>
-                <span class="siged-user__avatar">{{ usuario_actual.nombre|slice:":1" }}</span>
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'logout' %}">Salir</a>
+                <a href="{% url 'mi_perfil' %}" class="text-decoration-none" title="Mi perfil">
+                    {% if foto_actual %}<img class="siged-avatar" src="{{ foto_actual }}" alt="Mi perfil">{% else %}<span class="siged-user__avatar">{{ iniciales_actual|default:usuario_actual.nombre|slice:":2" }}</span>{% endif %}
+                    <span class="visually-hidden">Mi perfil</span>
+                </a>
+                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-secondary" type="submit">Salir</button>
+                </form>
                 {% endif %}
             </div>
         </header>
@@ -69,47 +93,29 @@
         </div>
         {% endif %}
 
-        <main class="siged-content">
+        <main class="siged-content" id="contenido" tabindex="-1">
             {% block content %}{% endblock %}
         </main>
 
         <footer class="siged-footer">
             <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
-                <div>
-                    <strong>Los watones PC</strong> — Felipe, Aixa y Gabriel · Proyecto Integrado · SIGED-SGR Delegaciones La Serena · Prof. Jorge Cortés
-                </div>
-                <div>Municipalidad de La Serena · Sistema de gestión de delegaciones</div>
+                <div><strong>SIGED-SGR</strong> · Sistema de gestión de delegaciones municipales</div>
+                <div>Municipalidad de La Serena</div>
             </div>
             {% include 'componentes/_atribucion_fotos.html' %}
         </footer>
     </div>
 </div>
 
-<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'js/lottie.min.js' %}"></script>
-<script src="{% static 'js/lordicon.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
-<script src="{% static 'js/siged-motion.js' %}"></script>
+<script src="{% static 'js/bootstrap.bundle.min.js' %}" defer></script>
+<script src="{% static 'js/lottie.min.js' %}" defer></script>
+<script src="{% static 'js/siged-motion.js' %}?v=20261122" defer></script>
+<script src="{% static 'js/siged-ui.js' %}?v=20261122b" defer></script>
+<script src="{% static 'js/mejoras-listados.js' %}?v=20261122" defer></script>
+<script src="{% static 'js/interacciones-siged.js' %}?v=20261122" defer></script>
+<script src="{% static 'js/evidencias.js' %}?v=20261123" defer></script>
+<script src="{% static 'js/buscador-inteligente.js' %}?v=20261123e" defer></script>
 <script type="module" src="{% static 'js/app.js' %}"></script>
-<script>
-    (() => {
-        const forms = document.querySelectorAll(".needs-validation");
-        Array.from(forms).forEach((form) => {
-            form.addEventListener("submit", (event) => {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add("was-validated");
-            });
-        });
-        const sidebar = document.getElementById("sigedSidebar");
-        const toggle = document.querySelector("[data-siged-toggle]");
-        if (toggle && sidebar) {
-            toggle.addEventListener("click", () => sidebar.classList.toggle("is-open"));
-        }
-    })();
-</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

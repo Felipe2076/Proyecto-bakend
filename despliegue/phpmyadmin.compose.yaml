@@ -1,0 +1,21 @@
+# phpMyAdmin cerrado: solo escucha en 127.0.0.1 del servidor (nunca en Internet).
+# Se usa JUNTO al compose principal, por ejemplo en el servidor:
+#   sudo docker compose -f compose.yaml -f phpmyadmin.compose.yaml --profile admin up -d phpmyadmin
+# y se entra por túnel SSH (ver PHPMYADMIN.md). Para apagarlo:
+#   sudo docker compose -f compose.yaml -f phpmyadmin.compose.yaml --profile admin stop phpmyadmin
+services:
+  phpmyadmin:
+    image: phpmyadmin:5.2.2
+    profiles: ["admin"]
+    restart: "no"
+    environment:
+      PMA_HOST: db            # nombre del servicio MySQL en el compose principal
+      PMA_PORT: "3306"
+      PMA_ABSOLUTE_URI: http://127.0.0.1:8081/
+      UPLOAD_LIMIT: 16M
+      HIDE_PHP_VERSION: "true"
+    ports:
+      - "127.0.0.1:8081:80"   # solo loopback: el grupo de seguridad de AWS no se toca
+    depends_on: [db]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m

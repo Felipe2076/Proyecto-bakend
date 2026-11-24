@@ -15,12 +15,15 @@ MODULOS = {
     'mantenedores': 'Mantenedores autorizados',
 }
 MODULOS_BASE = {
+    'superusuario': set(MODULOS),
     'administrador': set(MODULOS),
     'jefatura': set(MODULOS) - {'administracion'},
     'funcionario': {'requerimientos','matriz_sgr','actividades','agenda','compromisos','notificaciones','encuestas'},
     'ventanilla': {'requerimientos','agenda','notificaciones','encuestas'},
 }
 APPS_NEGOCIO = {'cuentas','requerimientos','control_gestion'}
+# Configuración que afecta a todas las delegaciones: solo el superusuario la crea, modifica o elimina.
+MODELOS_GLOBALES = {'delegacion','rol','meta','tipoatencion','subatencion','tipogestion','medicion','cargo'}
 CATALOGOS_SUPERVISOR = {'delegacion','meta','tipogestion','tipoatencion','subatencion'}
 OPERACIONES_SUPERVISOR = {'vecino','atencion'}
 
@@ -37,7 +40,7 @@ def permisos_iniciales(codigo, registry=apps, using='default'):
             perm,_ = Permission.objects.using(using).get_or_create(
                 content_type=ct,codename=f'{accion}_{model._meta.model_name}',
                 defaults={'name':f'Can {accion} {model._meta.verbose_name}'})
-            if codigo=='administrador' or (
+            if codigo=='superusuario' or (codigo=='administrador' and (accion=='view' or model._meta.model_name not in MODELOS_GLOBALES)) or (
                 codigo=='jefatura' and (
                     (accion=='view' and model._meta.model_name in CATALOGOS_SUPERVISOR)
                     or (accion in ('view','add','change') and model._meta.model_name in OPERACIONES_SUPERVISOR)

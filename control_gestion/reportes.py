@@ -16,23 +16,37 @@ def perfil_acceso(request,modulo):
     perfil=perfil_actual(request)
     if perfil is None: return None,redirect('login')
     if not puede_ver(perfil,modulo):
-        return None,HttpResponseForbidden('Su perfil no tiene acceso a este módulo.')
+        texto='Su perfil no tiene acceso a este módulo.'
+        if 'application/json' in request.headers.get('Accept',''):
+            from django.http import JsonResponse
+            return None,JsonResponse({'error':texto},status=403)
+        from django.contrib import messages
+        messages.error(request,texto)
+        return None,redirect('inicio')
     return perfil,None
 
 def ambito(qs,perfil):
-    if perfil.rol.codigo=='administrador': return qs
+    if perfil.rol.codigo=='superusuario': return qs
     return qs.filter(delegacion_id=perfil.delegacion_id) if perfil.delegacion_id else qs.none()
 
 def tubo_filtrado(request,perfil,filtrar=True):
     qs=ambito(queryset_compromisos(),perfil)
     if not filtrar: return qs
     if request.GET.get('delegacion'): qs=qs.filter(delegacion__nombre=request.GET['delegacion'])
-    if request.GET.get('estado'): qs=qs.filter(estado=request.GET['estado'].upper())
+    estado = request.GET.get('estado', '').strip().upper()
+    if estado == 'VENCIDO':
+        qs = qs.filter(fecha_compromiso__lt=timezone.localdate()).exclude(estado='REALIZADO')
+    elif estado:
+        qs = qs.filter(estado=estado)
     return buscar(qs,request.GET.get('q',''),['codigo','descripcion','estado','vecino__nombre','vecino__rut',
         'funcionario__nombre','funcionario__rut','funcionario__codigo','funcionario__cargo__nombre','delegacion__nombre'])
 
 def usuarios_filtrados(request):
     qs=Usuario.objects.select_related('rol','cargo','delegacion','funcionario').order_by('nombre','codigo')
+    perfil=perfil_actual(request)
+    if perfil is None or perfil.rol.codigo!='superusuario':
+        # Fuera del superusuario, solo las cuentas de la propia delegación (y nunca las de superusuario).
+        qs=(qs.filter(delegacion_id=perfil.delegacion_id) if perfil is not None and perfil.delegacion_id else qs.none()).exclude(rol__codigo='superusuario')
     return buscar(qs,request.GET.get('q',''),['codigo','username','nombre','correo','rol__nombre',
         'rol__codigo','cargo__nombre','delegacion__nombre','funcionario__rut','estado'])
 
@@ -52,16 +66,22 @@ def exportar_usuarios(request):
 def exportar_tubo(request):
     perfil,error=perfil_acceso(request,'compromisos')
     if error is not None: return error
-    compromisos=list(tubo_filtrado(request,perfil))
+    seleccion=tubo_filtrado(request,perfil)
+    es_propio = perfil.rol.codigo == 'funcionario' or getattr(request,'_exportacion_movil_propia',False)
+    if es_propio:
+        seleccion=seleccion.filter(funcionario_id=perfil.funcionario_id) if perfil.funcionario_id else seleccion.none()
+    compromisos=list(seleccion)
     meta=float(obtener_parametros()['meta_tubo_porcentaje'])
     total=len(compromisos)
     realizados=sum(c.estado=='REALIZADO' for c in compromisos)
     porcentaje=round(realizados*100/total,2) if total else 0
-    resumen=[['Generado',timezone.localtime().isoformat()],['Búsqueda',request.GET.get('q','')],
-        ['Delegación',request.GET.get('delegacion','') or (perfil.delegacion.nombre if perfil.rol.codigo!='administrador' and perfil.delegacion else 'Todas las autorizadas')],
+    resumen=[['Generado',timezone.localtime().isoformat()],['Exportado por',perfil.nombre],
+        ['Alcance','Solo mi trabajo' if es_propio else 'Trabajo autorizado por perfil'],
+        ['Búsqueda',request.GET.get('q','')],
+        ['Delegación',request.GET.get('delegacion','') or (perfil.delegacion.nombre if perfil.rol.codigo!='superusuario' and perfil.delegacion else 'Todas las autorizadas')],
         ['Estado',request.GET.get('estado','') or 'Todos'],['Total compromisos',total],['Realizados',realizados],
         ['Por realizar',total-realizados],['Realizado (%)',porcentaje],['Meta (%)',meta],['Cumple meta',bool(total and porcentaje>=meta)],
-        ['Alcance de actividades y metas','Funcionarios de los compromisos seleccionados, en las delegaciones autorizadas. Sin relación directa entre actividad y compromiso.']]
+        ['Alcance de actividades y metas','Trabajo del funcionario exportador; actividades y metas no se vinculan directamente con cada compromiso.' if es_propio else 'Funcionarios de los compromisos seleccionados, en las delegaciones autorizadas. Sin relación directa entre actividad y compromiso.']]
     for estado in ('INGRESADO','PENDIENTE','EN PROCESO','REALIZADO'):
         resumen.append([estado,sum(c.estado==estado for c in compromisos)])
     detalle=[]
@@ -71,7 +91,8 @@ def exportar_tubo(request):
         detalle.append([c.codigo,c.descripcion,c.vecino.rut or '',c.vecino.nombre_mostrado,
             c.funcionario.codigo,c.funcionario.rut,c.funcionario.nombre_mostrado,
             c.funcionario.cargo.nombre if c.funcionario.cargo_id else '',c.delegacion.nombre,
-            c.fecha_ingreso,c.fecha_compromiso,c.estado,c.estado!='REALIZADO' and c.fecha_compromiso<timezone.localdate()])
+            c.fecha_ingreso,c.fecha_compromiso,c.estado,c.estado!='REALIZADO' and c.fecha_compromiso<timezone.localdate(),
+            c.origen,c.territorio,c.apoyo,c.observaciones,c.fecha_compromiso.month])
         for groups,key,label in ((grupos_fun,c.funcionario_id,c.funcionario.nombre_mostrado),
                                   (grupos_del,c.delegacion_id,c.delegacion.nombre)):
             values=groups.setdefault(key,[label,0,0])
@@ -85,6 +106,9 @@ def exportar_tubo(request):
         return rows
     responsables={c.funcionario_id for c in compromisos}
     delegaciones={c.delegacion_id for c in compromisos}
+    if es_propio and perfil.funcionario_id:
+        responsables={perfil.funcionario_id}
+        delegaciones={perfil.delegacion_id} if perfil.delegacion_id else set()
     actividades=ambito(queryset_actividades(),perfil).filter(funcionario_id__in=responsables,delegacion_id__in=delegaciones)
     actividades_rows=[[a.codigo,a.fecha_actividad,a.funcionario.codigo,a.funcionario.nombre_mostrado,
         a.delegacion.nombre,a.meta.codigo,a.meta.nombre,a.servicio,a.contacto,a.codigo_verificador,
@@ -99,7 +123,7 @@ def exportar_tubo(request):
     return descargar('tubo-trabajo-'+timezone.localdate().isoformat(),[
         ('Resumen',['Indicador','Valor'],resumen),
         ('Tubo de trabajo',['Código','Compromiso','RUT vecino','Vecino','Código funcionario','RUT funcionario',
-            'Funcionario','Cargo','Delegación','Fecha ingreso','Fecha compromiso','Estado','Vencido'],detalle),
+            'Funcionario','Cargo','Delegación','Fecha ingreso','Fecha compromiso','Estado','Vencido','Interno / Externo','Territorio','Área / persona de apoyo','Avance / observaciones','Mes compromiso'],detalle),
         ('Por funcionario',['Funcionario','Total','Realizados','Por realizar','Realizado (%)','Meta (%)','Cumple meta'],consolidar(grupos_fun)),
         ('Por delegación',['Delegación','Total','Realizados','Por realizar','Realizado (%)','Meta (%)','Cumple meta'],consolidar(grupos_del)),
         ('Actividades',['Código','Fecha','Código funcionario','Funcionario','Delegación','Código meta','Meta',

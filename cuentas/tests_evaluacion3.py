@@ -86,7 +86,7 @@ class Evaluacion3Tests(TestCase):
         self.autenticar()
         self.client.post('/administracion/grupos/',{'accion':'asignar','usuario':self.admin.pk,'rol':self.funcionario.rol_id})
         self.admin.refresh_from_db()
-        self.assertEqual(self.admin.rol.codigo,'administrador')
+        self.assertEqual(self.admin.rol.codigo,'superusuario')
 
     def test_recuperacion_por_enlace_completa_y_no_reutilizable(self):
         enlace=self.enlace()

@@ -13,6 +13,9 @@ class ActividadInline(admin.TabularInline):
     model = Actividad
     extra = 0
     fields = ("codigo", "fecha_actividad", "meta", "servicio", "punto_validado")
+    readonly_fields = fields
+    can_delete = False
+    def has_add_permission(self, request, obj=None):return False
     autocomplete_fields = ("meta",)
     show_change_link = True
 
@@ -33,6 +36,23 @@ class ItemFuncionarioAdmin(admin.ModelAdmin):
 
 @admin.register(Actividad)
 class ActividadAdmin(admin.ModelAdmin):
+    readonly_fields = ('abrir_evidencia','punto_validado','estado_revision','version_revision')
+    def get_readonly_fields(self,request,obj=None):
+        if obj and obj.estado_revision!='HISTORICA':
+            return tuple(f.name for f in self.model._meta.fields if f.editable)+self.readonly_fields
+        return self.readonly_fields
+    def has_delete_permission(self,request,obj=None):
+        return bool(obj and obj.estado_revision=='HISTORICA' and super().has_delete_permission(request,obj))
+    def save_model(self,request,obj,form,change):
+        if not change:obj.creado_por=request.user
+        super().save_model(request,obj,form,change)
+
+    @admin.display(description='Ver evidencia adjunta')
+    def abrir_evidencia(self,obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        return format_html('<a href="{}" target="_blank" rel="noopener">Abrir imagen o PDF</a>',reverse('admin_actividad_evidencia',args=[obj.codigo])) if obj.evidencia_archivo else 'Sin archivo adjunto'
+
     list_display = ("codigo", "fecha_actividad", "funcionario", "delegacion", "meta", "servicio", "punto_validado")
     search_fields = ("codigo", "servicio", "contacto", "codigo_verificador", "funcionario__nombre")
     list_filter = ("punto_validado", "delegacion", "funcionario")
@@ -73,3 +93,7 @@ class NotificacionAdmin(admin.ModelAdmin):
     search_fields = ("codigo", "titulo", "mensaje")
     list_filter = ("tipo",)
     date_hierarchy = "fecha"
+
+from control_gestion.models import Ausencia, OrganizacionComunitaria
+admin.site.register(Ausencia)
+admin.site.register(OrganizacionComunitaria)

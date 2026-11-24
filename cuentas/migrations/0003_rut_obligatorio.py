@@ -10,6 +10,15 @@ from django.db import migrations, models
 
 from cuentas.simulacion_bd import aplicar
 
+
+def _aplicar_solo_demo(apps, schema_editor):
+    """La anonimización reescribe RUT, nombres y claves de personas existentes:
+    solo corre en una base de demostración. En bases nuevas no hay filas y no hace nada."""
+    import os
+
+    if os.environ.get("SIGED_PERMITIR_DEMO") == "1":
+        aplicar(apps, schema_editor)
+
 _TABLA = "cuentas_funcionario"
 _UNICO = "uq_funcionario_rut"
 _CHECK = "ck_funcionario_rut"
@@ -92,7 +101,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(aplicar, migrations.RunPython.noop),
+        migrations.RunPython(_aplicar_solo_demo, migrations.RunPython.noop),
         migrations.AlterField(
             model_name="funcionario",
             name="rut",

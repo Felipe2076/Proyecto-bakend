@@ -14,7 +14,6 @@
             <li class="breadcrumb-item active" aria-current="page">Nuevo</li>
         </ol>
     </nav>
-    {% include '_cu.html' with cu_id='CU-E02' cu_nombre='Registrar ticket' %}
     <h2 class="fw-bold mb-1 text-primary-custom">Ingreso de ticket del ciudadano</h2>
     <p class="text-muted small mb-4">Ventanilla, WhatsApp o correo. Tipifique como RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA o FELICITACIÓN.</p>
 
@@ -34,9 +33,32 @@
                                 <div class="invalid-feedback">{% if errores.vecino_nombre %}{{ errores.vecino_nombre }}{% else %}Indique el nombre del ciudadano (mínimo 5 caracteres).{% endif %}</div>
                             </div>
                             <div class="col-md-6">
-                                <label for="telefono_whatsapp" class="form-label fw-semibold">Teléfono / WhatsApp <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control {% if errores.telefono_whatsapp %}is-invalid{% endif %}" id="telefono_whatsapp" name="telefono_whatsapp" required placeholder="+56 9 8765 4321" pattern="(\+56\s?)?9[\s-]?\d{4}[\s-]?\d{4}" value="{{ valores.telefono_whatsapp }}">
+                                <label for="telefono_whatsapp" class="form-label fw-semibold">Teléfono / WhatsApp <span class="text-danger">*</span> <span class="text-muted small">(opcional si entra por correo)</span></label>
+                                <input type="tel" class="form-control {% if errores.telefono_whatsapp %}is-invalid{% endif %}" id="telefono_whatsapp" name="telefono_whatsapp" data-regla="telefono" inputmode="tel" required placeholder="+56 9 8765 4321" pattern="(\+56\s?)?9[\s-]?\d{4}[\s-]?\d{4}" value="{{ valores.telefono_whatsapp }}">
                                 <div class="invalid-feedback">{% if errores.telefono_whatsapp %}{{ errores.telefono_whatsapp }}{% else %}Use un celular chileno, por ejemplo +56 9 1234 5678.{% endif %}</div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="vecino_rut" class="form-label fw-semibold">RUT del ciudadano <span class="text-muted small">(opcional, evita confundir personas con el mismo nombre)</span></label>
+                                <input type="text" class="form-control {% if errores.vecino_rut %}is-invalid{% endif %}" id="vecino_rut" name="vecino_rut" data-regla="rut" data-autocompletar-rut="{% url 'vecino_por_rut' %}" inputmode="text" autocomplete="off" maxlength="12" placeholder="12.345.678-5" value="{{ valores.vecino_rut }}">
+                                <div class="invalid-feedback">{% if errores.vecino_rut %}{{ errores.vecino_rut }}{% else %}Revise el RUT y su dígito verificador.{% endif %}</div>
+                            </div>
+                            <div class="col-md-6" data-extranjero>
+                                <span class="form-label fw-semibold d-block">¿Es extranjero/a? <span class="text-danger">*</span></span>
+                                <div class="btn-group w-100 {% if errores.es_extranjero %}is-invalid{% endif %}" role="group" aria-label="¿Es extranjero/a?">
+                                    <input type="radio" class="btn-check" name="es_extranjero" id="extranjero_si" value="si" {% if valores.es_extranjero == "si" %}checked{% endif %} required>
+                                    <label class="btn btn-outline-primary" for="extranjero_si">Sí</label>
+                                    <input type="radio" class="btn-check" name="es_extranjero" id="extranjero_no" value="no" {% if valores.es_extranjero == "no" %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary" for="extranjero_no">No</label>
+                                </div>
+                                {% if errores.es_extranjero %}<div class="invalid-feedback d-block">{{ errores.es_extranjero }}</div>{% endif %}
+                                <div class="mt-2" data-nacionalidad {% if valores.es_extranjero != "si" %}hidden{% endif %}>
+                                    <label for="nacionalidad" class="form-label small fw-semibold mb-1">País de origen <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control {% if errores.nacionalidad %}is-invalid{% endif %}" id="nacionalidad" name="nacionalidad" list="paises" maxlength="60" placeholder="Ej.: Venezuela" value="{{ valores.nacionalidad }}">
+                                    <datalist id="paises">{% for p in paises %}<option value="{{ p }}">{% endfor %}</datalist>
+                                    <div class="invalid-feedback">{% if errores.nacionalidad %}{{ errores.nacionalidad }}{% else %}Indique el país de origen.{% endif %}</div>
+                                </div>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
@@ -91,7 +113,7 @@
                                 <div class="invalid-feedback">{% if errores.tipo_entrada %}{{ errores.tipo_entrada }}{% else %}Seleccione el tipo.{% endif %}</div>
                             </div>
                             <div class="col-md-6">
-                                <label for="funcionario_asignado" class="form-label fw-semibold">Funcionario / cuadrilla</label>
+                                <label for="funcionario_asignado" class="form-label fw-semibold">Funcionario asignado</label>
                                 <select class="form-select" id="funcionario_asignado" name="funcionario_asignado">
                                     <option value="">Por asignar</option>
                                     {% for func in funcionarios %}

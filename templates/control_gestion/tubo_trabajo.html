@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tubo de trabajo | SIGED La Serena{% endblock %}
+{% block title %}Compromisos ({% if vista == 'tabla' %}tabla{% else %}kanban{% endif %}) | SIGED La Serena{% endblock %}
+{% block topbar_title %}Compromisos{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-lg-4">
@@ -10,27 +11,34 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1 small">
                     <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Tubo de trabajo</li>
+                    <li class="breadcrumb-item active" aria-current="page">Compromisos · {% if vista == 'tabla' %}Tabla{% else %}Kanban{% endif %}</li>
                 </ol>
             </nav>
-            {% include '_cu.html' with cu_id='CU-E08' cu_nombre='Compromisos' %}
             <h2 class="fw-bold mb-1 text-primary-custom">Compromisos con el ciudadano</h2>
-            <p class="text-muted small mb-0">Tubo de trabajo: ingresado, pendiente, en proceso y realizado. Meta de cumplimiento 80%.</p>
+            <p class="text-muted small mb-0">Tubo de trabajo: ingresado, pendiente, en proceso y realizado. Meta de cumplimiento {{ meta_tubo }}%.</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a download href="{% url 'exportar_tubo_excel' %}?{{ consulta_tubo }}" class="btn btn-success">Exportar trabajo a Excel</a>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            {% url 'tubo_trabajo' as url_tabla %}{% url 'tubo_cartas' as url_kanban %}
+            {% if vista == 'tabla' %}{% include 'componentes/_selector_vista.html' with actual='tabla' consulta=consulta_vista %}{% else %}{% include 'componentes/_selector_vista.html' with actual='kanban' consulta=consulta_vista %}{% endif %}
+            <a data-resultado="excel" download href="{% url 'exportar_tubo_excel' %}?{{ consulta_tubo }}" class="btn btn-success">{% if usuario_actual.rol == "funcionario" %}Exportar mi trabajo a Excel{% else %}Exportar tubo a Excel{% endif %}</a>
             <a href="{% url 'compromiso_nuevo' %}" class="btn btn-warning text-dark fw-semibold">Nuevo compromiso</a>
             <a href="{% url 'agenda' %}" class="btn btn-outline-primary">Ver agenda</a>
-            <span class="badge text-bg-success fs-6 py-2">{{ pct_realizado }}% realizado</span>
-            <span class="badge text-bg-warning fs-6 py-2">{{ pct_pendiente }}% pendiente</span>
+            <span data-resultado="pct-realizado" class="badge text-bg-success fs-6 py-2">{{ pct_realizado }}% realizado</span>
+            <span data-resultado="pct-pendiente" class="badge text-bg-warning fs-6 py-2">{{ pct_pendiente }}% pendiente</span>
         </div>
     </div>
 
-    {% include 'componentes/_paginador.html' %}
+    <div class="row g-3 mb-4" data-resultado="resumen" aria-label="Resumen del tubo filtrado">
+        <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body"><div class="text-muted small">Total de compromisos</div><strong class="fs-3">{{ total_compromisos }}</strong></div></div></div>
+        <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body"><div class="text-muted small">Realizados</div><strong class="fs-3 text-success">{{ realizados }}</strong></div></div></div>
+        <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body"><div class="text-muted small">En proceso</div><strong class="fs-3 text-primary">{{ en_proceso }}</strong></div></div></div>
+        <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body"><div class="text-muted small">Por atender</div><strong class="fs-3 text-warning">{{ por_atender }}</strong><div class="small text-muted">Ingresados y pendientes</div></div></div></div>
+    </div>
 
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
+                <div class="col-12" data-resultado="vencidos"><span class="badge text-bg-danger">{{ vencidos }} vencido(s)</span></div>
                 <div class="col-12"><label class="form-label small fw-semibold" for="buscar-tubo">Búsqueda inteligente</label><input id="buscar-tubo" class="form-control" name="q" value="{{ q }}" placeholder="Código, RUT, vecino, funcionario o compromiso"></div>
                 <div class="col-md-4">
                     <label for="delegacion" class="form-label small fw-semibold">Delegación</label>
@@ -48,51 +56,50 @@
                         {% for est in estados %}
                         <option value="{{ est }}" {% if filtro_estado == est %}selected{% endif %}>{{ est }}</option>
                         {% endfor %}
+                        <option value="VENCIDO" {% if filtro_estado == 'VENCIDO' %}selected{% endif %}>VENCIDO</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary-custom w-100">Filtrar</button>
                 </div>
                 <div class="col-md-2">
-                    <a href="{% url 'tubo_trabajo' %}" class="btn btn-outline-secondary w-100">Limpiar</a>
+                    <a href="{% url ruta_vista %}" class="btn btn-outline-secondary w-100">Limpiar</a>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
+    <p class="small text-muted">Un compromiso se marca «Vencido» si pasó su fecha y aún no se ha realizado; sigue en la columna de su estado. {% if vista == 'tarjetas' %}Puede arrastrar las tarjetas para cambiar su estado.{% endif %} Use «Evidencias» para ver o subir fotos y PDF sin salir de esta pantalla.</p>
+    <div class="small mb-2" role="status" data-movimiento-aviso></div>
+    {% if vista == 'tabla' %}
+        {% include 'control_gestion/_tabla_compromisos.html' %}
+    {% else %}
+    <div data-resultado="tablero" class="row g-3 mb-4">
         {% for col in columnas_lista %}
         <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-kanban-col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-kanban-col" data-destino-estado="{{ col.estado }}">
                 <div class="card-header bg-white py-3 d-flex justify-content-between border-top border-4 {{ col.borde }} rounded-top-4">
                     <span class="fw-bold">{{ col.estado }}</span>
                     <span class="badge text-bg-dark">{{ col.total }}</span>
                 </div>
                 <div class="card-body p-2 kanban-cards-container">
                     {% for item in col.items %}
-                    <div class="card border-0 shadow-xs rounded-3 mb-2 p-3">
+                    <div class="card border-0 shadow-xs rounded-3 mb-2 p-3" draggable="true" data-mover="estado">
                         <div class="d-flex justify-content-between mb-1">
-                            <span class="fw-bold font-monospace small text-primary-custom">{{ item.id_compromiso }}</span>
-                            <small class="text-muted">{{ item.fecha_compromiso }}</small>
+                            <span class="fw-bold font-monospace small text-primary-custom"><i class="bi bi-grip-vertical" aria-hidden="true"></i> {{ item.id_compromiso }}</span>
+                            <small class="text-muted">{{ item.fecha_compromiso|fecha_breve }}</small>
                         </div>
-                        <p class="small mb-2">{{ item.descripcion }}</p>
-                        <div class="small text-muted mb-2">{{ item.vecino }} · {{ item.funcionario }}</div>
-                        <div class="d-flex gap-1 mb-2">
-                            <a class="btn btn-outline-primary btn-sm py-0" href="{% url 'compromiso_editar' item.id_compromiso %}">Editar</a>
-                            <a class="btn btn-outline-danger btn-sm py-0" href="{% url 'compromiso_eliminar' item.id_compromiso %}">Eliminar</a>
+                        {% if item.vencido %}<span class="badge text-bg-danger align-self-start mb-2">Vencido</span>{% endif %}
+                        <p class="small mb-2 {% if item.estado == 'REALIZADO' %}text-decoration-line-through text-muted{% else %}fw-semibold{% endif %}">{{ item.descripcion }}</p>
+                        <div class="small mb-1"><strong>Solicitante:</strong> {{ item.vecino }}</div><div class="small text-muted mb-1">Responsable: {{ item.funcionario }}</div>{% if item.territorio %}<div class="small text-muted mb-1">Territorio: {{ item.territorio }}</div>{% endif %}{% if item.apoyo %}<div class="small text-primary mb-2">Apoyo: {{ item.apoyo }}</div>{% endif %}{% if item.observaciones %}<details class="small mb-2"><summary>Avance y observaciones</summary><p class="mt-1">{{ item.observaciones }}</p></details>{% endif %}
+                        <div class="d-flex flex-wrap align-items-center gap-1 mb-2">
+                            {% if item.es_atencion %}<span class="badge text-bg-info">Atención</span>{% if perms.requerimientos.change_atencion %}<a class="btn btn-outline-primary btn-sm py-0" href="{{ item.url_editar }}">Modificar</a>{% endif %}{% else %}
+                            <a class="btn btn-primary-custom btn-sm" href="{% url 'compromiso_detalle' item.id_compromiso %}{% if consulta_ficha %}?{{ consulta_ficha }}{% endif %}">Ver</a>
+                            <a class="btn btn-outline-primary btn-sm py-0" href="{% url 'compromiso_editar' item.id_compromiso %}?vista=tarjetas" data-editar-ventana>Editar</a>
+                            <a class="btn btn-outline-danger btn-sm py-0" href="{% url 'compromiso_eliminar' item.id_compromiso %}">Eliminar</a>{% endif %}
                         </div>
-                        <form method="post" action="{% url 'tubo_trabajo' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="id_compromiso" value="{{ item.id_compromiso }}">
-                            <div class="input-group input-group-sm">
-                                <select name="estado" class="form-select">
-                                    {% for est in estados %}
-                                    <option value="{{ est }}" {% if item.estado == est %}selected{% endif %}>{{ est }}</option>
-                                    {% endfor %}
-                                </select>
-                                <button class="btn btn-outline-primary" type="submit">Ok</button>
-                            </div>
-                        </form>
+                        {% if not item.es_atencion %}<div class="mb-2">{% include 'componentes/_boton_evidencia.html' with tipo='compromiso' codigo=item.id_compromiso cantidad=item.evidencias %}</div>{% endif %}
+                        {% include 'control_gestion/_mover_compromiso.html' %}
                     </div>
                     {% empty %}
                     <p class="text-muted small text-center py-3">Sin compromisos</p>
@@ -103,10 +110,12 @@
         {% endfor %}
     </div>
 
+    {% endif %}
+    {% include 'componentes/_paginador.html' %}
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4">
             <h5 class="fw-bold text-primary-custom mb-3">Cumplimiento por funcionario (meta {{ meta_tubo }}%)</h5>
-            <div class="table-responsive">
+            <div data-resultado="ranking" class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -114,7 +123,7 @@
                             <th>Compromisos</th>
                             <th>Realizados</th>
                             <th>%</th>
-                            <th>Meta 80%</th>
+                            <th>Meta {{ meta_tubo }}%</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -125,7 +134,7 @@
                             <td>{{ fila.realizados }}</td>
                             <td>
                                 <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar {% if fila.cumple_meta %}bg-success{% else %}bg-danger{% endif %}" style="width: {{ fila.pct }}%;"></div>
+                                    <div class="progress-bar {% if fila.cumple_meta %}bg-success{% else %}bg-danger{% endif %}" style="width: {{ fila.pct|ancho }}%;"></div>
                                 </div>
                                 <small>{{ fila.pct }}%</small>
                             </td>

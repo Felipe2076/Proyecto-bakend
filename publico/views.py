@@ -44,8 +44,13 @@ def tramites_view(request):
 
 
 def delegaciones_view(request):
+    from cuentas.models import Delegacion
+
+    # Desde la base de datos (con su dirección); la lista oficial solo si aún no hay registros.
+    registradas = list(Delegacion.objects.order_by("nombre").values("nombre", "direccion"))
+    delegaciones = registradas or [{"nombre": n, "direccion": ""} for n in DELEGACIONES_OFICIALES]
     return render(request, "publico/delegaciones.html", {
-        "delegaciones": DELEGACIONES_OFICIALES,
+        "delegaciones": delegaciones,
         "url_delegaciones": c.URL_DELEGACIONES,
         "seccion": "publico_delegaciones",
     })

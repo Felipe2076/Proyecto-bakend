@@ -1,0 +1,7 @@
+{# Selector Tabla / Kanban. Recibe: url_tabla, url_kanban, actual ('tabla'|'kanban') y consulta (querystring sin '?'). #}
+<div class="selector-vista btn-group" role="group" aria-label="Cambiar la vista">
+    <a class="btn {% if actual == 'tabla' %}btn-primary-custom active{% else %}btn-outline-secondary{% endif %}" href="{{ url_tabla }}{% if consulta %}?{{ consulta }}{% endif %}"
+       aria-pressed="{% if actual == 'tabla' %}true{% else %}false{% endif %}" data-recordar-vista="tabla"><i class="bi bi-table" aria-hidden="true"></i> Tabla</a>
+    <a class="btn {% if actual == 'kanban' %}btn-primary-custom active{% else %}btn-outline-secondary{% endif %}" href="{{ url_kanban }}{% if consulta %}?{{ consulta }}{% endif %}"
+       aria-pressed="{% if actual == 'kanban' %}true{% else %}false{% endif %}" data-recordar-vista="kanban"><i class="bi bi-kanban" aria-hidden="true"></i> Kanban</a>
+</div>

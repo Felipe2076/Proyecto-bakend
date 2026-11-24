@@ -18,15 +18,34 @@ export function normalizarRut(rut) {
     return (rut || "").trim().replace(/\./g, "").replace(/\s/g, "").toUpperCase();
 }
 
+/* Tolerante al tipeo, igual que rut_canonico() en Python: puntos, espacios, guion opcional, «k» minúscula. */
+export function rutCanonico(rut) {
+    const limpio = (rut || "").replace(/[.\s-]/g, "").toUpperCase();
+    if (!/^\d{7,8}[\dK]$/.test(limpio)) return null;
+    const cuerpo = limpio.slice(0, -1);
+    const dv = limpio.slice(-1);
+    return dvRut(cuerpo) === dv ? `${cuerpo}-${dv}` : null;
+}
+
 export function validarRut(rut) {
+    return rutCanonico(rut) !== null;
+}
+
+/* Motivo del rechazo; mismo texto que motivo_rut_invalido() en Python. */
+export function motivoRut(rut) {
     const texto = (rut || "").trim();
-    if (!PATRON_RUT.test(texto)) return false;
-    const [cuerpo, dv] = normalizarRut(texto).split("-");
-    return dvRut(cuerpo) === dv;
+    if (!texto) return "Ingrese el RUT; el campo está vacío.";
+    if (rutCanonico(texto)) return "";
+    const limpio = texto.replace(/[.\s-]/g, "").toUpperCase();
+    if (/^\d{7,8}[\dK]$/.test(limpio)) {
+        const cuerpo = limpio.slice(0, -1);
+        return `El dígito verificador no corresponde: con ese número el RUT correcto sería ${formatearRut(`${cuerpo}-${dvRut(cuerpo)}`)}.`;
+    }
+    return "El RUT tiene un formato inválido. Use 7 u 8 dígitos y el verificador, por ejemplo 33.100.001-9.";
 }
 
 export function formatearRut(rut) {
-    const normal = normalizarRut(rut);
+    const normal = rutCanonico(rut) || normalizarRut(rut);
     if (!validarRut(normal) && !/^\d{7,8}-[\dkK]$/.test(normal)) {
         return (rut || "").trim();
     }
@@ -64,7 +83,7 @@ function enlazarRut(input) {
             input.setCustomValidity("");
         } else {
             input.classList.add("is-invalid");
-            input.setCustomValidity(input.dataset.mensaje || "Ingrese un RUT válido, por ejemplo 33.100.001-9.");
+            input.setCustomValidity(motivoRut(valor));
         }
     });
 }
@@ -77,13 +96,13 @@ export function iniciarValidacionRut() {
                 const valor = input.value.trim();
                 const ok = valor && validarRut(valor);
                 input.classList.toggle("is-invalid", !ok);
-                input.setCustomValidity(ok ? "" : (input.dataset.mensaje || "RUT inválido"));
+                input.setCustomValidity(ok ? "" : motivoRut(valor));
                 if (ok) input.value = formatearRut(valor);
                 return !ok;
             });
             if (malos.length) {
                 ev.preventDefault();
-                avisar("Revise los datos ingresados", malos[0].dataset.mensaje || "El RUT no es válido.");
+                avisar("Revise los datos ingresados", motivoRut(malos[0].value) || "El RUT no es válido.");
                 malos[0].focus();
             }
         });

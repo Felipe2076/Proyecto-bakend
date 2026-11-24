@@ -1,0 +1,36 @@
+diff -ruN a/config/settings.py b/config/settings.py
+--- a/config/settings.py
++++ b/config/settings.py
+@@ -166,6 +166,15 @@
+ DATA_UPLOAD_MAX_NUMBER_FILES = 5
+ FILE_UPLOAD_PERMISSIONS = 0o640
+ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
++# Los estáticos son públicos y los sirve Apache (otro usuario): sin modos propios, collectstatic
++# heredaba 0640/0750 de arriba y Apache respondía 403. Las evidencias conservan 0640/0750.
++STORAGES = {
++    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
++    "staticfiles": {
++        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
++        "OPTIONS": {"file_permissions_mode": 0o644, "directory_permissions_mode": 0o755},
++    },
++}
+ 
+ # Cuotas de intentos por 15 minutos (IP y cuenta). La cuenta se libera al ingresar.
+ SIGED_LIMITE_LOGIN_IP = int(os.getenv("SIGED_LIMITE_LOGIN_IP", "60"))
+diff -ruN a/core/tests_seguridad.py b/core/tests_seguridad.py
+--- a/core/tests_seguridad.py
++++ b/core/tests_seguridad.py
+@@ -196,3 +196,13 @@
+                 override_settings(SIGED_LIMITE_LOGIN_CUENTA=0):
+             self.client.post('/login/', {'rut': self.funcionario.user.username, 'password': 'x'})
+         self.assertEqual(capturado.output, ['WARNING:siged.seguridad:login_web_limitado'])
++
++
++class PermisosArchivosTests(TestCase):
++    def test_estaticos_legibles_por_el_proxy_y_evidencias_privadas(self):
++        from django.contrib.staticfiles.storage import staticfiles_storage
++        from django.core.files.storage import default_storage
++        self.assertEqual(staticfiles_storage.file_permissions_mode, 0o644)
++        self.assertEqual(staticfiles_storage.directory_permissions_mode, 0o755)
++        self.assertEqual(default_storage.file_permissions_mode, 0o640)
++        self.assertEqual(default_storage.directory_permissions_mode, 0o750)

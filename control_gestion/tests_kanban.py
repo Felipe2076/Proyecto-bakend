@@ -19,7 +19,7 @@ class KanbanTests(TestCase):
         cls.centro=Delegacion.objects.create(nombre='Delegación Centro')
         cls.rural=Delegacion.objects.create(nombre='Delegación Rural')
         cls.admin=crear_cuenta(codigo='USR-A', rut='33100011-6', password='Prueba123!',
-            rol_codigo='administrador', correo='admin@siged.test', nombre='Admin Prueba', delegacion=cls.centro)
+            rol_codigo='superusuario', correo='admin@siged.test', nombre='Admin Prueba', delegacion=cls.centro)
         cls.funcionario=crear_cuenta(codigo='USR-F', rut='33100032-9', password='Prueba123!',
             rol_codigo='funcionario', correo='funcionario@siged.test', nombre='Ana Prueba', delegacion=cls.centro)
         vecino=Vecino.objects.create(nombre='Vecino Prueba', delegacion=cls.centro)

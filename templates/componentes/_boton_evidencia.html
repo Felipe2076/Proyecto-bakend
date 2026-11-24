@@ -1,0 +1,7 @@
+{# Botón que abre la ventana de evidencias. Recibe: tipo ('compromiso'|'ticket'), codigo y cantidad. #}
+<button type="button" class="btn btn-sm btn-evidencia {% if cantidad %}btn-outline-success{% else %}btn-outline-primary{% endif %}"
+        data-evidencias="{% url 'evidencias_web' tipo codigo %}" data-evidencias-titulo="{{ codigo }}" draggable="false"
+        aria-label="Evidencias de {{ codigo }}: {{ cantidad|default:0 }}">
+    <i class="bi bi-paperclip" aria-hidden="true"></i> Evidencias
+    <span class="badge rounded-pill {% if cantidad %}text-bg-success{% else %}text-bg-secondary{% endif %}" data-evidencias-cantidad>{{ cantidad|default:0 }}</span>
+</button>

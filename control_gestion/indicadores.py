@@ -11,7 +11,7 @@ entre ``sla_verde_max_dias`` y ``sla_amarillo_max_dias`` de
 from django.db.models import Count, Max, Q
 from django.utils import timezone
 
-from control_gestion.models import Actividad, Compromiso, ItemFuncionario, Medicion
+from control_gestion.models import Actividad, Compromiso, ItemFuncionario
 from cuentas.models import Delegacion, Funcionario
 from cuentas.servicios import obtener_parametros
 
@@ -36,8 +36,8 @@ def cumplimiento_item(ponderador, meta_trimestre, avance_actual):
     avance = float(avance_actual or 0)
     peso = float(ponderador or 0)
     pct = round((avance / meta) * 100, 1) if meta else 0.0
-    if pct > 100:
-        pct = 100.0
+    if pct > 120:
+        pct = 120.0
     ponderado = round((peso * pct) / 100.0, 2)
     return pct, ponderado
 
@@ -77,34 +77,17 @@ def color_semaforo_diario(pct_logrado, pct_esperado, dias_totales, sla_verde, sl
 
 
 def _periodo(hoy):
-    medicion = Medicion.objects.select_related("delegacion_piloto").order_by("-fecha_inicio").first()
+    from control_gestion.trimestres import trimestre_actual
+    periodo = trimestre_actual(hoy)
     params = obtener_parametros()
-    meta = int(params["meta_tubo_porcentaje"] or META_TUBO_DEFECTO)
-    if medicion is None:
-        from datetime import date
-
-        fecha_inicio = date(2026, 7, 1)
-        fecha_termino = date(2026, 9, 28)
-        dias_totales = 90
-        nombre = "Trimestre en curso"
-        piloto = "Delegación Rural"
-    else:
-        fecha_inicio = medicion.fecha_inicio
-        fecha_termino = medicion.fecha_termino
-        dias_totales = int(medicion.dias_totales or 90)
-        nombre = medicion.periodo
-        piloto = medicion.delegacion_piloto.nombre
-        meta = int(medicion.meta_cumplimiento_tubo or meta)
-    avance = porcentaje_esperado(fecha_inicio, fecha_termino, dias_totales, hoy)
+    avance = porcentaje_esperado(periodo['fecha_inicio'], periodo['fecha_termino'], periodo['dias_totales'], hoy)
     return {
-        "periodo": nombre,
-        "delegacion_piloto": piloto,
-        "fecha_inicio": fecha_inicio,
-        "fecha_termino": fecha_termino,
-        "fecha_hoy": hoy,
-        "meta_cumplimiento_tubo": meta,
-        "sla_verde_max_dias": int(params["sla_verde_max_dias"]),
-        "sla_amarillo_max_dias": int(params["sla_amarillo_max_dias"]),
+        **periodo,
+        'fecha_hoy': hoy,
+        'delegacion_piloto': periodo.get('delegacion_piloto', 'Delegación Rural'),
+        'meta_cumplimiento_tubo': int(periodo.get('meta_cumplimiento_tubo') or params['meta_tubo_porcentaje'] or META_TUBO_DEFECTO),
+        'sla_verde_max_dias': int(params['sla_verde_max_dias']),
+        'sla_amarillo_max_dias': int(params['sla_amarillo_max_dias']),
         **avance,
     }
 
@@ -136,9 +119,10 @@ def _conteo_estados():
     )
 
 
-def _tubo_agrupado(campo_id, campo_nombre, meta):
+def _tubo_agrupado(campo_id, campo_nombre, meta, compromisos=None):
+    compromisos = Compromiso.objects.all() if compromisos is None else compromisos
     filas = (
-        Compromiso.objects.values(campo_id, campo_nombre)
+        compromisos.values(campo_id, campo_nombre)
         .annotate(**_conteo_estados())
         .order_by(campo_nombre)
     )
@@ -150,9 +134,20 @@ def _tubo_agrupado(campo_id, campo_nombre, meta):
     return resultado
 
 
-def construir_panel(hoy=None):
-    """Arma semáforo, tubo, metas y promedios de delegación desde el ORM."""
+def delegacion_visible(perfil):
+    """None = todas (superusuario o sin perfil en pruebas); id = solo esa delegación."""
+    if perfil is None or getattr(getattr(perfil, "rol", None), "codigo", "") == "superusuario":
+        return None
+    return perfil.delegacion_id or 0
+
+
+def construir_panel(hoy=None, perfil=None):
+    """Arma semáforo, tubo, metas y promedios de delegación desde el ORM.
+
+    Con ``perfil`` de una delegación, todo queda acotado a ella.
+    """
     hoy = hoy or timezone.localdate()
+    solo = delegacion_visible(perfil)
     periodo = _periodo(hoy)
     meta = periodo["meta_cumplimiento_tubo"]
     sla_verde = periodo["sla_verde_max_dias"]
@@ -164,6 +159,20 @@ def construir_panel(hoy=None):
             "funcionario", "funcionario__cargo", "funcionario__delegacion", "meta"
         ).order_by("funcionario__nombre", "-ponderador", "meta__nombre")
     )
+    funcionarios = Funcionario.objects.select_related("cargo", "delegacion").order_by("nombre")
+    compromisos = Compromiso.objects.all()
+    actividades_base = Actividad.objects.all()
+    delegaciones_qs = Delegacion.objects.order_by("nombre")
+    from django.conf import settings
+    if getattr(settings, "SIGED_OCULTAR_SIMULACION", False):
+        items = items.exclude(funcionario__es_simulacion=True)
+        funcionarios = funcionarios.exclude(es_simulacion=True)
+    if solo is not None:
+        items = items.filter(funcionario__delegacion_id=solo)
+        funcionarios = funcionarios.filter(delegacion_id=solo)
+        compromisos = compromisos.filter(delegacion_id=solo)
+        actividades_base = actividades_base.filter(delegacion_id=solo)
+        delegaciones_qs = delegaciones_qs.filter(pk=solo)
     filas_items = []
     for item in items:
         pct, ponderado = cumplimiento_item(item.ponderador, item.meta_trimestre, item.avance_actual)
@@ -192,7 +201,7 @@ def construir_panel(hoy=None):
             }
         )
 
-    for fun in Funcionario.objects.select_related("cargo", "delegacion").order_by("nombre"):
+    for fun in funcionarios:
         por_funcionario.setdefault(
             fun.pk,
             {
@@ -204,18 +213,22 @@ def construir_panel(hoy=None):
         )
 
     semaforo = []
-    for grupo in por_funcionario.values():
+    for funcionario_id, grupo in por_funcionario.items():
+        from control_gestion.evidencias import bonificacion
+        grupo['pct_logrado'] = min(150, grupo['pct_logrado'] + bonificacion(funcionario_id,periodo))
+        from control_gestion.ausencias import ajustar_periodo
+        periodo_personal = ajustar_periodo(funcionario_id, periodo)
         color = color_semaforo_diario(
             grupo["pct_logrado"],
-            periodo["pct_esperado"],
-            periodo["dias_totales"],
+            periodo_personal["pct_esperado"],
+            periodo_personal["dias_totales"],
             sla_verde,
             sla_amarillo,
         )
-        semaforo.append({**grupo, **color})
+        semaforo.append({**grupo, "pct_esperado": periodo_personal["pct_esperado"], "dias_ausencia": periodo_personal.get("dias_ausencia",0), **color})
     semaforo.sort(key=lambda fila: (fila["delegacion"], fila["nombre"]))
 
-    actividades_qs = Actividad.objects.values("delegacion_id", "delegacion__nombre").annotate(
+    actividades_qs = actividades_base.values("delegacion_id", "delegacion__nombre").annotate(
         ultimo=Max("fecha_actividad"),
         cantidad=Count("pk"),
     )
@@ -224,7 +237,7 @@ def construir_panel(hoy=None):
     }
     delegaciones = []
     dias_avance = periodo["dias_avance"]
-    for delegacion in Delegacion.objects.order_by("nombre"):
+    for delegacion in delegaciones_qs:
         fila = actividades.get(delegacion.pk)
         cantidad = int(fila["cantidad"]) if fila else 0
         ultimo = fila["ultimo"] if fila else None
@@ -242,9 +255,9 @@ def construir_panel(hoy=None):
         "periodo": periodo,
         "tope_amarillo": limite_amarillo(sla_verde, sla_amarillo),
         "semaforo": semaforo,
-        "tubo_funcionarios": _tubo_agrupado("funcionario_id", "funcionario__nombre", meta),
-        "tubo_delegaciones": _tubo_agrupado("delegacion_id", "delegacion__nombre", meta),
-        "tubo_total": _fila_tubo(Compromiso.objects.aggregate(**_conteo_estados()), meta),
+        "tubo_funcionarios": _tubo_agrupado("funcionario_id", "funcionario__nombre", meta, compromisos),
+        "tubo_delegaciones": _tubo_agrupado("delegacion_id", "delegacion__nombre", meta, compromisos),
+        "tubo_total": _fila_tubo(compromisos.aggregate(**_conteo_estados()), meta),
         "items": filas_items,
         "delegaciones": delegaciones,
     }

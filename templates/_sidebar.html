@@ -11,6 +11,9 @@
         <a class="siged-nav__link {% if request.resolver_match.url_name == 'inicio' %}is-active{% endif %}" href="{% url 'inicio' %}">
             <i class="bi bi-house-door"></i> Inicio
         </a>
+        <a class="siged-nav__link {% if request.resolver_match.url_name == 'mi_perfil' %}is-active{% endif %}" href="{% url 'mi_perfil' %}">
+            <i class="bi bi-person-circle"></i> Mi perfil
+        </a>
 
         {% if puede_requerimientos %}
         <p class="siged-nav__group">Atención ciudadana</p>
@@ -20,7 +23,7 @@
         <a class="siged-nav__link {% if request.resolver_match.url_name == 'lista_requerimientos' or request.resolver_match.url_name == 'detalle_requerimiento' %}is-active{% endif %}" href="{% url 'lista_requerimientos' %}">
             <i class="bi bi-ticket-detailed"></i> Listado de tickets
         </a>
-        {% if puede_control_gestion %}
+        {% if puede_requerimientos %}
         <a class="siged-nav__link {% if request.resolver_match.url_name == 'kanban' %}is-active{% endif %}" href="{% url 'kanban' %}">
             <i class="bi bi-kanban"></i> Tablero Kanban
         </a>
@@ -40,8 +43,9 @@
         </a>
         {% endif %}
         {% if puede_compromisos %}
-        <a class="siged-nav__link {% if request.resolver_match.url_name == 'tubo_trabajo' or request.resolver_match.url_name == 'compromiso_nuevo' or request.resolver_match.url_name == 'compromiso_editar' %}is-active{% endif %}" href="{% url 'tubo_trabajo' %}">
-            <i class="bi bi-check2-square"></i> Compromisos
+        {# Una sola entrada: dentro de la pantalla se elige Tabla o Kanban (tubo de cartas). #}
+        <a class="siged-nav__link {% if request.resolver_match.url_name in 'tubo_trabajo,tubo_cartas,compromiso_nuevo,compromiso_editar,compromiso_detalle' %}is-active{% endif %}" href="{% url 'tubo_trabajo' %}" data-vista-recordada="compromisos" data-url-kanban="{% url 'tubo_cartas' %}">
+            <i class="bi bi-columns-gap"></i> Compromisos <span class="small text-muted">(tabla/kanban)</span>
         </a>
         {% endif %}
         {% if puede_agenda %}
@@ -82,16 +86,18 @@
         {% endif %}
         {% if puede_administracion %}
         <p class="siged-nav__group">Administración</p>
-        <a class="siged-nav__link" href="{% url 'admin_grupos' %}"><i class="bi bi-shield-lock"></i> Grupos y permisos</a>
+        {% if es_superusuario %}<a class="siged-nav__link" href="{% url 'admin_grupos' %}"><i class="bi bi-shield-lock"></i> Grupos y permisos</a>{% endif %}
         <a class="siged-nav__link {% if request.resolver_match.url_name == 'admin_usuarios' %}is-active{% endif %}" href="{% url 'admin_usuarios' %}">
             <i class="bi bi-people"></i> Usuarios
         </a>
+        {% if es_superusuario %}
         <a class="siged-nav__link {% if request.resolver_match.url_name == 'admin_cargos' %}is-active{% endif %}" href="{% url 'admin_cargos' %}">
             <i class="bi bi-briefcase"></i> Cargos
         </a>
         <a class="siged-nav__link {% if request.resolver_match.url_name == 'admin_parametros' %}is-active{% endif %}" href="{% url 'admin_parametros' %}">
             <i class="bi bi-sliders"></i> Parámetros
         </a>
+        {% endif %}
         {% endif %}
     </nav>
 </aside>

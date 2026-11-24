@@ -1,10 +1,21 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static l10n %}
 
 {% block title %}Dashboard de cuellos de botella | SIGED La Serena{% endblock %}
 
+{% block extra_css %}
+<style>
+    #panel-gestion .e3d-tilt-on {
+        --e3d-tx: 0 !important;
+        --e3d-lift: 0 !important;
+        transform: none;
+        will-change: auto;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
+<div class="container" id="panel-gestion">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -13,9 +24,8 @@
                     <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
                 </ol>
             </nav>
-            {% include '_cu.html' with cu_id='CU-E10' cu_nombre='Panel de gestión' %}
-            <h2 class="fw-bold mb-1 text-primary-custom">Indicadores y cuellos de botella</h2>
-            <p class="text-muted small mb-0">Tickets con 6 o más días y carga por delegación.</p>
+            <h1 class="h2 fw-bold mb-1 text-primary-custom">Indicadores y cuellos de botella</h1>
+            <p class="text-muted small mb-0">Tickets abiertos con más de {{ sla_amarillo }} días y carga por delegación{% if not es_superusuario %} de su territorio{% endif %}.</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             <a href="{% url 'kanban' %}" class="btn btn-outline-primary">Tablero Kanban</a>
@@ -24,15 +34,10 @@
     </div>
 
     <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden bg-primary-custom text-white">
-        <div class="row align-items-center g-0">
-            <div class="col-lg-6 p-4 p-md-5">
-                <span class="badge text-bg-warning text-dark mb-3">Control de gestión</span>
-                <h3 class="fw-bold mb-2">Panel ejecutivo de desempeño territorial</h3>
-                <p class="text-white-75 small mb-0">SLA estándar: 1 a 3 días. Alerta en 4-5. Crítico desde el día 6.</p>
-            </div>
-            <div class="col-lg-6 text-center p-3">
-                <img src="{% static 'img/dashboard_analitica.svg' %}" alt="Analítica territorial" class="img-fluid rounded-3" style="max-height: 200px;">
-            </div>
+        <div class="p-4 p-md-5">
+            <span class="badge text-bg-warning text-dark mb-3">Control de gestión</span>
+            <h2 class="h3 fw-bold mb-2">Panel ejecutivo de desempeño territorial</h2>
+            <p class="text-white-75 small mb-0">Plazo normal: hasta {{ sla_verde }} día{{ sla_verde|pluralize }}. Alerta hasta el día {{ sla_amarillo }}. Crítico desde el día {{ sla_amarillo|add:1 }}. Valores tomados de Parámetros del sistema.</p>
         </div>
     </div>
 
@@ -41,19 +46,21 @@
             <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card">
                 <span class="text-muted small text-uppercase">Total solicitudes</span>
                 <h2 class="fw-bold my-1">{{ total_requerimientos }}</h2>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card accent-bar">
-                <span class="text-muted small text-uppercase">Casos críticos (≥6d)</span>
-                <h2 class="fw-bold text-danger my-1">{{ total_criticos }}</h2>
-                <span class="badge text-bg-danger">{{ porcentaje_criticos }}% de atraso</span>
+                <span class="small text-muted">{{ total_abiertos }} abiertas · {{ total_resueltos }} resueltas</span>
             </div>
         </div>
         <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card">
-                <span class="text-muted small text-uppercase">Tiempo promedio</span>
+                <span class="text-muted small text-uppercase">Casos críticos (más de {{ sla_amarillo }} días)</span>
+                <h2 class="fw-bold text-danger my-1">{{ total_criticos }}</h2>
+                <span class="badge text-bg-danger">{{ porcentaje_criticos }}% de los abiertos</span>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 kpi-card">
+                <span class="text-muted small text-uppercase">Tiempo de resolución</span>
                 <h2 class="fw-bold my-1">{{ tiempo_promedio }} <small class="fs-6 text-muted">días</small></h2>
+                <span class="small text-muted">Abiertos llevan {{ antiguedad_abiertos }} días en promedio</span>
             </div>
         </div>
         <div class="col-sm-6 col-lg-3">
@@ -93,7 +100,7 @@
                         <td>{{ item.vecino_nombre }}</td>
                         <td><span class="badge text-bg-light border">{{ item.delegacion }}</span></td>
                         <td><div class="small fw-semibold">{{ item.tipo_entrada }}</div><small class="text-muted">{{ item.area_tematica }}</small></td>
-                        <td class="small table-desc-col">{{ item.descripcion }}</td>
+                        <td class="small table-desc-col">{{ item.descripcion|truncatechars:140 }}</td>
                         <td class="text-center"><span class="badge text-bg-danger">{{ item.dias_transcurridos }} días</span></td>
                         <td class="text-end px-3"><a href="{% url 'detalle_requerimiento' item.id_ticket %}" class="btn btn-outline-danger btn-sm">Auditar</a></td>
                     </tr>
@@ -118,17 +125,17 @@
                     <div class="p-3 rounded-4 bg-body-tertiary border h-100">
                         <div class="d-flex justify-content-between mb-2">
                             <h6 class="fw-bold mb-0">{{ st.nombre }}</h6>
-                            <span class="badge {% if st.criticos > 0 %}text-bg-danger{% else %}text-bg-success{% endif %}">{{ st.criticos }} críticos</span>
+                            <span class="badge {% if st.criticos > 0 %}text-bg-danger{% else %}text-bg-success{% endif %}">{{ st.criticos }} crítico{{ st.criticos|pluralize }}</span>
                         </div>
                         <div class="d-flex justify-content-between small mb-1">
                             <span class="text-muted">Total</span>
-                            <strong>{{ st.total }} ({{ st.porcentaje_carga }}%)</strong>
+                            <strong>{{ st.total }} ({{ st.porcentaje_carga }}%) · {{ st.abiertos }} abiertas</strong>
                         </div>
-                        <div class="progress mb-2" role="progressbar" aria-valuenow="{{ st.porcentaje_carga }}" aria-valuemin="0" aria-valuemax="100" style="height: 8px;">
-                            <div class="progress-bar bg-primary-custom" style="width: {{ st.porcentaje_carga }}%;"></div>
+                        <div class="progress mb-2" role="progressbar" aria-valuenow="{{ st.porcentaje_carga|unlocalize }}" aria-valuemin="0" aria-valuemax="100" style="height: 8px;">
+                            <div class="progress-bar bg-primary-custom" style="width: {{ st.porcentaje_carga|ancho }}%;"></div>
                         </div>
                         <div class="d-flex justify-content-between small">
-                            <span class="text-muted">Tiempo promedio</span>
+                            <span class="text-muted">Tiempo de resolución</span>
                             <strong>{{ st.tiempo_promedio }} días</strong>
                         </div>
                     </div>

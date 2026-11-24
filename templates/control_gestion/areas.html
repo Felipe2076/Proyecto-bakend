@@ -13,21 +13,21 @@
                     <li class="breadcrumb-item active" aria-current="page">Áreas</li>
                 </ol>
             </nav>
-            <h2 class="fw-bold mb-1 text-primary-custom">Monitoreo de 4 áreas estratégicas</h2>
-            <p class="text-muted small mb-0">Cumplimiento, tiempos y satisfacción vecinal.</p>
+            <h1 class="h2 fw-bold mb-1 text-primary-custom">Monitoreo de {{ total_areas }} área{{ total_areas|pluralize }} de soporte</h1>
+            <p class="text-muted small mb-0">Calculado con los tickets registrados{% if not es_superusuario %} de su delegación{% endif %}: plazo cumplido si se resolvió (o lleva) hasta {{ sla_amarillo }} días; meta {{ meta_cumplimiento }}%.</p>
         </div>
-        <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_areas }} direcciones</span>
+        <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_areas }} área{{ total_areas|pluralize }}</span>
     </div>
 
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <span class="fw-semibold text-secondary small">Ordenar por</span>
-            <div class="btn-group btn-group-sm flex-wrap" role="group">
+            <div class="siged-orden d-flex flex-wrap gap-2" role="group">
                 <a href="{% url 'areas_soporte' %}" class="btn {% if not criterio_orden %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Predeterminado</a>
                 <a href="{% url 'areas_soporte' %}?orden=cumplimiento" class="btn {% if criterio_orden == 'cumplimiento' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Cumplimiento</a>
                 <a href="{% url 'areas_soporte' %}?orden=satisfaccion" class="btn {% if criterio_orden == 'satisfaccion' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Satisfacción</a>
                 <a href="{% url 'areas_soporte' %}?orden=tiempo" class="btn {% if criterio_orden == 'tiempo' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Menor tiempo</a>
-                <a href="{% url 'areas_soporte' %}?orden=casos" class="btn {% if criterio_orden == 'casos' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Mayor carga</a>
+                <a href="{% url 'areas_soporte' %}?orden=casos" class="btn {% if criterio_orden == 'casos' %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">Mayor carga (30 días)</a>
             </div>
         </div>
     </div>
@@ -35,7 +35,7 @@
     <div class="row g-4 mb-4">
         {% for area in areas %}
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 area-card {{ area.tarjeta_borde }} border-start border-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 {{ area.tarjeta_borde }} border-start border-4">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                     <div>
                         <span class="badge text-bg-light border font-monospace small">{{ area.id_area }}</span>
@@ -44,26 +44,33 @@
                     </div>
                     <span class="badge {{ area.badge_clase }}">{{ area.nivel_rendimiento }}</span>
                 </div>
-                <p class="text-muted small bg-body-tertiary p-3 rounded-3 border">{{ area.descripcion }}</p>
+                {% if area.descripcion %}
+                <details class="mb-3 small">
+                    <summary class="text-primary fw-semibold">Ver descripción</summary>
+                    <p class="mt-2 mb-0 text-secondary">{{ area.descripcion }}</p>
+                </details>
+                {% endif %}
                 <div class="d-flex justify-content-between small mb-1">
                     <span>Cumplimiento de plazos</span>
-                    <strong>{{ area.porcentaje_cumplimiento }}%</strong>
+                    <strong>{% if area.porcentaje_cumplimiento is None %}Sin datos{% else %}{{ area.porcentaje_cumplimiento }}%{% endif %}</strong>
                 </div>
                 <div class="progress mb-3" role="progressbar" style="height: 10px;">
-                    <div class="progress-bar {{ area.color_barra }}" style="width: {{ area.porcentaje_cumplimiento }}%;"></div>
+                    <div class="progress-bar {{ area.color_barra }}" style="width: {{ area.porcentaje_cumplimiento|ancho }}%;"></div>
                 </div>
                 <div class="row g-2 pt-2 border-top text-center">
                     <div class="col-4 border-end">
-                        <small class="text-muted d-block">Casos / mes</small>
-                        <strong>{{ area.total_casos_mes }}</strong>
+                        <small class="text-muted d-block">Casos 30 días</small>
+                        <strong>{{ area.casos_30d }}</strong>
+                        <small class="d-block text-muted">{{ area.abiertos }} abierto{{ area.abiertos|pluralize }}</small>
                     </div>
                     <div class="col-4 border-end">
-                        <small class="text-muted d-block">Tiempo prom.</small>
-                        <strong>{{ area.tiempo_promedio_dias }} d</strong>
+                        <small class="text-muted d-block">Resolución prom.</small>
+                        <strong>{% if area.tiempo_promedio_dias is None %}—{% else %}{{ area.tiempo_promedio_dias }} d{% endif %}</strong>
                     </div>
                     <div class="col-4">
                         <small class="text-muted d-block">Satisfacción</small>
-                        <strong>{{ area.satisfaccion_formato }}</strong>
+                        <strong>{% if area.satisfaccion_promedio is None %}—{% else %}{{ area.satisfaccion_promedio }} / 5{% endif %}</strong>
+                        <small class="d-block text-muted">{{ area.encuestas }} encuesta{{ area.encuestas|pluralize }}</small>
                     </div>
                 </div>
             </div>

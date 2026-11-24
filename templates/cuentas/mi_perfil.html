@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi perfil | SIGED-SGR{% endblock %}
+{% block topbar_title %}Mi perfil{% endblock %}
+{% block topbar_sub %}Sus datos y su foto de perfil{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 60rem;">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+            <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Mi perfil</li>
+        </ol>
+    </nav>
+    <h1 class="h2 fw-bold text-primary-custom mb-4">Mi perfil</h1>
+
+    <div class="row g-4">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4 text-center">
+                    <h2 class="h6 fw-bold text-start mb-3">Foto de perfil</h2>
+                    <div class="d-flex justify-content-center mb-3">
+                        <img id="vista-foto" class="siged-avatar siged-avatar--lg border" alt="Su foto de perfil" src="{{ foto_url }}" {% if not foto_url %}hidden{% endif %}>
+                        <span id="vista-foto-iniciales" class="siged-avatar siged-avatar--lg siged-avatar-iniciales" aria-hidden="true" {% if foto_url %}hidden{% endif %}>{{ iniciales }}</span>
+                    </div>
+                    <form method="post" enctype="multipart/form-data" novalidate class="text-start">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="subir">
+                        <label class="form-label fw-semibold" for="foto">Elegir imagen</label>
+                        <input type="file" class="form-control {% if error_foto %}is-invalid{% endif %}" id="foto" name="foto" required
+                               accept="image/jpeg,image/png,image/webp" data-vista-previa="vista-foto" data-max-mb="5">
+                        <div class="invalid-feedback">{{ error_foto|default:"Elija una imagen JPG, PNG o WebP de hasta 5 MB." }}</div>
+                        <div class="form-text">JPG, PNG o WebP, hasta 5 MB. Se recorta en cuadrado y se quitan los datos de ubicación de la foto. Verá la vista previa antes de guardar.</div>
+                        <button class="btn btn-primary-custom w-100 mt-3" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Guardar foto</button>
+                    </form>
+                    {% if foto_url %}
+                    <form method="post" class="mt-2" data-confirmar="¿Quitar su foto de perfil? Se mostrarán sus iniciales.">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="quitar">
+                        <button class="btn btn-outline-danger btn-sm w-100" type="submit">Quitar foto</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h2 class="h6 fw-bold mb-3">Mis datos</h2>
+                    <dl class="row mb-0 small">
+                        <dt class="col-sm-4 text-muted fw-normal">Nombre</dt><dd class="col-sm-8 fw-semibold">{{ perfil.nombre }}</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">RUT</dt><dd class="col-sm-8">{{ funcionario.rut|rut_formato|default:"—" }}</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">Correo</dt><dd class="col-sm-8">{{ perfil.correo }}</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">Rol</dt><dd class="col-sm-8">{{ perfil.rol.nombre }}</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">Cargo</dt><dd class="col-sm-8">{{ perfil.cargo.nombre|default:funcionario.cargo.nombre|default:"—" }}</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">Delegación</dt><dd class="col-sm-8">{{ perfil.delegacion.nombre|default:"—" }}</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">Código</dt><dd class="col-sm-8 font-monospace">{{ perfil.codigo }}</dd>
+                    </dl>
+                    <p class="small text-muted mt-3 mb-0">Para corregir nombre, RUT, cargo o delegación, pida el cambio al administrador de su delegación. Para cambiar la contraseña use <a href="{% url 'recuperar_contrasena' %}">Recuperar contraseña</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

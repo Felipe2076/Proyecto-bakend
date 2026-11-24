@@ -14,9 +14,8 @@
                     <li class="breadcrumb-item active" aria-current="page">Semáforo SGR</li>
                 </ol>
             </nav>
-            {% include '_cu.html' with cu_id='CU-E10' cu_nombre='Indicadores y metas' %}
-            <h2 class="fw-bold mb-1 text-primary-custom">Semáforo de indicadores</h2>
-            <p class="text-muted small mb-0">Compara el avance de cada funcionario contra la meta del trimestre (90 días = 100%).</p>
+            <h1 class="h2 fw-bold mb-1 text-primary-custom">Semáforo de indicadores</h1>
+            <p class="text-muted small mb-0">Compara el avance de cada funcionario contra la meta del trimestre ({{ periodo.dias_totales }} días = 100%).</p>
         </div>
     </div>
 
@@ -24,13 +23,13 @@
         <div class="col-6 col-lg-3">
             <div class="card border-0 shadow-sm rounded-4 p-3">
                 <small class="text-muted">Fecha de hoy</small>
-                <strong>{{ periodo.fecha_hoy }}</strong>
+                <strong>{{ periodo.fecha_hoy|fecha_breve }}</strong>
             </div>
         </div>
         <div class="col-6 col-lg-3">
             <div class="card border-0 shadow-sm rounded-4 p-3">
                 <small class="text-muted">Inicio / término</small>
-                <strong>{{ periodo.fecha_inicio }} → {{ periodo.fecha_termino }}</strong>
+                <strong>{{ periodo.fecha_inicio|fecha_breve }} → {{ periodo.fecha_termino|fecha_breve }}</strong>
             </div>
         </div>
         <div class="col-6 col-lg-3">
@@ -104,7 +103,7 @@
                         <th>% logrado</th>
                         <th>% esperado</th>
                         <th>Semáforo</th>
-                        <th>Tubo (meta 80%)</th>
+                        <th>Tubo (meta {{ periodo.meta_cumplimiento_tubo }}%)</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -117,10 +116,10 @@
                         <td>
                             <strong>{{ fun.ponderado_total }}%</strong>
                             <div class="progress mt-1" style="height: 6px;">
-                                <div class="progress-bar {{ fun.semaforo_clase }}" style="width: {{ fun.ponderado_total }}%;"></div>
+                                <div class="progress-bar {{ fun.semaforo_clase }}" style="width: {{ fun.ponderado_total|ancho }}%;"></div>
                             </div>
                         </td>
-                        <td>{{ periodo.pct_esperado }}%</td>
+                        <td>{{ fun.pct_esperado }}%{% if fun.dias_ausencia %}<small class="d-block text-muted">{{ fun.dias_ausencia }} día(s) de ausencia</small>{% endif %}</td>
                         <td><span class="badge {{ fun.semaforo_clase }}">{{ fun.semaforo_nivel }}</span></td>
                         <td>
                             {% if fun.tubo_total %}

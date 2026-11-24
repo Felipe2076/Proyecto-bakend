@@ -12,7 +12,6 @@
                     <li class="breadcrumb-item active">Agenda</li>
                 </ol>
             </nav>
-            {% include '_cu.html' with cu_id='CU-E09' cu_nombre='Agenda colectiva' %}
             <h2 class="fw-bold mb-1 text-primary-custom">Agenda de la delegación</h2>
             <p class="text-muted small mb-0">Reuniones, terreno, compromisos y actividades del mes.</p>
         </div>
@@ -24,14 +23,21 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <a class="btn btn-outline-secondary" href="?vista={{ vista }}&amp;anio={{ prev_anio }}&amp;mes={{ prev_mes }}">&laquo; Mes anterior</a>
-        <h3 class="h5 mb-0">{{ nombre_mes }} {{ anio }} · {{ total_mes }} evento(s)</h3>
+        <h3 data-resultado="mes" class="h5 mb-0">{{ nombre_mes }} {{ anio }} · {{ total_mes }} evento(s)</h3>
         <a class="btn btn-outline-secondary" href="?vista={{ vista }}&amp;anio={{ next_anio }}&amp;mes={{ next_mes }}">Mes siguiente &raquo;</a>
     </div>
 
+    <form method="get" class="d-flex gap-2 mb-3" role="search" data-periodo-agenda>
+        <input type="hidden" name="vista" value="{{ vista }}"><input type="hidden" name="anio" value="{{ anio }}"><input type="hidden" name="mes" value="{{ mes }}">
+        <input type="search" name="q" value="{{ q }}" class="form-control" aria-label="Buscar en la agenda" placeholder="Buscar evento, código o responsable">
+        <button class="btn btn-outline-primary">Buscar</button>
+    </form>
+    <p class="small text-muted">Arrastre los eventos y compromisos a otra fecha o use «Mover». Las actividades ya registradas conservan su fecha.</p>
+    <div class="small mb-2" role="status" data-movimiento-aviso></div>
     {% if vista == 'lista' %}
     <div class="card border-0 shadow-sm rounded-4">
         <div class="table-responsive">
-            <table class="table align-middle mb-0">
+            <table data-resultado="agenda" class="table align-middle mb-0">
                 <thead class="table-light">
                     <tr>
                         <th>Fecha</th>
@@ -44,11 +50,11 @@
                 <tbody>
                     {% for evento in lista_mes %}
                     <tr>
-                        <td class="font-monospace">{{ evento.fecha_iso }}</td>
+                        <td class="font-monospace">{{ evento.fecha_iso|fecha_breve }}</td>
                         <td><span class="badge {{ evento.clase }}">{{ evento.tipo }}</span></td>
                         <td>
                             <div class="fw-semibold">{{ evento.titulo }}</div>
-                            <small class="text-muted">{{ evento.detalle }}</small>
+                            <small class="text-muted">{{ evento.detalle }}</small>{% include 'control_gestion/_mover_evento.html' %}
                         </td>
                         <td>{{ evento.delegacion }}</td>
                         <td>{{ evento.responsable }}</td>
@@ -63,7 +69,7 @@
     {% else %}
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive">
-            <table class="table table-bordered mb-0 calendar-table">
+            <table data-resultado="agenda" class="table table-bordered mb-0 calendar-table">
                 <thead class="table-dark-custom text-white">
                     <tr>
                         {% for dia in dias_semana %}
@@ -75,11 +81,14 @@
                     {% for semana in semanas %}
                     <tr>
                         {% for celda in semana %}
-                        <td class="cal-day align-top {% if celda.es_hoy %}cal-today{% endif %}">
+                        <td {% if celda.dia %}data-destino-fecha="{{ celda.fecha_iso }}"{% endif %} class="cal-day align-top {% if celda.es_hoy %}cal-today{% endif %}">
                             {% if celda.dia %}
-                            <div class="fw-bold small mb-1">{{ celda.dia }}</div>
+                            <span class="siged-dia">{{ celda.dia }}</span>
                             {% for evento in celda.eventos %}
-                            <div class="badge {{ evento.clase }} text-wrap text-start w-100 mb-1 fw-normal">{{ evento.titulo|truncatechars:42 }}</div>
+                            <div class="siged-evento" {% if evento.movible %}draggable="true" data-mover="fecha"{% endif %}>
+                                <span class="badge {{ evento.clase }} text-wrap text-start w-100 fw-normal">{% if evento.movible %}<i class="bi bi-grip-vertical" aria-hidden="true"></i> {% endif %}{{ evento.titulo }}</span>
+                                {% include 'control_gestion/_mover_evento.html' %}
+                            </div>
                             {% endfor %}
                             {% endif %}
                         </td>

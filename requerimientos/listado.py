@@ -5,7 +5,6 @@ from xml.sax.saxutils import escape
 import re
 
 from django.core.paginator import Paginator
-from django.db.models import Q
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -31,14 +30,13 @@ def datos(request):
         qs = qs.filter(estado__iexact=filtros['estado'])
     if filtros['busqueda']:
         q = filtros['busqueda']
-        qs = qs.filter(Q(codigo__icontains=q) | Q(vecino__nombre__icontains=q)
-            | Q(descripcion__icontains=q) | Q(tipo_gestion__nombre__icontains=q)
-            | Q(area__nombre__icontains=q) | Q(asignado_a__icontains=q)
-            | Q(funcionario__nombre__icontains=q)).distinct()
+        from core.busqueda import buscar
+        qs = buscar(qs, q, ['codigo', 'vecino__nombre', 'vecino__rut', 'descripcion',
+                            'tipo_gestion__nombre', 'area__nombre', 'asignado_a', 'funcionario__nombre'])
     rows = _tickets_con_semaforo(qs.order_by('-fecha_ingreso','-codigo'))
     if filtros['semaforo']:
         rows = [r for r in rows if r['semaforo_nivel'].casefold() == filtros['semaforo'].casefold()]
-    delegaciones = nombres_delegaciones() if perfil.rol.codigo == 'administrador' else [perfil.delegacion.nombre] if perfil.delegacion_id else []
+    delegaciones = nombres_delegaciones() if perfil.rol.codigo == 'superusuario' else [perfil.delegacion.nombre] if perfil.delegacion_id else []
     return (rows, filtros, delegaciones), None
 
 
@@ -46,7 +44,7 @@ def datos(request):
 def lista(request):
     perfil=perfil_actual(request)
     delegacion=request.GET.get('delegacion','').strip()
-    if perfil and perfil.rol.codigo!='administrador' and delegacion and (
+    if perfil and perfil.rol.codigo!='superusuario' and delegacion and (
         not perfil.delegacion_id or delegacion.casefold()!=perfil.delegacion.nombre.casefold()):
         from django.contrib import messages
         messages.error(request,'Su perfil solo puede consultar su delegación.')

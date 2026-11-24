@@ -1,0 +1,30 @@
+<div data-resultado="tablero" class="card rounded-4 shadow-sm mb-2">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light"><tr><th>Código</th><th>Compromiso</th><th>Responsable</th><th>Fecha límite</th><th>Estado</th><th>Evidencias</th><th>Acciones</th></tr></thead>
+            <tbody>
+                {% for item in pagina_compromisos %}
+                <tr>
+                    <td class="text-nowrap"><code>{{ item.id_compromiso }}</code>{% if item.es_atencion %}<div><span class="badge text-bg-info">Atención</span></div>{% endif %}</td>
+                    <td>{{ item.descripcion }}<div class="small text-muted">{{ item.vecino }}</div></td>
+                    <td>{{ item.funcionario }}<div class="small text-muted">{{ item.delegacion }}</div></td>
+                    <td class="text-nowrap">{{ item.fecha_compromiso|fecha_breve }}</td>
+                    <td>{{ item.estado }}{% if item.vencido %}<div><span class="badge text-bg-danger">Vencido</span></div>{% endif %}</td>
+                    <td>{% if item.es_atencion %}<span class="text-muted small">—</span>{% else %}{% include 'componentes/_boton_evidencia.html' with tipo='compromiso' codigo=item.id_compromiso cantidad=item.evidencias %}{% endif %}</td>
+                    <td style="min-width: 13rem">
+                        <div class="d-flex flex-wrap gap-2 mb-1">
+                            {% if item.es_atencion %}{% if perms.requerimientos.change_atencion %}<a class="btn btn-sm btn-outline-primary" href="{{ item.url_editar }}">Modificar atención</a>{% endif %}{% else %}
+                            <a class="btn btn-primary-custom btn-sm" href="{% url 'compromiso_detalle' item.id_compromiso %}{% if consulta_ficha %}?{{ consulta_ficha }}{% endif %}">Ver</a>
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'compromiso_editar' item.id_compromiso %}" data-editar-ventana>Editar</a>
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'compromiso_eliminar' item.id_compromiso %}">Eliminar</a>{% endif %}
+                        </div>
+                        {% include 'control_gestion/_mover_compromiso.html' %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-3">Sin compromisos para estos filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

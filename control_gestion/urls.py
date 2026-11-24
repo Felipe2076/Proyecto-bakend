@@ -1,7 +1,15 @@
 from django.urls import path
-from . import views, views_extra, kanban, reportes
+from . import views, views_extra, kanban, reportes, evidencias, web_revision, movimientos, buscador, evidencias_web
 
 urlpatterns = [
+    path("buscar/", buscador.sugerencias, name="buscador"),
+    path("evidencias/<str:tipo>/<str:codigo>/", evidencias_web.evidencias, name="evidencias_web"),
+    path("evidencias/ticket/archivo/<int:pk>/", evidencias_web.ver_evidencia_ticket, name="ver_evidencia_ticket"),
+    path("vecinos/por-rut/", buscador.vecino_por_rut, name="vecino_por_rut"),
+    path("vecinos/<int:pk>/ficha/", buscador.ficha_vecino, name="ficha_vecino"),
+    path("actividades/<str:codigo>/revision/", web_revision.revision_web, name="actividad_revision"),
+    path("actividades/<str:codigo>/validar/", evidencias.validar_felicitacion, name="validar_felicitacion"),
+    path("actividades/<str:codigo>/evidencia/", evidencias.ver_evidencia, name="actividad_evidencia"),
     path("tubo-trabajo/excel/", reportes.exportar_tubo, name="exportar_tubo_excel"),
     path("", views.dashboard_cuellos_botella_view, name="dashboard"),
     path("dashboard/", views.dashboard_cuellos_botella_view),
@@ -10,6 +18,7 @@ urlpatterns = [
     path("areas/", views.areas_soporte_view, name="areas_soporte"),
     path("semaforo-sgr/", views.semaforo_sgr_view, name="semaforo_sgr"),
     path("tubo-trabajo/", views.tubo_trabajo_view, name="tubo_trabajo"),
+    path("tubo-cartas/", views.tubo_trabajo_view, {"vista": "tarjetas"}, name="tubo_cartas"),
     path("funcionarios/", views.funcionarios_view, name="funcionarios"),
     path(
         "funcionarios/<str:id_funcionario>/",
@@ -17,9 +26,12 @@ urlpatterns = [
         name="detalle_funcionario",
     ),
     path("resumen/", views.resumen_delegacion_view, name="resumen_delegacion"),
+    path("agenda/<str:origen>/<str:codigo>/mover/", movimientos.mover_agenda, name="agenda_mover"),
     path("agenda/", views_extra.agenda_view, name="agenda"),
     path("actividades/", views_extra.actividades_diarias_view, name="actividades_diarias"),
+    path("compromisos/<str:id_compromiso>/ver/", views_extra.compromiso_detalle_view, name="compromiso_detalle"),
     path("compromisos/nuevo/", views_extra.compromiso_form_view, name="compromiso_nuevo"),
+    path("compromisos/evidencia/<int:pk>/", views_extra.evidencia_compromiso_view, name="evidencia_compromiso"),
     path(
         "compromisos/<str:id_compromiso>/editar/",
         views_extra.compromiso_form_view,

@@ -74,12 +74,12 @@
                             <tbody>
                                 {% for act in actividades %}
                                 <tr>
-                                    <td class="font-monospace small">{{ act.fecha_actividad }}</td>
+                                    <td class="font-monospace small">{{ act.fecha_actividad|fecha_breve }}</td>
                                     <td>{{ act.contacto }}</td>
                                     <td class="small">{{ act.item }}</td>
                                     <td class="small">{{ act.servicio }}</td>
                                     <td><code>{{ act.codigo_verificador }}</code></td>
-                                    <td class="small">{{ act.imagen_verificadora }}</td>
+                                    <td class="small">{% if act.evidencia_url %}{% include 'control_gestion/_vista_evidencia.html' with url=act.evidencia_url nombre=act.evidencia_nombre %}{% else %}{{ act.imagen_verificadora|default:'Sin archivo adjunto' }}{% endif %}</td>
                                     <td>
                                         {% if act.punto_validado %}
                                         <span class="badge text-bg-success">Validado</span>
@@ -101,40 +101,58 @@
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-4">
                     <h5 class="fw-bold text-primary-custom mb-3">Registrar actividad del día</h5>
-                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    {% if not puede_registrar %}
+                    <p class="text-muted small mb-0">Solo la persona titular o el administrador de su delegación registran actividades en esta ficha.</p>
+                    {% elif not funcionario.items %}
+                    <p class="text-muted small mb-0">Esta persona aún no tiene ítems de la Matriz SGR asignados. Pídale al administrador que los agregue en <strong>Metas</strong> antes de registrar actividades.</p>
+                    {% else %}
+                    <form method="post" enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="fecha_actividad" class="form-label small">Fecha de la actividad <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" required value="{{ fecha_hoy }}">
+                            <input type="date" class="form-control {% if errores.fecha_actividad %}is-invalid{% endif %}" id="fecha_actividad" name="fecha_actividad" required max="{{ fecha_hoy }}" value="{{ valores.fecha_actividad|default:fecha_hoy }}">
+                            <div class="invalid-feedback">{{ errores.fecha_actividad|default:"Ingrese la fecha (no futura)." }}</div>
+                            <div class="form-text">Se puede registrar hasta el martes siguiente a la semana de la actividad.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tipo_registro" class="form-label small">Tipo de registro <span class="text-danger">*</span></label>
+                            <select class="form-select {% if errores.tipo_registro %}is-invalid{% endif %}" id="tipo_registro" name="tipo_registro" required>
+                                {% for valor, texto in tipos_registro %}<option value="{{ valor }}" {% if valores.tipo_registro == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+                            </select>
+                            <div class="invalid-feedback">{{ errores.tipo_registro|default:"Seleccione el tipo." }}</div>
                         </div>
                         <div class="mb-3">
                             <label for="contacto" class="form-label small">Contacto / usuario <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="contacto" name="contacto" required minlength="3">
-                            <div class="invalid-feedback">Indique el contacto (mínimo 3 caracteres).</div>
+                            <input type="text" class="form-control {% if errores.contacto %}is-invalid{% endif %}" id="contacto" name="contacto" required minlength="3" maxlength="150" value="{{ valores.contacto }}">
+                            <div class="invalid-feedback">{{ errores.contacto|default:"Indique el contacto (mínimo 3 caracteres)." }}</div>
                         </div>
                         <div class="mb-3">
                             <label for="item" class="form-label small">Ítem a medir <span class="text-danger">*</span></label>
-                            <select class="form-select" id="item" name="item" required>
+                            <select class="form-select {% if errores.item %}is-invalid{% endif %}" id="item" name="item" required>
                                 {% for item in funcionario.items %}
-                                <option value="{{ item.item }}">{{ item.item }}</option>
+                                <option value="{{ item.item }}" {% if valores.item == item.item %}selected{% endif %}>{{ item.item }}</option>
                                 {% endfor %}
                             </select>
+                            <div class="invalid-feedback">{{ errores.item|default:"Seleccione el ítem." }}</div>
                         </div>
                         <div class="mb-3">
                             <label for="servicio" class="form-label small">Servicio o atención <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="servicio" name="servicio" required minlength="5">
-                            <div class="invalid-feedback">Describa el servicio (mínimo 5 caracteres).</div>
+                            <input type="text" class="form-control {% if errores.servicio %}is-invalid{% endif %}" id="servicio" name="servicio" required minlength="5" maxlength="200" value="{{ valores.servicio }}">
+                            <div class="invalid-feedback">{{ errores.servicio|default:"Describa el servicio (mínimo 5 caracteres)." }}</div>
                         </div>
                         <div class="mb-3">
-                            <label for="evidencia" class="form-label small">Evidencia (upload simulado)</label>
-                            <input type="file" class="form-control" id="evidencia" name="evidencia" accept="image/*,.pdf">
+                            <label for="evidencia" class="form-label small">Evidencia (JPG, PNG o PDF, máx. 10 MB)</label>
+                            <input type="file" class="form-control {% if errores.evidencia %}is-invalid{% endif %}" id="evidencia" name="evidencia" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf">
+                            <div class="invalid-feedback">{{ errores.evidencia|default:"Revise el archivo." }}</div>
+                            {% if errores %}<div class="form-text">Por seguridad, si hubo un error debe volver a elegir el archivo.</div>{% endif %}
                         </div>
                         <div class="mb-3">
-                            <label for="imagen_verificadora" class="form-label small">O nombre de la evidencia</label>
-                            <input type="text" class="form-control" id="imagen_verificadora" name="imagen_verificadora" placeholder="Foto, acta o llamado">
+                            <label for="imagen_verificadora" class="form-label small">O describa la evidencia</label>
+                            <input type="text" class="form-control" id="imagen_verificadora" name="imagen_verificadora" maxlength="200" placeholder="Foto, acta o llamado" value="{{ valores.imagen_verificadora }}">
                         </div>
                         <button type="submit" class="btn btn-primary-custom w-100">Guardar y generar código</button>
                     </form>
+                    {% endif %}
                 </div>
             </div>
             <div class="card border-0 shadow-sm rounded-4 mb-4">

@@ -14,7 +14,6 @@
     </nav>
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            {% include '_cu.html' with cu_id='CU-E04' cu_nombre='Ficha del ticket' %}
             <h2 class="fw-bold mb-1 text-primary-custom">Ticket {{ ticket.id_ticket }}</h2>
             <p class="text-muted small mb-0">Ficha del ciudadano, la delegación y el semáforo de plazo.</p>
         </div>
@@ -30,6 +29,32 @@
                         <span class="badge text-bg-light border">{{ ticket.tipo_entrada }}</span>
                     </div>
                     <p class="bg-body-tertiary p-3 rounded-3 border">{{ ticket.descripcion }}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+                        <h6 class="fw-bold text-primary-custom mb-0"><i class="bi bi-paperclip" aria-hidden="true"></i> Evidencias de la gestión</h6>
+                        {% include 'componentes/_boton_evidencia.html' with tipo='ticket' codigo=ticket.id_ticket cantidad=evidencias|length %}
+                    </div>
+                    {% if evidencias %}
+                    <ul class="list-unstyled small mb-3">
+                        {% for e in evidencias %}
+                        <li class="mb-1"><i class="bi {% if e.tipo == 'DOCUMENTO' %}bi-file-earmark-pdf text-danger{% else %}bi-image text-primary{% endif %}" aria-hidden="true"></i>
+                            <a href="{% url 'ver_evidencia_ticket' e.pk %}" target="_blank" rel="noopener" data-ver-evidencia="{% url 'ver_evidencia_ticket' e.pk %}" data-pdf="{% if e.tipo == 'DOCUMENTO' %}1{% else %}0{% endif %}" data-titulo="{{ e.descripcion|default:e.tipo }}">{{ e.descripcion|default:e.tipo }}</a>
+                            <span class="text-muted">· {{ e.fecha|date:"d/m/Y H:i" }}{% if e.subido_por %} · {{ e.subido_por.get_full_name|default:e.subido_por.username }}{% endif %}</span></li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}<p class="small text-muted mb-3">Sin evidencias todavía. Suba fotos o PDF que respalden la gestión del ticket.</p>{% endif %}
+                    <details class="border rounded-3 p-3 mb-3">
+                        <summary class="fw-semibold text-primary-custom">Ver ficha técnica</summary>
+                        <dl class="row small mt-3 mb-0">
+                            <dt class="col-sm-5">Código de seguimiento</dt><dd class="col-sm-7"><code>{{ ticket.id_ticket }}</code></dd>
+                            <dt class="col-sm-5">Fecha de ingreso</dt><dd class="col-sm-7">{{ ficha_tecnica.fecha_ingreso|fecha_breve }}</dd>
+                            <dt class="col-sm-5">Canal de ingreso</dt><dd class="col-sm-7">{{ ticket.canal_ingreso }}</dd>
+                            <dt class="col-sm-5">Tipo de gestión</dt><dd class="col-sm-7">{{ ticket.tipo_entrada }}</dd>
+                            <dt class="col-sm-5">Delegación</dt><dd class="col-sm-7">{{ ticket.delegacion }}</dd>
+                            <dt class="col-sm-5">Área responsable</dt><dd class="col-sm-7">{{ ticket.area_tematica }}</dd>
+                            <dt class="col-sm-5">Código de funcionario</dt><dd class="col-sm-7">{{ ficha_tecnica.funcionario.codigo|default:'Sin funcionario vinculado' }}</dd>
+                            <dt class="col-sm-5">Estado y plazo</dt><dd class="col-sm-7">{{ ticket.estado_proceso }} · {{ ticket.dias_transcurridos }} días</dd>
+                        </dl>
+                    </details>
                     <div class="row g-3">
                         <div class="col-sm-6">
                             <div class="p-3 rounded-3 bg-body-tertiary border">
@@ -63,7 +88,7 @@
                     <h5 class="fw-bold text-primary-custom mb-3">Trazabilidad de plazos</h5>
                     <div class="p-3 rounded-3 {% if ticket.semaforo_nivel == 'Rojo' %}bg-danger-subtle border border-danger{% elif ticket.semaforo_nivel == 'Amarillo' %}bg-warning-subtle border border-warning{% else %}bg-success-subtle border border-success{% endif %}">
                         <strong>{{ ticket.semaforo_texto }}</strong>
-                        <div class="small">{{ ticket.alerta_texto }} · {{ ticket.dias_transcurridos }} días desde {{ ticket.fecha_ingreso }}.</div>
+                        <div class="small">{{ ticket.alerta_texto }} · {{ ticket.dias_transcurridos }} días desde {{ ticket.fecha_ingreso|fecha_breve }}.</div>
                     </div>
                     {% if ticket.evaluacion_satisfaccion %}
                     <div class="p-3 rounded-3 bg-body-tertiary border mt-3">
@@ -74,6 +99,15 @@
                         {% endif %}
                     </div>
                     {% elif ticket.estado_proceso == 'Resuelto' and encuesta_habilitada %}
+                    {% if enlace_vecinal %}
+                    <div class="border rounded-3 p-3 mb-3">
+                        <p class="fw-semibold mb-1">Enviar encuesta al vecino</p>
+                        <p class="small text-muted mb-2">Comparta este enlace. El vecino puede responder una vez, sin iniciar sesión, durante los próximos 30 días.</p>
+                        <input class="form-control form-control-sm mb-2" aria-label="Enlace de encuesta vecinal" value="{{ enlace_vecinal }}" readonly>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-copiar="{{ enlace_vecinal }}">Copiar enlace</button>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ enlace_vecinal }}" target="_blank" rel="noopener noreferrer">Abrir encuesta</a>
+                    </div>
+                    {% endif %}
                     <div class="p-3 rounded-3 border border-warning mt-3">
                         <h6 class="fw-bold">Encuesta de satisfacción (1 a 5)</h6>
                         <p class="small text-muted">Registre la nota que entregó el vecino al cerrar el caso.</p>
@@ -81,7 +115,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="accion" value="encuesta">
                             <div class="mb-2">
-                                <label class="form-label small" for="evaluacion_satisfaccion">Nota <span class="text-danger">*</span></label>
+                                <label class="form-label small" for="evaluacion_satisfaccion">¿Qué tan satisfecho quedó con el servicio recibido? <span class="text-danger">*</span></label>
                                 <select class="form-select" id="evaluacion_satisfaccion" name="evaluacion_satisfaccion" required>
                                     <option value="">Seleccione...</option>
                                     {% for nota in notas_encuesta %}
@@ -106,8 +140,9 @@
                 <div class="card-body p-4">
                     <h5 class="fw-bold text-primary-custom mb-3">Ciudadano</h5>
                     <p class="mb-2"><small class="text-muted d-block">Nombre</small><strong>{{ ticket.vecino_nombre }}</strong></p>
-                    <p class="mb-2"><small class="text-muted d-block">WhatsApp</small>{{ ticket.telefono_whatsapp }}</p>
-                    <p class="mb-2"><small class="text-muted d-block">Correo</small>{{ ticket.email }}</p>
+                    {% if ticket.vecino_rut %}<p class="mb-2"><small class="text-muted d-block">RUT</small>{{ ticket.vecino_rut|rut_formato }}</p>{% endif %}
+                    <p class="mb-2"><small class="text-muted d-block">WhatsApp</small>{{ ticket.telefono_whatsapp|default:"—" }}</p>
+                    <p class="mb-2"><small class="text-muted d-block">Correo</small>{{ ticket.email|default:"No registra" }}</p>
                     <p class="mb-3"><small class="text-muted d-block">Canal</small><span class="badge text-bg-light border">{{ ticket.canal_ingreso }}</span></p>
                     <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-primary w-100">Volver al listado</a>
                 </div>
@@ -129,17 +164,18 @@
                         <div class="mb-3">
                             <label for="funcionario_asignado" class="form-label small">Funcionario</label>
                             <select id="funcionario_asignado" name="funcionario_asignado" class="form-select">
+                                <option value="" {% if not ticket.funcionario_asignado %}selected{% endif %}>Sin asignar</option>
                                 {% for func in funcionarios %}
                                 <option value="{{ func }}" {% if func == ticket.funcionario_asignado %}selected{% endif %}>{{ func }}</option>
                                 {% endfor %}
-                                <option value="{{ ticket.funcionario_asignado }}" {% if ticket.funcionario_asignado not in funcionarios %}selected{% endif %}>{{ ticket.funcionario_asignado }}</option>
                             </select>
+                            <div class="form-text">Funcionarios activos de la delegación {{ ticket.delegacion }}.</div>
                         </div>
-                        <div class="mb-3">
-                            <label for="dias_transcurridos" class="form-label small">Días transcurridos</label>
-                            <input type="number" id="dias_transcurridos" name="dias_transcurridos" class="form-control" value="{{ ticket.dias_transcurridos }}" min="0" max="999" required>
-                        </div>
-                        <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">Guardar en JSON</button>
+                        <p class="small text-muted mb-3">
+                            Ingresó el {{ ticket.fecha_ingreso|fecha_breve }} · {{ ticket.dias_transcurridos }} día{{ ticket.dias_transcurridos|pluralize }} de gestión{% if ticket.fecha_resolucion %} · resuelto el {{ ticket.fecha_resolucion|fecha_breve }}{% endif %}.
+                            La fecha de ingreso no se modifica.
+                        </p>
+                        <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">Guardar cambios</button>
                     </form>
                 </div>
             </div>

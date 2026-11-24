@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Revisión de {{ actividad.codigo }} | SIGED{% endblock %}
+{% block topbar_title %}Revisión de actividad{% endblock %}
+{% block content %}
+<div class="container py-3" style="max-width:900px">
+  <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'actividades_diarias' %}">Volver a actividades</a>
+  <section class="card border-0 rounded-4 shadow-sm p-4 mb-3">
+    <div class="d-flex justify-content-between flex-wrap gap-2"><h2 class="h4 mb-0">{{ actividad.codigo }} · {{ actividad.get_tipo_registro_display }}</h2><span class="badge text-bg-light align-self-center">{{ actividad.get_estado_revision_display }}</span></div>
+    <p class="text-muted mt-2">{{ actividad.funcionario.nombre_mostrado }} · {{ actividad.delegacion }} · {{ actividad.fecha_actividad|date:'d/m/y' }}</p>
+    <p><strong>Ítem:</strong> {{ actividad.meta }}<br><strong>Contacto:</strong> {{ actividad.contacto }}<br><strong>Servicio:</strong> {{ actividad.servicio }}</p>
+    <p><strong>Código de evidencia:</strong> <code>{{ actividad.codigo_verificador }}</code></p>
+    {% if actividad.evidencia_archivo %}{% url 'actividad_evidencia' actividad.codigo as evidencia_url %}{% include 'control_gestion/_vista_evidencia.html' with url=evidencia_url nombre=actividad.nombre_archivo_evidencia %}{% else %}<p class="text-muted mb-0">No hay archivo adjunto.</p>{% endif %}
+  </section>
+  {% if puede_revisar %}
+  <form method="post" class="card border-0 rounded-4 shadow-sm p-4 mb-3">
+    {% csrf_token %}<input type="hidden" name="version" value="{{ actividad.version_revision }}">
+    <h3 class="h5">Registrar decisión</h3>
+    <label for="decision" class="form-label">Decisión</label><select required name="decision" id="decision" class="form-select mb-3"><option value="">Seleccione</option><option value="APROBADA">Aprobar</option><option value="RECHAZADA">Rechazar</option><option value="CORRECCION">Solicitar corrección</option></select>
+    <label for="comentario" class="form-label">Observación</label><textarea required maxlength="2000" name="comentario" id="comentario" class="form-control mb-3" rows="3"></textarea>
+    <button class="btn btn-primary-custom align-self-start">Guardar decisión</button>
+  </form>
+  {% endif %}
+  {% if puede_corregir %}
+  <form method="post" enctype="multipart/form-data" class="card border-0 rounded-4 shadow-sm p-4 mb-3">
+    {% csrf_token %}<input type="hidden" name="accion" value="corregir"><input type="hidden" name="version" value="{{ actividad.version_revision }}">
+    <h3 class="h5">Enviar corrección</h3><p class="text-muted small">El código, la fecha y el ítem se conservan.</p>
+    <label for="contacto" class="form-label">Contacto</label><input id="contacto" name="contacto" class="form-control mb-3" value="{{ actividad.contacto }}" required minlength="3" maxlength="150">
+    <label for="servicio" class="form-label">Servicio</label><textarea id="servicio" name="servicio" class="form-control mb-3" required minlength="5" maxlength="200">{{ actividad.servicio }}</textarea>
+    <label for="evidencia" class="form-label">Reemplazar evidencia (opcional)</label><input type="file" id="evidencia" name="evidencia" accept="image/jpeg,image/png,application/pdf" class="form-control mb-3">
+    <button class="btn btn-primary-custom align-self-start">Enviar a revisión</button>
+  </form>
+  {% endif %}
+  <section class="card border-0 rounded-4 shadow-sm p-4"><h3 class="h5">Historial de revisión</h3>
+    {% for r in historial %}<div class="border-bottom py-2"><strong>{{ r.get_estado_nuevo_display }}</strong> · {{ r.fecha|date:'d/m/y H:i' }} · {{ r.autor.get_full_name|default:r.autor.username }}<p class="mb-0">{{ r.comentario }}</p></div>{% empty %}<p class="text-muted mb-0">Aún no hay decisiones registradas.</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}

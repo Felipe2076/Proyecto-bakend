@@ -1,3 +1,4 @@
+from cuentas import fotos
 from django.urls import path
 
 from . import views, grupos
@@ -9,6 +10,8 @@ urlpatterns = [
     path("administracion/usuarios/excel/", reportes.exportar_usuarios, name="exportar_usuarios_excel"),
     path("activar/", views.activar_cuenta_view, name="activar_cuenta"),
     path("login/", views.login_view, name="login"),
+    path("perfil/", fotos.mi_perfil, name="mi_perfil"),
+    path("cuentas/foto/<str:codigo>/", fotos.ver_foto, name="foto_usuario"),
     path("logout/", views.logout_view, name="logout"),
     path("recuperar/", views.recuperar_contrasena_view, name="recuperar_contrasena"),
     path('recuperar/enlace/<uidb64>/<token>/', views.RestablecerEnlaceView.as_view(), name='recuperar_enlace'),

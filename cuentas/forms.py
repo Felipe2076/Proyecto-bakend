@@ -3,13 +3,34 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import SetPasswordForm
+from django.db import transaction
+from django.forms.boundfield import BoundField
 
 from core.validaciones import MENSAJE_RUT, normalizar_rut, validar_rut
 from cuentas.models import Delegacion, Rol, Usuario
 from cuentas.servicios import errores_clave, siguiente_codigo
 
 
+class CampoSiged(BoundField):
+    """Calcula ``required`` e ``is-invalid`` al dibujar, no al construir el formulario.
+
+    Antes ``required`` quedaba fijo en el widget y, si una vista volvía opcional un
+    campo después, el navegador igual bloqueaba el envío. Además los errores del
+    servidor no marcaban el campo en rojo.
+    """
+
+    def build_widget_attrs(self, attrs, widget=None):
+        attrs = super().build_widget_attrs(attrs, widget)
+        if self.form.is_bound and self.errors:
+            clases = attrs.get("class", (widget or self.field.widget).attrs.get("class", ""))
+            if "is-invalid" not in clases:
+                attrs["class"] = f"{clases} is-invalid".strip()
+            attrs["aria-describedby"] = f"{self.auto_id}_error"
+        return attrs
+
+
 def aplicar_bootstrap(form):
+    form.bound_field_class = CampoSiged
     for field in form.fields.values():
         widget = field.widget
         if isinstance(widget, forms.CheckboxInput):
@@ -19,14 +40,13 @@ def aplicar_bootstrap(form):
         else:
             extra = "form-control"
         previa = widget.attrs.get("class", "")
-        widget.attrs["class"] = f"{previa} {extra}".strip()
+        if extra not in previa.split():
+            widget.attrs["class"] = f"{previa} {extra}".strip()
         field.error_messages["required"] = "Este campo es obligatorio."
         if getattr(field, "empty_label", None) is not None:
             field.empty_label = "Seleccione..." if field.required else "Sin asignar"
-        if field.required and not isinstance(widget, forms.CheckboxInput):
-            widget.attrs["required"] = "required"
-        else:
-            widget.attrs.pop("required", None)
+        # ``required`` lo pone Django al dibujar según field.required vigente.
+        widget.attrs.pop("required", None)
 
 
 class FormularioBootstrap(forms.ModelForm):
@@ -83,8 +103,14 @@ class UsuarioForm(FormularioBootstrap):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["username"].required = False
-        self.fields["username"].help_text = "Se completa con el RUT del funcionario. Puede dejarlo en blanco."
+        # Usuario, nombre y delegación salen de la ficha del funcionario al guardar:
+        # se muestran solo como referencia para que nadie crea que los cambió.
+        for campo in ("username", "nombre", "delegacion"):
+            self.fields[campo].required = False
+            self.fields[campo].disabled = True
+        self.fields["username"].help_text = "Es el RUT del funcionario elegido."
+        self.fields["nombre"].help_text = "Se toma de la ficha del funcionario."
+        self.fields["delegacion"].help_text = "Se toma de la ficha del funcionario."
         self.fields["funcionario"].required = True
         self.fields["funcionario"].help_text = "Persona con RUT. El acceso usa ese RUT."
         self.fields.pop("password", None)
@@ -105,29 +131,20 @@ class UsuarioForm(FormularioBootstrap):
         if duplicado:
             self.add_error("funcionario", "Ese RUT ya tiene otra cuenta.")
             return cleaned
+        # Una cuenta de acceso (auth.User) con ese RUT que no es la de este usuario
+        # no se reutiliza: podría ser de administración y heredaría su clave y permisos.
+        User = get_user_model()
+        ajena = User.objects.filter(username=rut)
+        if self.instance.user_id:
+            ajena = ajena.exclude(pk=self.instance.user_id)
+        if ajena.exists():
+            self.add_error("funcionario", "Ese RUT ya pertenece a otra cuenta de acceso. Revise con soporte.")
+            return cleaned
+        correo = (cleaned.get("correo") or "").strip()
+        if correo and Usuario.objects.filter(correo__iexact=correo).exclude(pk=self.instance.pk).exists():
+            self.add_error("correo", "Ese correo ya está registrado en otra cuenta.")
         cleaned["username"] = rut
         return cleaned
-
-    def clean_nombre(self):
-        from core.validaciones import MENSAJE_NOMBRE, validar_nombre
-
-        nombre = (self.cleaned_data.get("nombre") or "").strip()
-        if len(nombre) < 5:
-            raise forms.ValidationError("Ingrese el nombre completo (mínimo 5 caracteres).")
-        if not validar_nombre(nombre):
-            raise forms.ValidationError(MENSAJE_NOMBRE)
-        return nombre
-
-    def clean_password(self):
-        password = self.cleaned_data.get("password") or ""
-        if not password:
-            if self.instance.pk is None:
-                raise forms.ValidationError("Ingrese una contraseña.")
-            return ""
-        errores = errores_clave(password)
-        if errores:
-            raise forms.ValidationError(errores)
-        return password
 
     def save(self, commit=True):
         usuario = super().save(commit=False)
@@ -140,15 +157,17 @@ class UsuarioForm(FormularioBootstrap):
         if not usuario.codigo:
             usuario.codigo = siguiente_codigo(Usuario, "codigo", "USR-", 3)
         if commit:
-            usuario.save()
-            self.save_m2m()
-            self._sincronizar_auth(usuario)
+            with transaction.atomic():
+                usuario.save()
+                self.save_m2m()
+                self._sincronizar_auth(usuario)
         return usuario
 
     def _sincronizar_auth(self, usuario):
         User = get_user_model()
         password = self.cleaned_data.get("password") or ""
-        user = usuario.user or User.objects.filter(username=usuario.username).first()
+        # Solo la cuenta propia; clean() ya rechazó un auth.User ajeno con ese RUT.
+        user = usuario.user
         if user is None:
             user = User(username=usuario.username, email=usuario.correo)
         user.username = usuario.username

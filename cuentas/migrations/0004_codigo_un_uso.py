@@ -6,9 +6,15 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
-def _ddl_v019() -> str:
-    """El CREATE TABLE de V019, sin el encabezado. En MySQL se ejecuta tal cual."""
+def _ddl_v019():
+    """El CREATE TABLE de V019, sin el encabezado, o None si el archivo no viene.
+
+    El .sql no se copia a la imagen Docker (.dockerignore excluye *.sql); en ese caso
+    la tabla se crea con el esquema del ORM, equivalente, y ``migrate`` no falla.
+    """
     ruta = Path(__file__).resolve().parents[2] / "sql" / "migraciones" / "V019__codigo_un_uso.sql"
+    if not ruta.exists():
+        return None
     texto = ruta.read_text(encoding="utf-8")
     return texto[texto.index("CREATE TABLE") :]
 
@@ -17,8 +23,9 @@ class CreateCodigoUnUso(migrations.CreateModel):
     """En MySQL crea la tabla con el DDL de V019. SQLite usa el esquema del ORM para la suite."""
 
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
-        if schema_editor.connection.vendor == "mysql":
-            schema_editor.execute(_ddl_v019())
+        ddl = _ddl_v019() if schema_editor.connection.vendor == "mysql" else None
+        if ddl:
+            schema_editor.execute(ddl)
             return
         super().database_forwards(app_label, schema_editor, from_state, to_state)
 

@@ -30,7 +30,7 @@ def perfil_actual(request):
 
 def tickets_visibles(perfil):
     qs = queryset_requerimientos()
-    if perfil.rol.codigo != "administrador":
+    if perfil.rol.codigo != "superusuario":
         return qs.filter(delegacion_id=perfil.delegacion_id) if perfil.delegacion_id else qs.none()
     return qs
 
@@ -42,16 +42,36 @@ def tablero(request):
     if perfil is None:
         return redirect("login")
     if not puede_ver(perfil, "requerimientos"):
-        return JsonResponse({"error": "Su perfil no tiene acceso al tablero."}, status=403)
+        messages.error(request, "Su perfil no tiene acceso al tablero.")
+        return redirect("inicio")
     columnas = [dict(estado=estado, nombre=nombre, color=color, tickets=[])
                 for estado, nombre, color in COLUMNAS]
     por_estado = {col["estado"]: col for col in columnas}
-    for req in tickets_visibles(perfil):
-        ticket = calcular_semaforo_ticket(ticket_a_dict(req))
+    from datetime import timedelta
+
+    from django.db.models import Q
+    from django.utils import timezone
+
+    from cuentas.servicios import obtener_parametros
+
+    params = obtener_parametros()
+    # Los resueltos antiguos no se mueven más: el tablero muestra los de los últimos 30 días.
+    corte = timezone.localdate() - timedelta(days=30)
+    visibles = tickets_visibles(perfil).exclude(
+        Q(estado=Requerimiento.Estado.RESUELTO) & (Q(fecha_resolucion__lt=corte) | Q(fecha_resolucion__isnull=True, fecha_ingreso__lt=corte)))
+    from django.db.models import Count
+    for req in visibles.annotate(n_evidencias=Count("evidencias", distinct=True)):
+        ticket = calcular_semaforo_ticket(ticket_a_dict(req), params)
+        ticket["evidencias"] = req.n_evidencias
         por_estado.get(req.estado, columnas[0])["tickets"].append(ticket)
+    vista = "tabla" if request.GET.get("vista") == "tabla" else "kanban"
+    filas = sorted((t for col in columnas for t in col["tickets"]), key=lambda t: t.get("fecha_ingreso", ""), reverse=True)
     return render(request, "control_gestion/kanban.html", {
         "columnas": columnas,
+        "vista": vista,
+        "filas": filas,
         "total_general": sum(len(col["tickets"]) for col in columnas),
+        "dias_resueltos": 30,
     })
 
 
@@ -78,7 +98,7 @@ def mover_ticket(request, ticket_id):
     with transaction.atomic():
         # Solo bloquear el ticket: los joins opcionales no son necesarios al escribir.
         qs = Requerimiento.objects.select_for_update().filter(codigo=ticket_id)
-        if perfil.rol.codigo != "administrador":
+        if perfil.rol.codigo != "superusuario":
             qs = qs.filter(delegacion_id=perfil.delegacion_id) if perfil.delegacion_id else qs.none()
         ticket = qs.first()
         if ticket is None:

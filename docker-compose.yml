@@ -1,0 +1,89 @@
+# SIGED con mínimos privilegios. Variables en .env (no versionado), ver .env.example.
+# MySQL no publica puertos: solo lo alcanza "web" por la red interna.
+# Apache del host publica 443 y reenvía a 127.0.0.1:8000.
+
+x-logs: &logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    # Sin env_file: MySQL no recibe SECRET_KEY ni credenciales de correo.
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:?Falta DB_NAME}
+      MYSQL_USER: ${DB_USER:?Falta DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root
+    secrets: [mysql_root]
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-storage-engine=InnoDB
+      - --local-infile=0
+      - --max-connections=60
+    volumes:
+      - mysql-datos:/var/lib/mysql
+    networks: [interna]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    # El entrypoint oficial arranca como root y cambia a "mysql": necesita solo estas capacidades.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    pids_limit: 256
+    mem_limit: ${DB_MEM_LIMIT:-768m}
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysqladmin ping -h 127.0.0.1 -u\"$$MYSQL_USER\" --silent"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    logging: *logs
+
+  web:
+    build: .
+    image: siged-web:${SIGED_VERSION:-local}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      SIGED_MEDIA_ROOT: /srv/siged/evidencias
+      DEBUG: "False"
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    volumes:
+      - evidencias:/srv/siged/evidencias
+      - estaticos:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [interna, publica]
+    ports:
+      # Solo loopback: el acceso externo pasa por Apache con HTTPS.
+      - "127.0.0.1:8000:8000"
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    pids_limit: 256
+    mem_limit: ${WEB_MEM_LIMIT:-768m}
+    logging: *logs
+
+secrets:
+  # Archivo fuera de Git con permisos 600 (ver .env.example).
+  mysql_root:
+    file: ./secretos/mysql_root.txt
+
+networks:
+  interna:
+    internal: true
+  publica: {}
+
+volumes:
+  mysql-datos:
+  # Evidencias privadas: se respaldan junto con MySQL y el proxy nunca las publica.
+  evidencias:
+  estaticos:

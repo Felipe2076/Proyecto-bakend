@@ -1,0 +1,14 @@
+{% if evento.movible %}
+<details class="siged-mover-fecha">
+    <summary>Mover</summary>
+    <form method="post" action="{% url 'agenda_mover' evento.origen evento.id %}" data-form-mover>
+        {% csrf_token %}
+        <input type="hidden" name="fecha_anterior" value="{{ evento.fecha_iso }}">
+        <input type="hidden" name="vista" value="{{ vista }}">
+        <input type="hidden" name="q" value="{{ q }}">
+        <label class="visually-hidden" for="fecha-{{ evento.origen }}-{{ evento.id }}">Nueva fecha</label>
+        <input type="date" name="fecha" id="fecha-{{ evento.origen }}-{{ evento.id }}" value="{{ evento.fecha_iso }}" class="form-control form-control-sm" required>
+        <button class="btn btn-sm btn-outline-primary mt-1">Guardar fecha</button>
+    </form>
+</details>
+{% endif %}

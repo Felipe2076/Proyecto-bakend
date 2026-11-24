@@ -87,7 +87,7 @@
                         <tr>
                             <td class="px-3 fw-semibold">{{ fun.nombre }}</td>
                             <td>{{ fun.cargo }}</td>
-                            <td>{{ fun.fecha_ultimo_ingreso }}</td>
+                            <td>{{ fun.fecha_ultimo_ingreso|fecha_breve }}</td>
                             <td>{% if fun.dias_sin_ingreso != None %}{{ fun.dias_sin_ingreso }}{% else %}—{% endif %}</td>
                             <td>{{ fun.ponderado_total }}%</td>
                             <td><span class="badge {{ fun.semaforo_clase }}">{{ fun.semaforo_nivel }}</span></td>

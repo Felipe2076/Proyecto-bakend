@@ -3,29 +3,66 @@
 {% block title %}Tablero Kanban | SIGED La Serena{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/kanban.css' %}?v=20261018">{% endblock %}
 {% block content %}
-<div class="container-fluid px-lg-4" id="kanban-board" aria-busy="false">
+<div class="container-fluid px-lg-4" id="kanban-board" aria-busy="false" data-vista="{{ vista }}">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
         <div>
             <nav aria-label="breadcrumb"><ol class="breadcrumb mb-1 small">
                 <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Inicio</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Tablero</li>
+                <li class="breadcrumb-item active" aria-current="page">Tablero · {% if vista == 'tabla' %}Tabla{% else %}Kanban{% endif %}</li>
             </ol></nav>
             <h1 class="h3 fw-bold mb-2 text-primary-custom">Tablero de tickets</h1>
-            <p class="text-muted mb-1" id="kanban-help">Arrastra una tarjeta a otra columna para cambiar su estado.</p>
+            <p class="text-muted mb-1" id="kanban-help">{% if vista == 'tabla' %}Cambia el estado de cada ticket desde su fila.{% else %}Arrastra una tarjeta a otra columna para cambiar su estado.{% endif %}</p>
             <p class="text-muted small mb-0">También puedes elegir un estado y pulsar «Mover». El color del ticket sigue indicando su antigüedad.</p>
         </div>
-        <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_general }} requerimientos</span>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            {% url 'kanban' as url_kanban %}
+            {% with url_tabla=url_kanban|add:'?vista=tabla' %}{% if vista == 'tabla' %}{% include 'componentes/_selector_vista.html' with actual='tabla' consulta='' %}{% else %}{% include 'componentes/_selector_vista.html' with actual='kanban' consulta='' %}{% endif %}{% endwith %}
+            <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total_general }} requerimientos</span>
+        </div>
     </div>
     <div class="kanban-feedback mb-3" role="status" aria-live="polite" aria-atomic="true">
         <span id="kanban-message">Los cambios se guardan automáticamente al mover.</span>
         <button class="btn btn-sm btn-outline-secondary ms-2" id="kanban-refresh" type="button" hidden>Actualizar tablero</button>
     </div>
+    {% if vista == 'tabla' %}
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th class="px-3">Ticket</th><th>Ciudadano</th><th>Tipificación</th><th>Antigüedad</th><th>Estado</th><th>Evidencias</th><th style="min-width:15rem">Cambiar estado</th></tr></thead>
+                <tbody>
+                {% for req in filas %}
+                <tr class="kanban-ticket" data-ticket="{{ req.id_ticket }}" data-state="{{ req.estado_proceso }}">
+                    <td class="px-3"><a href="{% url 'detalle_requerimiento' req.id_ticket %}" class="fw-bold font-monospace text-primary-custom">#{{ req.id_ticket }}</a><div class="small text-muted">{{ req.delegacion }}</div></td>
+                    <td><div class="fw-semibold">{{ req.vecino_nombre }}</div><div class="small text-muted text-truncate-2">{{ req.descripcion }}</div></td>
+                    <td><span class="badge text-bg-light border">{{ req.tipo_entrada }}</span></td>
+                    <td><span class="badge kanban-age {% if req.estado_proceso == 'Resuelto' %}text-bg-success{% else %}{{ req.semaforo_clase }}{% endif %}" data-age-class="{{ req.semaforo_clase }}" data-days="{{ req.dias_transcurridos }}">{% if req.estado_proceso == 'Resuelto' %}Cerrado{% else %}Día {{ req.dias_transcurridos }}{% endif %}</span></td>
+                    <td>{% for col in columnas %}{% if col.estado == req.estado_proceso %}<span class="badge kanban-estado text-bg-{{ col.color }}">{{ col.nombre }}</span>{% endif %}{% endfor %}</td>
+                    <td>{% include 'componentes/_boton_evidencia.html' with tipo='ticket' codigo=req.id_ticket cantidad=req.evidencias %}</td>
+                    <td>
+                        <form method="post" action="{% url 'kanban_mover' req.id_ticket %}" class="kanban-move-form d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="estado_anterior" value="{{ req.estado_proceso }}">
+                            <select class="form-select form-select-sm" name="estado" aria-label="Nuevo estado de {{ req.id_ticket }}">
+                                {% for destino in columnas %}<option value="{{ destino.estado }}" data-color="{{ destino.color }}"{% if req.estado_proceso == destino.estado %} selected{% endif %}>{{ destino.nombre }}</option>{% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Mover</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">Sin tickets.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
     <div class="row g-3 mb-4">
         {% for columna in columnas %}
         <section class="col-12 col-md-6 col-xl-3" aria-labelledby="column-title-{{ forloop.counter }}">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-kanban-col kanban-column" data-state="{{ columna.estado }}">
                 <div class="card-header bg-white py-3 border-top border-4 border-{{ columna.color }} rounded-top-4 d-flex justify-content-between align-items-center">
-                    <h2 class="h6 fw-bold mb-0" id="column-title-{{ forloop.counter }}">{{ columna.nombre }}</h2>
+                    <h2 class="h6 fw-bold mb-0" id="column-title-{{ forloop.counter }}">{{ columna.nombre }}{% if columna.estado == "Resuelto" %} <small class="fw-normal text-muted">(últimos {{ dias_resueltos }} días)</small>{% endif %}</h2>
                     <span class="badge text-bg-{{ columna.color }} kanban-count" aria-label="Cantidad de tickets">{{ columna.tickets|length }}</span>
                 </div>
                 <div class="card-body p-2 kanban-cards-container" data-dropzone aria-label="{{ columna.nombre }}">
@@ -38,6 +75,7 @@
                         <div class="mb-2"><span class="badge kanban-age {% if req.estado_proceso == 'Resuelto' %}text-bg-success{% else %}{{ req.semaforo_clase }}{% endif %}" data-age-class="{{ req.semaforo_clase }}" data-days="{{ req.dias_transcurridos }}">{% if req.estado_proceso == 'Resuelto' %}Cerrado{% else %}Día {{ req.dias_transcurridos }}{% endif %}</span></div>
                         <h3 class="h6 fw-bold small text-dark mb-1">{{ req.tipo_entrada }}</h3>
                         <p class="text-muted small mb-2 text-truncate-2">{{ req.descripcion }}</p>
+                        <div class="mb-2">{% include 'componentes/_boton_evidencia.html' with tipo='ticket' codigo=req.id_ticket cantidad=req.evidencias %}</div>
                         <form method="post" action="{% url 'kanban_mover' req.id_ticket %}" class="kanban-move-form mt-auto">
                             {% csrf_token %}
                             <input type="hidden" name="estado_anterior" value="{{ req.estado_proceso }}">
@@ -57,6 +95,7 @@
         </section>
         {% endfor %}
     </div>
+    {% endif %}
 </div>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'js/kanban.js' %}?v=20261018" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/kanban.js' %}?v=20261123" defer></script>{% endblock %}

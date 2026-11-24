@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Compromiso {{ compromiso.id_compromiso }} | SIGED{% endblock %}
+{% block topbar_title %}Ficha de compromiso{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <a class="btn btn-outline-secondary" href="{{ volver }}">Volver a {% if desde_tubo %}Tubo de cartas{% else %}Compromisos{% endif %}</a>
+        <a class="btn btn-outline-primary" href="{% url 'compromiso_editar' compromiso.id_compromiso %}">Editar compromiso</a>
+    </div>
+    <article class="card shadow-sm border-0 rounded-4 p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div><small class="text-muted">Ficha de compromiso</small><h2 class="h4 mb-0">{{ compromiso.id_compromiso }}</h2></div>
+            <div class="d-flex gap-2">
+                <span class="badge text-bg-light border">{{ estado }}</span>
+                {% if compromiso.vencido %}<span class="badge text-bg-danger">Vencido</span>{% endif %}
+            </div>
+        </div>
+        <h3 class="h6">Descripción</h3>
+        <p class="siged-descripcion">{{ compromiso.descripcion }}</p>
+        <dl class="row g-2 mb-3">
+            <dt class="col-sm-4">Solicitante</dt><dd class="col-sm-8">{{ compromiso.vecino }}</dd>
+            <dt class="col-sm-4">Responsable</dt><dd class="col-sm-8">{{ compromiso.funcionario }}</dd>
+            <dt class="col-sm-4">Delegación</dt><dd class="col-sm-8">{{ compromiso.delegacion }}</dd>
+            <dt class="col-sm-4">Origen</dt><dd class="col-sm-8">{{ origen }}</dd>
+            <dt class="col-sm-4">Territorio</dt><dd class="col-sm-8">{{ compromiso.territorio|default:'—' }}</dd>
+            <dt class="col-sm-4">Fecha de ingreso</dt><dd class="col-sm-8">{{ compromiso.fecha_ingreso|fecha_breve }}</dd>
+            <dt class="col-sm-4">Fecha límite</dt><dd class="col-sm-8">{{ compromiso.fecha_compromiso|fecha_breve }}</dd>
+            <dt class="col-sm-4">Apoyo</dt><dd class="col-sm-8">{{ compromiso.apoyo|default:'—' }}</dd>
+        </dl>
+        <h3 class="h6">Avance y observaciones</h3>
+        <p class="siged-descripcion mb-0">{{ compromiso.observaciones|default:'Sin observaciones registradas.' }}</p>
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-2 gap-2 flex-wrap"><h3 class="h6 mb-0">Evidencias</h3>{% include 'componentes/_boton_evidencia.html' with tipo='compromiso' codigo=compromiso.id_compromiso cantidad=evidencias|length %}</div>
+        {% if evidencias %}
+        <ul class="list-unstyled mb-0">
+            {% for e in evidencias %}
+            <li class="mb-1"><i class="bi {% if e.tipo == 'DOCUMENTO' %}bi-file-earmark-pdf{% else %}bi-image{% endif %}" aria-hidden="true"></i>
+                <a href="{% url 'evidencia_compromiso' e.pk %}" target="_blank" rel="noopener" data-ver-evidencia="{% url 'evidencia_compromiso' e.pk %}" data-pdf="{% if e.tipo == 'DOCUMENTO' %}1{% else %}0{% endif %}" data-titulo="{{ e.descripcion|default:e.tipo }}">{{ e.descripcion|default:e.get_tipo_display|default:e.tipo }}</a>
+                <small class="text-muted">· {{ e.fecha|fecha_breve }}{% if e.subido_por %} · {{ e.subido_por.get_full_name|default:e.subido_por.username }}{% endif %}</small></li>
+            {% endfor %}
+        </ul>
+        {% else %}<p class="small text-muted mb-0">Sin evidencias. Súbalas con el botón «Evidencias» (foto o PDF) o desde la app SIGED Móvil.</p>{% endif %}
+    </article>
+</div>
+{% endblock %}

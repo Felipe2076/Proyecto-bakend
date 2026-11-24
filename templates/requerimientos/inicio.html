@@ -4,6 +4,7 @@
 {% block title %}Inicio | SIGED-SGR Delegaciones{% endblock %}
 {% block topbar_title %}Mi panel{% endblock %}
 {% block topbar_sub %}Tickets, semáforo y metas de su usuario{% endblock %}
+{% block extra_js %}<script src="{% static 'js/lordicon.js' %}" defer></script>{% endblock %}
 
 {% block content %}
 <section class="hero-panel e3d-escena mb-4">
@@ -15,17 +16,29 @@
     <div class="row align-items-center g-4">
         <div class="col-lg-8">
             <p class="hero-kicker">Municipalidad de La Serena · SIGED-SGR / Delegaciones</p>
-            {% include '_cu.html' with cu_id='CU-E01' cu_nombre='Sesión iniciada' %}
             <h1 class="mt-2 mb-2">Atención ciudadana en las seis delegaciones</h1>
             <p class="mb-3" style="max-width:40rem;color:rgba(255,248,238,.88);">
                 {% if usuario_actual %}Hola, <strong>{{ usuario_actual.nombre }}</strong>.
                 <span id="panel-perfil">{{ usuario_actual.rol_etiqueta }}{% if usuario_actual.delegacion %} · {{ usuario_actual.delegacion }}{% endif %}{% if panel.delegacion_nombre and not usuario_actual.delegacion %} · {{ panel.delegacion_nombre }}{% endif %}{% if usuario_actual.rut_enmascarado %} · RUT {{ usuario_actual.rut_enmascarado }}{% endif %}</span>{% endif %}
                 Registre el ticket del ciudadano, dé seguimiento con semáforo y deje actividad, evidencia y compromiso en la agenda del equipo.
             </p>
+            {% if trimestre_vigente %}
+            <div class="mb-3" style="max-width:40rem;color:rgba(255,248,238,.92);" data-trimestre-vigente role="status">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <span class="badge text-bg-light text-dark">Trimestre vigente</span>
+                    <strong>{{ trimestre_vigente.periodo }}</strong>
+                    <span class="small">{{ trimestre_vigente.inicio }} al {{ trimestre_vigente.termino }} · para todas las delegaciones</span>
+                </div>
+                <div class="progress" style="height:.5rem;background:rgba(255,255,255,.25);" role="progressbar" aria-label="Avance del trimestre" aria-valuenow="{{ trimestre_vigente.porcentaje }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar bg-warning" style="width:{{ trimestre_vigente.porcentaje|ancho }}%"></div>
+                </div>
+                <div class="small mt-1">Día {{ trimestre_vigente.dia }} de {{ trimestre_vigente.dias_total }} · {% if trimestre_vigente.restantes %}faltan {{ trimestre_vigente.restantes }} días{% else %}último día del trimestre{% endif %}</div>
+            </div>
+            {% endif %}
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'nuevo_requerimiento' %}" class="btn btn-warning fw-semibold text-dark">Ingresar ticket</a>
                 <a href="{% url 'lista_requerimientos' %}" class="btn btn-outline-light">Ver tickets</a>
-                <a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light">Semáforo SGR</a>
+                {% if puede_matriz_sgr %}<a href="{% url 'semaforo_sgr' %}" class="btn btn-outline-light">Semáforo SGR</a>{% endif %}
             </div>
         </div>
         <div class="col-lg-4">

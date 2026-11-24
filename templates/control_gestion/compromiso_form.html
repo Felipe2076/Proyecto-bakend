@@ -37,25 +37,26 @@
                                 <select class="form-select {% if errores.id_funcionario %}is-invalid{% endif %}" id="id_funcionario" name="id_funcionario" required>
                                     <option value="">Seleccione...</option>
                                     {% for fun in funcionarios %}
-                                    <option value="{{ fun.id_funcionario }}" {% if valores.id_funcionario == fun.id_funcionario %}selected{% endif %}>{{ fun.nombre }}</option>
+                                    <option value="{{ fun.id_funcionario }}" data-delegacion="{{ fun.delegacion }}" {% if valores.id_funcionario == fun.id_funcionario %}selected{% endif %}>{{ fun.nombre }} · {{ fun.delegacion }}</option>
                                     {% endfor %}
                                 </select>
                                 <div class="invalid-feedback">{% if errores.id_funcionario %}{{ errores.id_funcionario }}{% else %}Seleccione funcionario.{% endif %}</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="delegacion">Delegación <span class="text-danger">*</span></label>
-                                <select class="form-select {% if errores.delegacion %}is-invalid{% endif %}" id="delegacion" name="delegacion" required>
+                                <label class="form-label" for="delegacion">Delegación</label>
+                                <select class="form-select {% if errores.delegacion %}is-invalid{% endif %}" id="delegacion" name="delegacion" data-sigue-funcionario>
                                     <option value="">Seleccione...</option>
                                     {% for del in delegaciones %}
                                     <option value="{{ del }}" {% if valores.delegacion == del %}selected{% endif %}>{{ del }}</option>
                                     {% endfor %}
                                 </select>
+                                <div class="form-text">Se completa con la delegación del funcionario responsable.</div>
                                 <div class="invalid-feedback">{% if errores.delegacion %}{{ errores.delegacion }}{% else %}Seleccione delegación.{% endif %}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="fecha_compromiso">Fecha comprometida <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control {% if errores.fecha_compromiso %}is-invalid{% endif %}" id="fecha_compromiso" name="fecha_compromiso" required value="{{ valores.fecha_compromiso }}">
-                                <div class="invalid-feedback">{% if errores.fecha_compromiso %}{{ errores.fecha_compromiso }}{% else %}Fecha obligatoria.{% endif %}</div>
+                                <div class="invalid-feedback">{% if errores.fecha_compromiso %}{{ errores.fecha_compromiso|fecha_breve }}{% else %}Fecha obligatoria.{% endif %}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="estado">Estado <span class="text-danger">*</span></label>
@@ -67,6 +68,13 @@
                                 <div class="invalid-feedback">{% if errores.estado %}{{ errores.estado }}{% else %}Seleccione estado.{% endif %}</div>
                             </div>
                         </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6"><label for="origen" class="form-label">Origen de la gestión</label><select name="origen" id="origen" class="form-select"><option value="EXT" {% if valores.origen != 'INT' %}selected{% endif %}>Externo</option><option value="INT" {% if valores.origen == 'INT' %}selected{% endif %}>Interno</option></select></div>
+                            <div class="col-md-6"><label for="territorio" class="form-label">Territorio</label><input name="territorio" id="territorio" maxlength="150" class="form-control" value="{{ valores.territorio }}"></div>
+                            <div class="col-12"><label for="apoyo" class="form-label">Área o persona de apoyo</label><input name="apoyo" id="apoyo" maxlength="200" class="form-control" value="{{ valores.apoyo }}"></div>
+                            <div class="col-12"><label for="observaciones" class="form-label">Avance y observaciones</label><textarea name="observaciones" id="observaciones" maxlength="5000" rows="3" class="form-control">{{ valores.observaciones }}</textarea></div>
+                        </div>
+                        {% for campo,mensaje in errores.items %}<div class="text-danger small mt-1" role="alert">{{ mensaje }}</div>{% endfor %}
                         <div class="d-flex justify-content-between mt-4">
                             <a class="btn btn-outline-secondary" href="{% url 'tubo_trabajo' %}">Cancelar</a>
                             <button class="btn btn-primary-custom" type="submit">Guardar compromiso</button>
@@ -78,3 +86,14 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const fun = document.getElementById("id_funcionario");
+    const del = document.querySelector("[data-sigue-funcionario]");
+    if (!fun || !del) return;
+    const seguir = () => { const op = fun.options[fun.selectedIndex]; if (op && op.dataset.delegacion) del.value = op.dataset.delegacion; };
+    fun.addEventListener("change", seguir);
+    seguir();
+});
+</script>{% endblock %}

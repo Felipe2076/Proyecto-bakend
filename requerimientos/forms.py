@@ -60,6 +60,8 @@ class VecinoForm(NombreMinimoMixin, FormularioBootstrap):
             "territorio",
             "delegacion",
             "tipo_gestion",
+            "es_extranjero",
+            "nacionalidad",
             "estado",
         ]
         labels = {
@@ -91,6 +93,14 @@ class VecinoForm(NombreMinimoMixin, FormularioBootstrap):
         if not validar_rut(rut):
             raise forms.ValidationError(MENSAJE_RUT)
         return normalizar_rut(rut)
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("es_extranjero") and not (cleaned.get("nacionalidad") or "").strip():
+            self.add_error("nacionalidad", "Indique el país de origen.")
+        if cleaned.get("es_extranjero") is not True:
+            cleaned["nacionalidad"] = None
+        return cleaned
 
     def clean_telefono(self):
         telefono = (self.cleaned_data.get("telefono") or "").strip()

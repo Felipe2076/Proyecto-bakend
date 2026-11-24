@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.db import models
+from core.sincronizacion import SincronizableMixin
 from core.codigos import CodigoAutomaticoMixin
 
 
@@ -46,12 +47,17 @@ class Rol(models.Model):
         return self.nombre
 
 
-class Delegacion(models.Model):
+class Delegacion(SincronizableMixin, models.Model):
     """Delegación municipal territorial."""
 
     nombre = models.CharField(max_length=100, unique=True)
     direccion = models.CharField("dirección", max_length=200, blank=True)
     comuna = models.CharField(max_length=80, default="La Serena")
+
+    # Control de sincronización con la app móvil (ver core/sincronizacion.py).
+    uuid = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    actualizado = models.DateTimeField("actualizado", null=True, blank=True, editable=False, db_index=True)
+    version = models.PositiveIntegerField(null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "delegación municipal"
@@ -80,7 +86,7 @@ class Cargo(CodigoAutomaticoMixin, models.Model):
         return self.nombre
 
 
-class Funcionario(CodigoAutomaticoMixin, models.Model):
+class Funcionario(SincronizableMixin, CodigoAutomaticoMixin, models.Model):
     """Persona trabajadora: RUT, nombre y delegación viven en esta fila.
 
     ``nombre`` se conserva como texto compuesto para las pantallas actuales.
@@ -98,6 +104,11 @@ class Funcionario(CodigoAutomaticoMixin, models.Model):
     apellido_paterno = models.CharField("apellido paterno", max_length=60)
     apellido_materno = models.CharField("apellido materno", max_length=60, null=True, blank=True)
     nombre = models.CharField(max_length=120)
+
+    # Control de sincronización con la app móvil (ver core/sincronizacion.py).
+    uuid = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    actualizado = models.DateTimeField("actualizado", null=True, blank=True, editable=False, db_index=True)
+    version = models.PositiveIntegerField(null=True, blank=True, editable=False)
     es_simulacion = models.BooleanField("dato de simulación", default=False)
     cargo = models.ForeignKey(Cargo, on_delete=models.PROTECT, related_name="funcionarios")
     delegacion = models.ForeignKey(Delegacion, on_delete=models.PROTECT, related_name="funcionarios",
@@ -178,7 +189,14 @@ class Funcionario(CodigoAutomaticoMixin, models.Model):
         super().save(*args, **kwargs)
 
 
-class Usuario(models.Model):
+def ruta_foto_perfil(instancia, nombre):
+    """Nombre aleatorio: la ruta no revela RUT ni nombre de la persona."""
+    import uuid as _uuid
+
+    return f"fotos/{_uuid.uuid4().hex}.jpg"
+
+
+class Usuario(SincronizableMixin, models.Model):
     """Usuario del sistema. Se enlaza (opcional) con el User de django.contrib.auth."""
 
     codigo = models.CharField("código", max_length=20, unique=True, null=True, blank=True,
@@ -195,6 +213,13 @@ class Usuario(models.Model):
     funcionario = models.OneToOneField(Funcionario, on_delete=models.PROTECT, related_name="usuario")
     estado = models.CharField(max_length=10, choices=EstadoRegistro.choices, default=EstadoRegistro.ACTIVO)
     creado = models.DateTimeField(auto_now_add=True)
+    foto = models.ImageField("foto de perfil", upload_to=ruta_foto_perfil, null=True, blank=True, max_length=120)
+    foto_actualizada = models.DateTimeField("foto actualizada", null=True, blank=True, editable=False)
+
+    # Control de sincronización con la app móvil (ver core/sincronizacion.py).
+    uuid = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    actualizado = models.DateTimeField("actualizado", null=True, blank=True, editable=False, db_index=True)
+    version = models.PositiveIntegerField(null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "usuario"

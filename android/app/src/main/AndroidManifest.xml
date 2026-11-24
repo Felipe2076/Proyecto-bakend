@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <uses-permission android:name="android.permission.INTERNET" />
+ <application android:label="SIGED Municipal" android:icon="@drawable/siged_icon" android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@style/Theme.Siged" android:supportsRtl="true">
+  <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+  <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.archivos" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/archivos"/></provider>
+ </application>
+</manifest>

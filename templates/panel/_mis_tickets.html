@@ -1,7 +1,7 @@
 <section class="card card-calculo e3d-tilt border-0 shadow-sm rounded-4 mb-4" aria-label="Mis tickets">
     <div class="card-body p-4">
         <h2 class="h5 fw-bold text-primary-custom mb-1">Mis tickets</h2>
-        <p class="text-muted small mb-3">Asignados a su usuario. Verde hasta el día {{ panel.sla_verde }}, ámbar hasta el día {{ panel.sla_amarillo }}, rojo después.</p>
+        <p class="text-muted small mb-3">Abiertos y asignados a su usuario ({{ panel.cifras.resueltos }} resuelto{{ panel.cifras.resueltos|pluralize }} no se listan). Verde hasta el día {{ panel.sla_verde }}, ámbar hasta el día {{ panel.sla_amarillo }}, rojo después.</p>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">

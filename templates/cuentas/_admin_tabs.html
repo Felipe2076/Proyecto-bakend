@@ -1,7 +1,8 @@
-<ul class="nav nav-pills gap-2 mb-4">
+<ul class="nav nav-pills gap-2 mb-4 siged-admin-nav" aria-label="Administración">
     <li class="nav-item">
         <a class="nav-link {% if seccion == 'usuarios' %}active bg-primary-custom{% endif %}" href="{% url 'admin_usuarios' %}">Usuarios</a>
     </li>
+    {% if es_superusuario %}
     <li class="nav-item">
         <a class="nav-link {% if seccion == 'cargos' %}active bg-primary-custom{% endif %}" href="{% url 'admin_cargos' %}">Cargos</a>
     </li>
@@ -9,4 +10,5 @@
         <a class="nav-link {% if seccion == 'parametros' %}active bg-primary-custom{% endif %}" href="{% url 'admin_parametros' %}">Parámetros</a>
     </li>
     <li class="nav-item"><a class="nav-link {% if seccion == 'grupos' %}active bg-primary-custom{% endif %}" href="{% url 'admin_grupos' %}">Grupos y permisos</a></li>
+    {% endif %}
 </ul>

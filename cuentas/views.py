@@ -12,10 +12,17 @@ from django.contrib.auth.views import PasswordResetConfirmView
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.shortcuts import redirect, render
-from django.db import transaction
+from django.db import DatabaseError, transaction
+from django.core.exceptions import ValidationError
 from smtplib import SMTPException
 
-from core.validaciones import MENSAJE_NOMBRE, MENSAJE_RUT, formatear_rut, rut_normalizado_valido, validar_nombre
+import logging
+
+from core.seguridad import LimiteExcedido, clave_limite, consumir, ip_cliente, liberar
+from core.validaciones import (
+    MENSAJE_NOMBRE, MENSAJE_RUT, formatear_rut, motivo_rut_invalido, rut_canonico, rut_normalizado_valido,
+    validar_nombre,
+)
 from cuentas.auth import requerir_modulo, usuario_sesion
 from cuentas.forms import NuevaContrasenaForm, RestablecerEnlaceForm
 from cuentas.models import Cargo, Delegacion, EstadoRegistro, Funcionario, ParametroSistema, Rol, Usuario
@@ -28,11 +35,25 @@ from cuentas.servicios import (
     sesion_desde_usuario,
     siguiente_codigo,
 )
+from cuentas.fotos import iniciales, url_foto
 from cuentas.simulacion import CODIGO_ADMIN_GLOBAL, identidad, nombre_almacenado
 from control_gestion.models import Medicion
 
+log_seguridad = logging.getLogger("siged.seguridad")
+MENSAJE_LIMITE = "Demasiados intentos. Espere 15 minutos antes de volver a intentar."
+
+
+def _claves_login(request, rut):
+    cuenta = rut_normalizado_valido(rut) or "".join(c for c in rut.upper() if c.isalnum())
+    return {
+        clave_limite("login-ip", ip_cliente(request)): settings.SIGED_LIMITE_LOGIN_IP,
+        clave_limite("login-cuenta", cuenta): settings.SIGED_LIMITE_LOGIN_CUENTA,
+    }
+
+
 ROLES_DISPONIBLES = [
-    ("administrador", "Administrador"),
+    ("superusuario", "Superusuario"),
+    ("administrador", "Administrador de delegación"),
     ("jefatura", "Jefatura / Control de gestión"),
     ("funcionario", "Funcionario territorial"),
     ("ventanilla", "Ventanilla ciudadana"),
@@ -72,29 +93,50 @@ def login_view(request):
         return redirect("inicio")
     errores = {}
     valores = {"rut": ""}
+    estado = 200
     if request.method == "POST":
-        rut = (request.POST.get("rut") or "").strip()
-        password = request.POST.get("password") or ""
+        rut = (request.POST.get("rut") or "").strip()[:32]
+        password = (request.POST.get("password") or "")[:256]
         valores["rut"] = rut
         if not rut:
             errores["rut"] = "Ingrese el RUT."
         if not password:
             errores["password"] = "Ingrese la contraseña."
+        claves = _claves_login(request, rut) if not errores else {}
+        if claves:
+            try:
+                consumir(claves)
+            except LimiteExcedido:
+                log_seguridad.warning("login_web_limitado")
+                errores["password"] = MENSAJE_LIMITE
+                messages.error(request, MENSAJE_LIMITE)
+                estado = 429
         if not errores:
             encontrado = autenticar(rut, password)
             if encontrado is None:
+                normal = rut_normalizado_valido(rut)
+                pendiente = Usuario.objects.select_related('user').filter(username=normal, estado=EstadoRegistro.ACTIVO, user__is_active=True).first() if normal else None
+                if pendiente and pendiente.user_id and not pendiente.user.has_usable_password() and re.fullmatch(r'\d{6}',password):
+                    if verificar_codigo(pendiente,password) == 'ok':
+                        liberar(*claves)
+                        _sesion_recuperacion(request,pendiente,verificado=True)
+                        messages.info(request,'Primer ingreso: debe definir su contraseña personal para activar el acceso.')
+                        return redirect('nueva_contrasena')
                 errores["password"] = "RUT o clave incorrectos."
                 messages.error(request, "RUT o clave incorrectos.")
             else:
+                liberar(*claves)
                 auth_login(request, encontrado.user)
                 request.session["usuario"] = sesion_desde_usuario(encontrado)
                 request.session["notificaciones_leidas"] = []
                 perfil = sesion_desde_usuario(encontrado)
+                from control_gestion.trimestres import resumen_trimestre_vigente
+                trimestre = resumen_trimestre_vigente()
                 messages.success(
                     request,
                     f"Bienvenido/a, {perfil['nombre']}. {perfil['rol_etiqueta']}"
                     + (f" · {perfil['delegacion']}" if perfil["delegacion"] else "")
-                    + ".",
+                    + f". Trimestre vigente: {trimestre['periodo']} ({trimestre['inicio']} al {trimestre['termino']}).",
                 )
                 return redirect(_next_seguro(request.POST.get("next") or request.GET.get("next")))
     contexto = {
@@ -104,12 +146,17 @@ def login_view(request):
         "valores": valores,
         "next_url": _next_seguro(request.GET.get("next") or request.POST.get("next")),
     }
-    return render(request, "cuentas/login.html", contexto)
+    return render(request, "cuentas/login.html", contexto, status=estado)
 
 
 def logout_view(request):
+    # Por POST: un enlace o imagen de otro sitio no puede cerrar la sesión (CSRF de logout).
+    if request.method != "POST":
+        if request.user.is_authenticated:
+            return render(request, "cuentas/salir.html")
+        return redirect("login")
     auth_logout(request)
-    messages.info(request, "Sesión cerrada. Puede ingresar con otro perfil de demostración.")
+    messages.info(request, "Sesión cerrada correctamente.")
     return redirect("login")
 
 
@@ -133,6 +180,9 @@ def _usuario_en_recuperacion(request):
 
 def _correo_habilitado():
     backend = settings.EMAIL_BACKEND
+    # En desarrollo (DEBUG) el correo sale por consola: así se pueden probar altas y recuperación.
+    if settings.DEBUG and backend == 'django.core.mail.backends.console.EmailBackend':
+        return True
     return backend == 'django.core.mail.backends.locmem.EmailBackend' or (
         backend == 'django.core.mail.backends.smtp.EmailBackend'
         and settings.EMAIL_HOST not in ('', 'localhost', '127.0.0.1', '::1')
@@ -159,9 +209,12 @@ def recuperar_contrasena_view(request):
     errores = {}
     correo = ""
     if request.method == "POST":
-        correo = (request.POST.get("correo") or "").strip()
+        correo = (request.POST.get("correo") or "").strip()[:254]
         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", correo):
             errores["correo"] = "Ingrese un correo electrónico válido."
+        elif not _cuota_recuperacion(request, correo):
+            errores["correo"] = MENSAJE_LIMITE
+            return render(request, "cuentas/recuperar.html", {"errores": errores, "correo": correo}, status=429)
         else:
             usuario = (
                 Usuario.objects.select_related("user")
@@ -169,28 +222,64 @@ def recuperar_contrasena_view(request):
                 .first()
             )
             if usuario is None or usuario.user_id is None:
-                errores["correo"] = "No encontramos un usuario activo con ese correo."
+                # Misma respuesta que una cuenta real (Ley 19.628: no confirmar titulares).
+                request.session["recuperacion"] = {"usuario_id": None, "correo": correo}
             else:
                 if not _emitir_y_enviar(request, usuario):
                     return redirect("recuperar_contrasena")
                 _sesion_recuperacion(request, usuario, verificado=False)
-                messages.success(
-                    request,
-                    "Enviamos un enlace seguro y un código de respaldo a su correo. "
-                    "Vencen en 10 minutos. Puede abrir el enlace para crear su nueva contraseña.",
-                )
-                return redirect("validar_codigo")
+            messages.success(
+                request,
+                "Si el correo corresponde a una cuenta activa, enviamos un enlace seguro y un código "
+                "de respaldo. Vencen en 10 minutos. Puede abrir el enlace para crear su nueva contraseña.",
+            )
+            return redirect("validar_codigo")
     return render(request, "cuentas/recuperar.html", {"errores": errores, "correo": correo})
+
+
+def _cuota_recuperacion(request, correo):
+    try:
+        consumir({
+            clave_limite("recuperar-ip", ip_cliente(request)): settings.SIGED_LIMITE_RECUPERAR_IP,
+            clave_limite("recuperar-correo", correo.lower()): settings.SIGED_LIMITE_RECUPERAR_CORREO,
+        })
+    except LimiteExcedido:
+        log_seguridad.warning("recuperacion_limitada")
+        return False
+    return True
+
+
+def _validacion_sin_cuenta(request, datos):
+    """Recuperación pedida para un correo sin cuenta: se comporta igual y nunca valida."""
+    errores = {}
+    if request.method == "POST":
+        if (request.POST.get("accion") or "") == "reenviar":
+            if not _cuota_recuperacion(request, datos["correo"]):
+                messages.error(request, MENSAJE_LIMITE)
+            else:
+                messages.success(request, "Enviamos un código nuevo a su correo. El anterior ya no sirve.")
+            return redirect("validar_codigo")
+        intentos = datos.get("intentos", 0) + 1
+        request.session["recuperacion"] = {**datos, "intentos": intentos}
+        errores["codigo"] = ("Demasiados intentos. Solicite un código nuevo." if intentos >= 5
+                             else "El código no coincide. Revíselo e intente de nuevo.")
+        messages.error(request, "No pudimos validar el código.")
+    return render(request, "cuentas/validar_codigo.html", {"errores": errores, "correo": datos["correo"]})
 
 
 def validar_codigo_view(request):
     usuario, datos = _usuario_en_recuperacion(request)
+    if usuario is None and datos.get("correo"):
+        return _validacion_sin_cuenta(request, datos)
     if usuario is None:
         messages.error(request, "No hay una recuperación en curso. Solicite un código nuevo.")
         return redirect("recuperar_contrasena")
     errores = {}
     if request.method == "POST":
         if (request.POST.get("accion") or "") == "reenviar":
+            if not _cuota_recuperacion(request, usuario.correo):
+                messages.error(request, MENSAJE_LIMITE)
+                return redirect("validar_codigo")
             if not _correo_habilitado() or not _emitir_y_enviar(request, usuario):
                 return redirect("recuperar_contrasena")
             _sesion_recuperacion(request, usuario, verificado=False)
@@ -256,24 +345,43 @@ def _usuario_a_fila(usuario):
         "activo": usuario.activo,
         "delegacion": usuario.delegacion.nombre if usuario.delegacion_id else "",
         "codigo": usuario.codigo,
+        "foto_url": url_foto(usuario),
+        "iniciales": iniciales(usuario.nombre),
     }
+
+
+def _solo_superusuario(request):
+    """Lo que rige a todas las delegaciones (cargos, parámetros, grupos) solo lo administra el superusuario."""
+    if request._perfil_siged.rol.codigo != "superusuario":
+        messages.error(request, "Esta configuración afecta a todas las delegaciones y la administra el superusuario.")
+        return redirect("inicio")
+    return None
 
 
 def administracion_usuarios_view(request):
     bloqueo = requerir_modulo(request, "administracion")
     if bloqueo:
         return bloqueo
+    perfil = request._perfil_siged
+    es_super = perfil.rol.codigo == "superusuario"
     errores = {}
     valores = {}
     if request.method == "POST":
         accion = (request.POST.get("accion") or "crear").strip()
         if accion == "toggle":
             user_id = (request.POST.get("id_usuario") or "").strip()
-            usuario = Usuario.objects.select_related("user").filter(codigo=user_id).first()
+            usuario = Usuario.objects.select_related("user", "rol").filter(codigo=user_id).first()
+            if usuario is None and user_id.isdigit():
+                usuario = Usuario.objects.select_related("user", "rol").filter(pk=int(user_id)).first()
+            if usuario is not None and not es_super and (
+                    usuario.delegacion_id != perfil.delegacion_id or usuario.rol.codigo == "superusuario"):
+                usuario = None  # fuera de su delegación: no existe para esta persona
             if usuario is None:
                 messages.error(request, "No fue posible actualizar el usuario.")
+            elif usuario.pk == perfil.pk:
+                messages.error(request, "No puede desactivar su propia cuenta.")
             elif usuario.codigo == CODIGO_ADMIN_GLOBAL:
-                messages.error(request, "El administrador global de simulación no puede desactivarse.")
+                messages.error(request, "Esta cuenta está protegida y no puede desactivarse.")
             else:
                 usuario.estado = (
                     EstadoRegistro.INACTIVO if usuario.estado == EstadoRegistro.ACTIVO else EstadoRegistro.ACTIVO
@@ -282,7 +390,8 @@ def administracion_usuarios_view(request):
                 if usuario.user_id:
                     usuario.user.is_active = usuario.activo
                     usuario.user.save(update_fields=["is_active"])
-                messages.success(request, "Estado del usuario actualizado.")
+                estado = "activada" if usuario.activo else "desactivada"
+                messages.success(request, f"Cuenta de {usuario.nombre} {estado}.")
             return redirect("admin_usuarios")
 
         rut_ingresado = (request.POST.get("rut") or "").strip()
@@ -292,6 +401,11 @@ def administracion_usuarios_view(request):
         cargo_nombre = (request.POST.get("cargo") or "").strip()
         delegacion_nombre = (request.POST.get("delegacion") or "").strip()
         id_funcionario = (request.POST.get("id_funcionario") or "").strip()
+        if not es_super:
+            # Quien no es superusuario solo crea cuentas de su delegación y nunca de superusuario.
+            delegacion_nombre = perfil.delegacion.nombre if perfil.delegacion_id else ""
+            if rol_codigo == "superusuario":
+                rol_codigo = ""
         valores = {
             "rut": rut_ingresado,
             "nombre": nombre,
@@ -301,11 +415,27 @@ def administracion_usuarios_view(request):
             "delegacion": delegacion_nombre,
             "id_funcionario": id_funcionario,
         }
-        rut = rut_normalizado_valido(rut_ingresado)
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        funcionario = Funcionario.objects.filter(codigo=id_funcionario).first() if id_funcionario else None
+        if funcionario is not None and not es_super and funcionario.delegacion_id != perfil.delegacion_id:
+            funcionario = None
+            errores["id_funcionario"] = "Esa ficha no pertenece a su delegación."
+        # Acepta puntos, espacios, «k» minúscula y RUT sin guion; el motivo del rechazo se explica.
+        rut = rut_canonico(rut_ingresado)
         if rut is None:
-            errores["rut"] = MENSAJE_RUT
-        elif Funcionario.objects.filter(rut=rut).exists() or Usuario.objects.filter(username=rut).exists():
+            errores["rut"] = motivo_rut_invalido(rut_ingresado) or MENSAJE_RUT
+        elif funcionario is not None and funcionario.rut and funcionario.rut != rut:
+            errores["rut"] = "El RUT no coincide con el de la ficha seleccionada. Corrija el RUT o elija otra ficha."
+        elif Usuario.objects.filter(username=rut).exists() or (
+                Funcionario.objects.filter(rut=rut).exclude(pk=funcionario.pk if funcionario else None).exists()):
             errores["rut"] = "Ese RUT ya está registrado."
+        elif User.objects.filter(username=rut).exists():
+            # Cuenta de acceso sin perfil (restos de una carga anterior). No se reutiliza: podría
+            # conservar una contraseña antigua o ser de un administrador.
+            errores["rut"] = ("Ya existe una cuenta de acceso con ese RUT sin perfil asociado. "
+                              "Pida al administrador técnico que la revise antes de crear el usuario.")
         if len(nombre) < 5:
             errores["nombre"] = "Ingrese el nombre completo (mínimo 5 caracteres)."
         elif not validar_nombre(nombre):
@@ -314,9 +444,9 @@ def administracion_usuarios_view(request):
             errores["email"] = "Ingrese el correo del usuario para enviar su activación."
         if not _correo_habilitado():
             errores["email"] = "El envío de correo no está configurado. No se creó la cuenta."
-        if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
-            errores["email"] = "Ingrese un correo válido."
-        if email and Usuario.objects.filter(correo__iexact=email).exists():
+        if email and (len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email)):
+            errores["email"] = "Ingrese un correo válido (hasta 254 caracteres)."
+        if email and "email" not in errores and Usuario.objects.filter(correo__iexact=email).exists():
             errores["email"] = "Ese correo ya está registrado."
         rol = Rol.objects.filter(codigo=rol_codigo).first()
         if rol is None:
@@ -324,9 +454,10 @@ def administracion_usuarios_view(request):
         cargo = Cargo.objects.filter(nombre=cargo_nombre).first() if cargo_nombre else None
         if not cargo_nombre or cargo is None:
             errores["cargo"] = "Seleccione o indique un cargo."
-        if not delegacion_nombre:
-            errores["delegacion"] = "Seleccione la delegación del trabajador."
-        funcionario = Funcionario.objects.filter(codigo=id_funcionario).first() if id_funcionario else None
+        # Solo delegaciones existentes: escribir mal el nombre ya no crea una delegación nueva.
+        delegacion = Delegacion.objects.filter(nombre=delegacion_nombre).first() if delegacion_nombre else None
+        if delegacion is None:
+            errores["delegacion"] = "Seleccione la delegación del trabajador de la lista."
         if funcionario is not None and Usuario.objects.filter(funcionario=funcionario).exists():
             errores["id_funcionario"] = "Esa ficha ya tiene una cuenta."
         if errores:
@@ -334,9 +465,6 @@ def administracion_usuarios_view(request):
         else:
             try:
                 with transaction.atomic():
-                    delegacion, _ = Delegacion.objects.get_or_create(
-                        nombre=delegacion_nombre, defaults={"comuna": "La Serena"}
-                    )
                     partes = [p for p in nombre.split() if p]
                     nombres = partes[0][:60]
                     paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
@@ -389,6 +517,12 @@ def administracion_usuarios_view(request):
 
             except (OSError, SMTPException, RuntimeError):
                 messages.error(request, 'No se pudo enviar la invitación. No se creó el usuario; revise el correo e intente nuevamente.')
+            except (DatabaseError, ValidationError) as error:
+                # Doble envío, dato que no cabe en la base u otra restricción: no queda nada a medias
+                # (la transacción se revierte) y el registro no incluye datos personales.
+                log_seguridad.error("alta_usuario_rechazada %s", type(error).__name__)
+                messages.error(request, 'No se pudo crear el usuario. No se guardó nada; revise los datos o '
+                                        'intente de nuevo en un momento. Si se repite, avise al administrador técnico.')
             else:
                 messages.success(request, f'Usuario {formatear_rut(rut)} creado. Invitación enviada a {email}; el usuario definirá su contraseña.')
                 return redirect('admin_usuarios')
@@ -397,7 +531,8 @@ def administracion_usuarios_view(request):
     listado_usuarios = usuarios_filtrados(request)
     from core.paginacion import paginar
     pagina_usuarios,paginacion=paginar(request,listado_usuarios)
-    roles = list(Rol.objects.order_by("nombre").values_list("codigo", "nombre")) or ROLES_DISPONIBLES
+    roles_qs = Rol.objects.order_by("nombre")
+    roles = list((roles_qs if es_super else roles_qs.exclude(codigo="superusuario")).values_list("codigo", "nombre"))
     contexto = {
         "usuarios": [
             _usuario_a_fila(item)
@@ -405,11 +540,13 @@ def administracion_usuarios_view(request):
         ],
         "funcionarios": [
             {"id_funcionario": fun.codigo, "nombre": fun.nombre_mostrado}
-            for fun in Funcionario.objects.order_by("nombre")
+            # Solo fichas sin cuenta: elegir una que ya tiene usuario terminaba en error.
+            for fun in (Funcionario.objects.filter(usuario__isnull=True).order_by("nombre") if es_super else
+                        Funcionario.objects.filter(delegacion_id=perfil.delegacion_id, usuario__isnull=True).order_by("nombre"))
         ],
         "cargos": Cargo.objects.order_by("nombre"),
         "roles": roles,
-        "delegaciones": nombres_delegaciones(),
+        "delegaciones": nombres_delegaciones() if es_super else ([perfil.delegacion.nombre] if perfil.delegacion_id else []),
         "errores": errores,
         "valores": valores,
         "seccion": "usuarios",
@@ -421,7 +558,7 @@ def administracion_usuarios_view(request):
 
 
 def administracion_cargos_view(request):
-    bloqueo = requerir_modulo(request, "administracion")
+    bloqueo = requerir_modulo(request, "administracion") or _solo_superusuario(request)
     if bloqueo:
         return bloqueo
     errores = {}
@@ -478,12 +615,11 @@ def _medicion_dict(medicion):
 
 
 def administracion_parametros_view(request):
-    bloqueo = requerir_modulo(request, "administracion")
+    bloqueo = requerir_modulo(request, "administracion") or _solo_superusuario(request)
     if bloqueo:
         return bloqueo
     parametros = obtener_parametros()
-    medicion = _medicion_actual()
-    medicion_vista = _medicion_dict(medicion)
+    medicion_vista = _medicion_dict(_medicion_actual())
     errores = {}
     if request.method == "POST":
         nombre_sistema = (request.POST.get("nombre_sistema") or "").strip()
@@ -496,9 +632,6 @@ def administracion_parametros_view(request):
         except (TypeError, ValueError):
             sla_verde = sla_amarillo = meta_tubo = max_atenciones = 0
         encuesta = request.POST.get("encuesta_habilitada") == "on"
-        periodo = (request.POST.get("periodo") or "").strip()
-        fecha_inicio = (request.POST.get("fecha_inicio") or "").strip()
-        fecha_termino = (request.POST.get("fecha_termino") or "").strip()
         if len(nombre_sistema) < 8:
             errores["nombre_sistema"] = "Ingrese el nombre del sistema."
         if not comuna:
@@ -511,14 +644,6 @@ def administracion_parametros_view(request):
             errores["meta_tubo_porcentaje"] = "La meta del tubo debe estar entre 50% y 100%."
         if max_atenciones < 1 or max_atenciones > 10:
             errores["max_atenciones_mismo_usuario"] = "Indique un máximo entre 1 y 10 atenciones."
-        if not periodo:
-            errores["periodo"] = "Indique el periodo de medición."
-        try:
-            inicio = date.fromisoformat(fecha_inicio)
-            termino = date.fromisoformat(fecha_termino)
-        except ValueError:
-            inicio = termino = None
-            errores["fecha_inicio"] = "Ingrese fecha de inicio y término del periodo."
         if errores:
             messages.error(request, "Hay errores de formato en los parámetros. No se guardaron los cambios.")
             parametros = {
@@ -531,7 +656,6 @@ def administracion_parametros_view(request):
                 "encuesta_habilitada": encuesta,
                 "max_atenciones_mismo_usuario": max_atenciones,
             }
-            medicion_vista = {"periodo": periodo, "fecha_inicio": fecha_inicio, "fecha_termino": fecha_termino}
         else:
             registro = ParametroSistema.objects.order_by("pk").first() or ParametroSistema()
             registro.nombre_sistema = nombre_sistema
@@ -542,29 +666,8 @@ def administracion_parametros_view(request):
             registro.encuesta_habilitada = encuesta
             registro.max_atenciones_mismo_usuario = max_atenciones
             registro.save()
-            piloto = medicion.delegacion_piloto if medicion else None
-            if piloto is None:
-                piloto = (
-                    Delegacion.objects.filter(nombre__icontains="Rural").first()
-                    or Delegacion.objects.order_by("pk").first()
-                )
-            if piloto is None:
-                piloto = Delegacion.objects.create(nombre="Delegación Centro", comuna=comuna or "La Serena")
-            if medicion is None:
-                Medicion.objects.create(
-                    periodo=periodo,
-                    delegacion_piloto=piloto,
-                    fecha_inicio=inicio,
-                    fecha_termino=termino,
-                    dias_totales=max((termino - inicio).days, 1),
-                    meta_cumplimiento_tubo=meta_tubo,
-                )
-            else:
-                medicion.periodo = periodo
-                medicion.fecha_inicio = inicio
-                medicion.fecha_termino = termino
-                medicion.meta_cumplimiento_tubo = meta_tubo
-                medicion.save()
+            from cuentas.servicios import CACHE_PETICION
+            (CACHE_PETICION.get() or {}).pop("parametros", None)
             messages.success(request, "Parámetros actualizados.")
             return redirect("admin_parametros")
     contexto = {

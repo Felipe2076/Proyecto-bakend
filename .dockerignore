@@ -1,0 +1,18 @@
+# Nada privado entra a la imagen: secretos, datos, evidencias ni bases locales.
+.env
+.env.*
+!.env.example
+secretos/
+media/
+staticfiles/
+data/
+fixtures/
+*.sqlite3
+*.sql
+.demo_credentials.local
+__pycache__/
+*.py[cod]
+.git/
+.venv/
+venv/
+docs/

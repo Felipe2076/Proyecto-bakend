@@ -7,6 +7,8 @@
     const feedback = board.querySelector('.kanban-feedback');
     const message = document.getElementById('kanban-message');
     const refresh = document.getElementById('kanban-refresh');
+    // En modo «Tabla» las filas usan el mismo formulario de movimiento, sin columnas ni arrastre.
+    const tabla = board.dataset.vista === 'tabla';
     let dragged = null;
     let saving = false;
     function announce(text, kind = '', needsRefresh = false) {
@@ -27,7 +29,7 @@
         saving = value;
         board.setAttribute('aria-busy', String(value));
         cards.forEach(card => {
-            card.draggable = !value;
+            card.draggable = !value && !tabla;
             card.querySelectorAll('button, select').forEach(control => { control.disabled = value; });
         });
     }
@@ -37,7 +39,7 @@
         const previous = card.dataset.state;
         const select = form.elements.estado;
         const target = columns.find(column => column.dataset.state === state);
-        if (!target) return;
+        if (!target && !tabla) return;
         if (previous === state) { announce('El ticket ya está en esa columna.'); return; }
         const hadFocus = card.contains(document.activeElement);
         const data = new URLSearchParams({estado: state, estado_anterior: previous});
@@ -60,7 +62,12 @@
                 : 'No se pudo guardar el cambio. Actualice el tablero para comprobar el estado.'));
             if (result.estado !== state || result.ticket !== card.dataset.ticket)
                 throw new Error('La respuesta no coincide con el cambio. Actualice el tablero para comprobar el estado.');
-            target.querySelector('[data-dropzone]').insertBefore(card, target.querySelector('.kanban-empty'));
+            if (target) target.querySelector('[data-dropzone]').insertBefore(card, target.querySelector('.kanban-empty'));
+            const insignia = card.querySelector('.kanban-estado');
+            if (insignia) {
+                insignia.textContent = select.options[select.selectedIndex].textContent;
+                insignia.className = 'badge kanban-estado text-bg-' + (select.options[select.selectedIndex].dataset.color || 'secondary');
+            }
             card.dataset.state = result.estado;
             form.elements.estado_anterior.value = result.estado;
             select.value = result.estado;
@@ -68,7 +75,7 @@
             age.className = 'badge kanban-age ' + (state === 'Resuelto' ? 'text-bg-success' : age.dataset.ageClass);
             age.textContent = state === 'Resuelto' ? 'Cerrado' : `Día ${age.dataset.days}`;
             updateCounts();
-            announce(`Ticket ${result.ticket} movido a ${target.querySelector('h2').textContent}. Cambio guardado.`, 'success');
+            announce(`Ticket ${result.ticket} movido a ${target ? target.querySelector('h2').textContent : select.options[select.selectedIndex].textContent}. Cambio guardado.`, 'success');
         } catch (error) {
             select.value = previous;
             announce(error instanceof TypeError || error.name === 'AbortError'
@@ -83,7 +90,7 @@
         }
     }
     cards.forEach(card => {
-        card.draggable = true;
+        card.draggable = !tabla;
         card.addEventListener('dragstart', event => {
             if (saving || event.target.closest('a, button, select, input')) { event.preventDefault(); return; }
             dragged = card;

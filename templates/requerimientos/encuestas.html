@@ -10,9 +10,8 @@
             <li class="breadcrumb-item active">Encuesta</li>
         </ol>
     </nav>
-    {% include '_cu.html' with cu_id='CU-E12' cu_nombre='Encuesta de satisfacción' %}
     <h2 class="fw-bold text-primary-custom mb-1">Encuesta al ciudadano (1 a 5)</h2>
-    <p class="text-muted small mb-4">Se aplica cuando el ticket queda Resuelto. La nota queda en el registro local.</p>
+    <p class="text-muted small mb-4">Cuando un ticket queda resuelto, abre su ficha para compartir la encuesta con el vecino o registrar su respuesta.</p>
 
     {% if not encuesta_habilitada %}
     <div class="alert alert-warning">La encuesta está deshabilitada en parámetros de administración.</div>

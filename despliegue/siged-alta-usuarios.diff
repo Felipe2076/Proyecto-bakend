@@ -1,0 +1,564 @@
+diff -ruN alta_a/core/validaciones.py alta_b/core/validaciones.py
+--- a/core/validaciones.py
++++ b/core/validaciones.py
+@@ -91,3 +91,30 @@
+         return False
+     cuerpo = int(normal.split("-")[0])
+     return 33_000_000 <= cuerpo <= 33_999_999
++
++
++def rut_canonico(rut: str):
++    """RUT tolerante al tipeo: acepta puntos, espacios, guion opcional y «k» minúscula.
++
++    Devuelve ``cuerpo-DV`` (p. ej. ``33200032-2``) si el módulo 11 calza, o ``None``.
++    """
++    limpio = re.sub(r"[.\s-]", "", (rut or "")).upper()
++    if not re.fullmatch(r"\d{7,8}[\dK]", limpio):
++        return None
++    cuerpo, dv = limpio[:-1], limpio[-1]
++    return f"{cuerpo}-{dv}" if dv_rut(cuerpo) == dv else None
++
++
++def motivo_rut_invalido(rut: str):
++    """Texto que explica por qué un RUT no sirve, o ``None`` si es válido."""
++    texto = (rut or "").strip()
++    if not texto:
++        return "Ingrese el RUT; el campo está vacío."
++    if rut_canonico(texto):
++        return None
++    limpio = re.sub(r"[.\s-]", "", texto).upper()
++    if re.fullmatch(r"\d{7,8}[\dK]", limpio):
++        cuerpo = limpio[:-1]
++        correcto = formatear_rut(f"{cuerpo}-{dv_rut(cuerpo)}")
++        return f"El dígito verificador no corresponde: con ese número el RUT correcto sería {correcto}."
++    return "El RUT tiene un formato inválido. Use 7 u 8 dígitos y el verificador, por ejemplo 33.100.001-9."
+diff -ruN alta_a/cuentas/admin.py alta_b/cuentas/admin.py
+--- a/cuentas/admin.py
++++ b/cuentas/admin.py
+@@ -1,4 +1,10 @@
++import re
++
++from django import forms
+ from django.contrib import admin
++from django.db import transaction
++
++from core.validaciones import motivo_rut_invalido, rut_canonico
+ 
+ from .models import Cargo, Delegacion, Funcionario, ParametroSistema, Rol, Usuario
+ 
+@@ -44,8 +50,29 @@
+     list_filter = ("modulo_principal",)
+ 
+ 
++class FuncionarioAdminForm(forms.ModelForm):
++    """El campo del modelo admite 10 caracteres; aquí se acepta el RUT con puntos y se guarda normalizado."""
++
++    rut = forms.CharField(label="RUT", max_length=14, help_text="Con o sin puntos y guion. Se guarda como 33100001-9.")
++
++    class Meta:
++        model = Funcionario
++        fields = "__all__"
++
++    def clean_rut(self):
++        valor = self.cleaned_data["rut"]
++        canonico = rut_canonico(valor)
++        if canonico is None:
++            raise forms.ValidationError(motivo_rut_invalido(valor))
++        otro = Funcionario.objects.filter(rut=canonico).exclude(pk=self.instance.pk).first()
++        if otro is not None:
++            raise forms.ValidationError(f"Ese RUT ya pertenece a la ficha {otro.codigo}.")
++        return canonico
++
++
+ @admin.register(Funcionario)
+ class FuncionarioAdmin(admin.ModelAdmin):
++    form = FuncionarioAdminForm
+     list_display = ("codigo", "rut", "nombre_visible", "cargo", "delegacion", "es_simulacion", "fecha_ultimo_ingreso", "estado")
+     search_fields = ("codigo", "rut", "nombre", "nombres", "apellido_paterno", "cargo__nombre", "delegacion__nombre")
+     list_filter = ("estado", "delegacion", "cargo")
+@@ -62,8 +89,37 @@
+         return [ItemFuncionarioInline, ActividadInline]
+ 
+ 
++class UsuarioAdminForm(forms.ModelForm):
++    class Meta:
++        model = Usuario
++        fields = "__all__"
++
++    def clean_username(self):
++        valor = (self.cleaned_data.get("username") or "").strip()
++        canonico = rut_canonico(valor)
++        if canonico:
++            return canonico
++        # Nombres de usuario que no son un RUT (cuentas antiguas) se conservan; un RUT mal escrito, no.
++        if re.fullmatch(r"[\d.\s-]+[\dkK]", valor):
++            raise forms.ValidationError(motivo_rut_invalido(valor))
++        return valor
++
++
++def _borrar_cuentas_de_acceso(usuarios):
++    """Quita la cuenta de acceso de cada perfil borrado para no dejar un RUT bloqueado.
++
++    Nunca elimina cuentas de personal técnico (staff o superusuario).
++    """
++    from django.contrib.auth import get_user_model
++
++    ids = [u.user_id for u in usuarios if u.user_id]
++    if ids:
++        get_user_model().objects.filter(pk__in=ids, is_staff=False, is_superuser=False).delete()
++
++
+ @admin.register(Usuario)
+ class UsuarioAdmin(admin.ModelAdmin):
++    form = UsuarioAdminForm
+     list_display = ("id", "nombre_visible", "username", "correo", "rol", "delegacion", "estado")
+     search_fields = ("nombre", "username", "correo", "codigo", "funcionario__rut", "funcionario__nombre")
+     list_filter = ("estado", "rol", "delegacion")
+@@ -73,6 +129,18 @@
+     def get_queryset(self, request):
+         return super().get_queryset(request).select_related("funcionario")
+ 
++    def delete_model(self, request, obj):
++        with transaction.atomic():
++            perfiles = [obj]
++            super().delete_model(request, obj)
++            _borrar_cuentas_de_acceso(perfiles)
++
++    def delete_queryset(self, request, queryset):
++        with transaction.atomic():
++            perfiles = list(queryset)
++            super().delete_queryset(request, queryset)
++            _borrar_cuentas_de_acceso(perfiles)
++
+     @admin.display(description="nombre")
+     def nombre_visible(self, obj):
+         return obj.nombre_mostrado
+diff -ruN alta_a/cuentas/management/commands/cuentas_huerfanas.py alta_b/cuentas/management/commands/cuentas_huerfanas.py
+--- a/cuentas/management/commands/cuentas_huerfanas.py
++++ b/cuentas/management/commands/cuentas_huerfanas.py
+@@ -0,0 +1,42 @@
++"""Lista (y, si se pide, elimina) cuentas de acceso sin perfil de usuario.
++
++Una cuenta así bloquea el alta de ese RUT. Por defecto solo informa; no muestra contraseñas
++ni correos. No toca cuentas de personal técnico (staff o superusuario).
++
++    python manage.py cuentas_huerfanas              # solo informe
++    python manage.py cuentas_huerfanas --eliminar   # borra las huérfanas que no sean staff
++"""
++from django.contrib.auth import get_user_model
++from django.core.management.base import BaseCommand
++from django.db import transaction
++
++from core.validaciones import enmascarar_rut
++
++
++class Command(BaseCommand):
++    help = "Informa las cuentas de acceso sin perfil asociado; --eliminar las borra (excepto staff)."
++
++    def add_arguments(self, parser):
++        parser.add_argument("--eliminar", action="store_true", help="Borra las huérfanas que no sean staff.")
++
++    def handle(self, *args, **opciones):
++        User = get_user_model()
++        huerfanas = User.objects.filter(perfil__isnull=True).order_by("pk")
++        if not huerfanas.exists():
++            self.stdout.write("Sin cuentas huérfanas.")
++            return
++        borrables = []
++        for u in huerfanas:
++            tecnica = u.is_staff or u.is_superuser
++            etiqueta = enmascarar_rut(u.username) or "(usuario no RUT)"
++            self.stdout.write(f"  id={u.pk} usuario={etiqueta} activa={u.is_active} "
++                              f"{'TÉCNICA: se conserva' if tecnica else 'huérfana'}")
++            if not tecnica:
++                borrables.append(u.pk)
++        self.stdout.write(f"Total: {huerfanas.count()}; eliminables: {len(borrables)}.")
++        if opciones["eliminar"] and borrables:
++            with transaction.atomic():
++                User.objects.filter(pk__in=borrables).delete()
++            self.stdout.write(self.style.WARNING(f"Eliminadas {len(borrables)} cuentas huérfanas."))
++        elif borrables:
++            self.stdout.write("Informe solamente. Para borrarlas: --eliminar")
+diff -ruN alta_a/cuentas/tests_alta_usuarios.py alta_b/cuentas/tests_alta_usuarios.py
+--- a/cuentas/tests_alta_usuarios.py
++++ b/cuentas/tests_alta_usuarios.py
+@@ -0,0 +1,211 @@
++"""Alta de usuarios desde «Administración → Usuarios»: RUT, duplicados y errores de base, con datos ficticios."""
++from django.contrib.auth import get_user_model
++from django.core import mail
++from django.test import TestCase, override_settings
++
++from control_gestion import tests_kanban
++from core.validaciones import dv_rut, motivo_rut_invalido, rut_canonico
++from cuentas.models import Cargo, Delegacion, Funcionario, Usuario
++
++URL = '/administracion/usuarios/'
++
++
++@override_settings(SESSION_ENGINE='django.contrib.sessions.backends.db',
++                   PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],
++                   EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
++class AltaUsuariosTests(TestCase):
++    setUpTestData = classmethod(tests_kanban.KanbanTests.setUpTestData.__func__)
++    autenticar = tests_kanban.KanbanTests.autenticar
++
++    def datos(self, **cambios):
++        base = dict(accion='crear', rut='33.200.032-2', nombre='Persona Ficticia Prueba', email='nueva@siged.test',
++                    rol='funcionario', cargo='Cargo de prueba', delegacion=self.centro.nombre)
++        base.update(cambios)
++        return base
++
++    def enviar(self, **cambios):
++        self.autenticar()
++        return self.client.post(URL, self.datos(**cambios))
++
++    # --- RUT --------------------------------------------------------------------------------
++    def test_digito_verificador_incorrecto_dice_cual_corresponde(self):
++        self.assertEqual(dv_rut('33200032'), '2')
++        respuesta = self.enviar(rut='33.200.032-9')
++        self.assertEqual(respuesta.status_code, 200)
++        mensaje = respuesta.context['errores']['rut']
++        self.assertIn('dígito verificador', mensaje)
++        self.assertIn('33.200.032-2', mensaje)
++        self.assertFalse(Usuario.objects.filter(username__startswith='33200032').exists())
++        self.assertEqual(respuesta.context['valores']['rut'], '33.200.032-9')  # no pierde lo escrito
++
++    def test_motivos_distintos_segun_el_error(self):
++        self.assertIn('formato', motivo_rut_invalido('abc'))
++        self.assertIn('vacío', motivo_rut_invalido('  '))
++        self.assertIn('33.200.032-2', motivo_rut_invalido('33200032-9'))
++        self.assertIsNone(motivo_rut_invalido('33.200.032-2'))
++
++    def test_acepta_rut_con_puntos_sin_guion_o_con_k_minuscula(self):
++        self.assertEqual(rut_canonico(' 33.200.032-2 '), '33200032-2')
++        self.assertEqual(rut_canonico('332000322'), '33200032-2')
++        self.assertEqual(rut_canonico('33200032 2'), '33200032-2')
++        self.assertEqual(rut_canonico('7.654.321-6'), '7654321-6')
++        self.assertEqual(rut_canonico('21.356.658-k'), '21356658-K')
++        self.assertIsNone(rut_canonico('33200032-9'))
++        self.assertIsNone(rut_canonico('1234'))
++        self.assertEqual(self.enviar(rut='332000322').status_code, 302)
++        self.assertTrue(Usuario.objects.filter(username='33200032-2').exists())
++
++    # --- Alta correcta ----------------------------------------------------------------------
++    def test_alta_correcta_crea_todo_y_envia_invitacion(self):
++        respuesta = self.enviar()
++        self.assertEqual(respuesta.status_code, 302)
++        usuario = Usuario.objects.select_related('user', 'funcionario').get(username='33200032-2')
++        self.assertEqual(usuario.funcionario.rut, '33200032-2')
++        self.assertFalse(usuario.user.has_usable_password())
++        self.assertEqual(mail.outbox[-1].to, ['nueva@siged.test'])
++
++    def test_rut_repetido_con_otro_formato_se_detecta(self):
++        self.assertEqual(self.enviar().status_code, 302)
++        otra = self.enviar(rut='33200032-2', email='otra@siged.test')
++        self.assertEqual(otra.status_code, 200)
++        self.assertIn('ya está registrado', otra.context['errores']['rut'])
++
++    # --- Errores que antes terminaban en HTTP 500 -------------------------------------------
++    def test_cuenta_de_acceso_huerfana_no_provoca_error_500(self):
++        get_user_model().objects.create_user('33200032-2', 'huerfana@siged.test', 'x')
++        respuesta = self.enviar()
++        self.assertEqual(respuesta.status_code, 200)
++        self.assertIn('acceso', respuesta.context['errores']['rut'])
++        self.assertFalse(Funcionario.objects.filter(rut='33200032-2').exists())
++        self.assertEqual(len(mail.outbox), 0)
++
++    def test_textos_demasiado_largos_se_rechazan_con_mensaje(self):
++        respuesta = self.enviar(email='a' * 250 + '@siged.test', delegacion='D' * 101)
++        self.assertEqual(respuesta.status_code, 200)
++        self.assertIn('email', respuesta.context['errores'])
++        self.assertIn('delegacion', respuesta.context['errores'])
++
++    def test_delegacion_inexistente_no_se_crea_por_escribirla_mal(self):
++        antes = Delegacion.objects.count()
++        respuesta = self.enviar(delegacion='Delegacion Escrita Mal')
++        self.assertEqual(respuesta.status_code, 200)
++        self.assertIn('delegacion', respuesta.context['errores'])
++        self.assertEqual(Delegacion.objects.count(), antes)
++
++    def test_error_inesperado_de_base_no_deja_datos_parciales_ni_500(self):
++        from unittest import mock
++        from django.db import IntegrityError
++        self.autenticar()
++        with mock.patch('cuentas.views.emitir_codigo', side_effect=IntegrityError('simulado')):
++            respuesta = self.client.post(URL, self.datos())
++        self.assertEqual(respuesta.status_code, 200)
++        self.assertContains(respuesta, 'No se pudo crear el usuario')
++        self.assertFalse(Funcionario.objects.filter(rut='33200032-2').exists())
++        self.assertFalse(get_user_model().objects.filter(username='33200032-2').exists())
++
++    # --- Ficha SGR existente ----------------------------------------------------------------
++    def crear_ficha(self, rut='33200032-2'):
++        cargo = Cargo.objects.get_or_create(nombre='Cargo de prueba')[0]
++        return Funcionario.objects.create(codigo='FUN-900', rut=rut, nombres='Ficha', apellido_paterno='Ficticia',
++                                          cargo=cargo, delegacion=self.centro)
++
++    def test_vincula_ficha_existente_con_el_mismo_rut(self):
++        ficha = self.crear_ficha()
++        respuesta = self.enviar(id_funcionario=ficha.codigo)
++        self.assertEqual(respuesta.status_code, 302)
++        self.assertEqual(Usuario.objects.get(username='33200032-2').funcionario_id, ficha.pk)
++        self.assertEqual(Funcionario.objects.filter(rut='33200032-2').count(), 1)
++
++    def test_ficha_con_otro_rut_no_se_sobrescribe(self):
++        ficha = self.crear_ficha(rut='33100001-9')
++        respuesta = self.enviar(id_funcionario=ficha.codigo)
++        self.assertEqual(respuesta.status_code, 200)
++        self.assertIn('no coincide', respuesta.context['errores']['rut'])
++        ficha.refresh_from_db()
++        self.assertEqual(ficha.rut, '33100001-9')
++
++    def test_ficha_con_cuenta_no_se_reutiliza(self):
++        ficha = self.crear_ficha()
++        self.assertEqual(self.enviar(id_funcionario=ficha.codigo).status_code, 302)
++        otra = self.enviar(id_funcionario=ficha.codigo, rut='33100001-9', email='otra@siged.test')
++        self.assertEqual(otra.status_code, 200)
++        self.assertIn('id_funcionario', otra.context['errores'])
++
++
++@override_settings(SESSION_ENGINE='django.contrib.sessions.backends.db',
++                   PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],
++                   EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
++class AdminDjangoTests(TestCase):
++    setUpTestData = classmethod(tests_kanban.KanbanTests.setUpTestData.__func__)
++
++    def setUp(self):
++        User = get_user_model()
++        self.tecnico = User.objects.create_superuser('tecnico-ficticio', 'tec@siged.test', 'x')
++        self.client.force_login(self.tecnico)
++
++    def datos_ficha(self, **cambios):
++        cargo = Cargo.objects.get_or_create(nombre='Cargo admin')[0]
++        base = dict(codigo='FUN-910', rut='33.200.032-2', nombres='Ana', apellido_paterno='Ficticia', apellido_materno='',
++                    nombre='Ana Ficticia', cargo=cargo.pk, delegacion=self.centro.pk, estado='activo')
++        base.update(cambios)
++        return base
++
++    def test_ficha_en_admin_acepta_rut_con_puntos_y_lo_normaliza(self):
++        from cuentas.admin import FuncionarioAdminForm
++        self.assertEqual(self.client.get('/admin/cuentas/funcionario/add/').status_code, 200)
++        form = FuncionarioAdminForm(self.datos_ficha())
++        self.assertTrue(form.is_valid(), form.errors)
++        self.assertEqual(form.save().rut, '33200032-2')
++
++    def test_ficha_en_admin_explica_el_rut_invalido_y_el_repetido(self):
++        from cuentas.admin import FuncionarioAdminForm
++        malo = FuncionarioAdminForm(self.datos_ficha(rut='33.200.032-9'))
++        self.assertFalse(malo.is_valid())
++        self.assertIn('33.200.032-2', ' '.join(malo.errors['rut']))
++        FuncionarioAdminForm(self.datos_ficha()).save()
++        repetido = FuncionarioAdminForm(self.datos_ficha(codigo='FUN-911', rut='332000322'))
++        self.assertFalse(repetido.is_valid())
++        self.assertIn('FUN-910', ' '.join(repetido.errors['rut']))
++
++    def test_usuario_en_admin_normaliza_el_nombre_de_usuario(self):
++        from cuentas.admin import UsuarioAdminForm
++        form = UsuarioAdminForm({'username': '33.200.032-2'})
++        form.is_valid()
++        self.assertEqual(form.cleaned_data.get('username'), '33200032-2')
++        malo = UsuarioAdminForm({'username': '33.200.032-9'})
++        malo.is_valid()
++        self.assertIn('dígito verificador', ' '.join(malo.errors['username']))
++        antiguo = UsuarioAdminForm({'username': 'cuenta-antigua'})
++        antiguo.is_valid()
++        self.assertEqual(antiguo.cleaned_data.get('username'), 'cuenta-antigua')
++
++    def test_borrar_usuario_en_admin_libera_el_rut_para_volver_a_crearlo(self):
++        otro = self.funcionario
++        pk_user = otro.user_id
++        respuesta = self.client.post(f'/admin/cuentas/usuario/{otro.pk}/delete/', {'post': 'yes'})
++        self.assertEqual(respuesta.status_code, 302)
++        self.assertFalse(Usuario.objects.filter(pk=otro.pk).exists())
++        self.assertFalse(get_user_model().objects.filter(pk=pk_user).exists())
++        self.assertTrue(get_user_model().objects.filter(pk=self.tecnico.pk).exists())
++
++    def test_borrar_usuario_no_elimina_cuentas_tecnicas(self):
++        perfil = self.funcionario
++        perfil.user.is_staff = True
++        perfil.user.save()
++        self.client.post(f'/admin/cuentas/usuario/{perfil.pk}/delete/', {'post': 'yes'})
++        self.assertTrue(get_user_model().objects.filter(pk=perfil.user_id).exists())
++
++    def test_comando_de_cuentas_huerfanas_informa_sin_borrar(self):
++        from io import StringIO
++        from django.core.management import call_command
++        User = get_user_model()
++        User.objects.create_user('33200032-2', 'h@siged.test', 'x')
++        salida = StringIO()
++        call_command('cuentas_huerfanas', stdout=salida)
++        texto = salida.getvalue()
++        self.assertIn('eliminables: 1', texto)
++        self.assertNotIn('33200032', texto)  # el RUT sale enmascarado
++        self.assertTrue(User.objects.filter(username='33200032-2').exists())
++        call_command('cuentas_huerfanas', '--eliminar', stdout=StringIO())
++        self.assertFalse(User.objects.filter(username='33200032-2').exists())
++        self.assertTrue(User.objects.filter(pk=self.tecnico.pk).exists())
+diff -ruN alta_a/cuentas/views.py alta_b/cuentas/views.py
+--- a/cuentas/views.py
++++ b/cuentas/views.py
+@@ -12,13 +12,17 @@
+ from django.utils.encoding import force_bytes
+ from django.utils.http import urlsafe_base64_encode
+ from django.shortcuts import redirect, render
+-from django.db import transaction
++from django.db import DatabaseError, transaction
++from django.core.exceptions import ValidationError
+ from smtplib import SMTPException
+ 
+ import logging
+ 
+ from core.seguridad import LimiteExcedido, clave_limite, consumir, ip_cliente, liberar
+-from core.validaciones import MENSAJE_NOMBRE, MENSAJE_RUT, formatear_rut, rut_normalizado_valido, validar_nombre
++from core.validaciones import (
++    MENSAJE_NOMBRE, MENSAJE_RUT, formatear_rut, motivo_rut_invalido, rut_canonico, rut_normalizado_valido,
++    validar_nombre,
++)
+ from cuentas.auth import requerir_modulo, usuario_sesion
+ from cuentas.forms import NuevaContrasenaForm, RestablecerEnlaceForm
+ from cuentas.models import Cargo, Delegacion, EstadoRegistro, Funcionario, ParametroSistema, Rol, Usuario
+@@ -374,11 +378,24 @@
+             "delegacion": delegacion_nombre,
+             "id_funcionario": id_funcionario,
+         }
+-        rut = rut_normalizado_valido(rut_ingresado)
++        from django.contrib.auth import get_user_model
++
++        User = get_user_model()
++        funcionario = Funcionario.objects.filter(codigo=id_funcionario).first() if id_funcionario else None
++        # Acepta puntos, espacios, «k» minúscula y RUT sin guion; el motivo del rechazo se explica.
++        rut = rut_canonico(rut_ingresado)
+         if rut is None:
+-            errores["rut"] = MENSAJE_RUT
+-        elif Funcionario.objects.filter(rut=rut).exists() or Usuario.objects.filter(username=rut).exists():
++            errores["rut"] = motivo_rut_invalido(rut_ingresado) or MENSAJE_RUT
++        elif funcionario is not None and funcionario.rut and funcionario.rut != rut:
++            errores["rut"] = "El RUT no coincide con el de la ficha seleccionada. Corrija el RUT o elija otra ficha."
++        elif Usuario.objects.filter(username=rut).exists() or (
++                Funcionario.objects.filter(rut=rut).exclude(pk=funcionario.pk if funcionario else None).exists()):
+             errores["rut"] = "Ese RUT ya está registrado."
++        elif User.objects.filter(username=rut).exists():
++            # Cuenta de acceso sin perfil (restos de una carga anterior). No se reutiliza: podría
++            # conservar una contraseña antigua o ser de un administrador.
++            errores["rut"] = ("Ya existe una cuenta de acceso con ese RUT sin perfil asociado. "
++                              "Pida al administrador técnico que la revise antes de crear el usuario.")
+         if len(nombre) < 5:
+             errores["nombre"] = "Ingrese el nombre completo (mínimo 5 caracteres)."
+         elif not validar_nombre(nombre):
+@@ -387,9 +404,9 @@
+             errores["email"] = "Ingrese el correo del usuario para enviar su activación."
+         if not _correo_habilitado():
+             errores["email"] = "El envío de correo no está configurado. No se creó la cuenta."
+-        if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+-            errores["email"] = "Ingrese un correo válido."
+-        if email and Usuario.objects.filter(correo__iexact=email).exists():
++        if email and (len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email)):
++            errores["email"] = "Ingrese un correo válido (hasta 254 caracteres)."
++        if email and "email" not in errores and Usuario.objects.filter(correo__iexact=email).exists():
+             errores["email"] = "Ese correo ya está registrado."
+         rol = Rol.objects.filter(codigo=rol_codigo).first()
+         if rol is None:
+@@ -397,9 +414,10 @@
+         cargo = Cargo.objects.filter(nombre=cargo_nombre).first() if cargo_nombre else None
+         if not cargo_nombre or cargo is None:
+             errores["cargo"] = "Seleccione o indique un cargo."
+-        if not delegacion_nombre:
+-            errores["delegacion"] = "Seleccione la delegación del trabajador."
+-        funcionario = Funcionario.objects.filter(codigo=id_funcionario).first() if id_funcionario else None
++        # Solo delegaciones existentes: escribir mal el nombre ya no crea una delegación nueva.
++        delegacion = Delegacion.objects.filter(nombre=delegacion_nombre).first() if delegacion_nombre else None
++        if delegacion is None:
++            errores["delegacion"] = "Seleccione la delegación del trabajador de la lista."
+         if funcionario is not None and Usuario.objects.filter(funcionario=funcionario).exists():
+             errores["id_funcionario"] = "Esa ficha ya tiene una cuenta."
+         if errores:
+@@ -407,9 +425,6 @@
+         else:
+             try:
+                 with transaction.atomic():
+-                    delegacion, _ = Delegacion.objects.get_or_create(
+-                        nombre=delegacion_nombre, defaults={"comuna": "La Serena"}
+-                    )
+                     partes = [p for p in nombre.split() if p]
+                     nombres = partes[0][:60]
+                     paterno = (partes[1] if len(partes) > 1 else "Registro")[:60]
+@@ -462,6 +477,12 @@
+ 
+             except (OSError, SMTPException, RuntimeError):
+                 messages.error(request, 'No se pudo enviar la invitación. No se creó el usuario; revise el correo e intente nuevamente.')
++            except (DatabaseError, ValidationError) as error:
++                # Doble envío, dato que no cabe en la base u otra restricción: no queda nada a medias
++                # (la transacción se revierte) y el registro no incluye datos personales.
++                log_seguridad.error("alta_usuario_rechazada %s", type(error).__name__)
++                messages.error(request, 'No se pudo crear el usuario. No se guardó nada; revise los datos o '
++                                        'intente de nuevo en un momento. Si se repite, avise al administrador técnico.')
+             else:
+                 messages.success(request, f'Usuario {formatear_rut(rut)} creado. Invitación enviada a {email}; el usuario definirá su contraseña.')
+                 return redirect('admin_usuarios')
+diff -ruN alta_a/static/js/modulos/validaciones.js alta_b/static/js/modulos/validaciones.js
+--- a/static/js/modulos/validaciones.js
++++ b/static/js/modulos/validaciones.js
+@@ -18,15 +18,34 @@
+     return (rut || "").trim().replace(/\./g, "").replace(/\s/g, "").toUpperCase();
+ }
+ 
++/* Tolerante al tipeo, igual que rut_canonico() en Python: puntos, espacios, guion opcional, «k» minúscula. */
++export function rutCanonico(rut) {
++    const limpio = (rut || "").replace(/[.\s-]/g, "").toUpperCase();
++    if (!/^\d{7,8}[\dK]$/.test(limpio)) return null;
++    const cuerpo = limpio.slice(0, -1);
++    const dv = limpio.slice(-1);
++    return dvRut(cuerpo) === dv ? `${cuerpo}-${dv}` : null;
++}
++
+ export function validarRut(rut) {
++    return rutCanonico(rut) !== null;
++}
++
++/* Motivo del rechazo; mismo texto que motivo_rut_invalido() en Python. */
++export function motivoRut(rut) {
+     const texto = (rut || "").trim();
+-    if (!PATRON_RUT.test(texto)) return false;
+-    const [cuerpo, dv] = normalizarRut(texto).split("-");
+-    return dvRut(cuerpo) === dv;
++    if (!texto) return "Ingrese el RUT; el campo está vacío.";
++    if (rutCanonico(texto)) return "";
++    const limpio = texto.replace(/[.\s-]/g, "").toUpperCase();
++    if (/^\d{7,8}[\dK]$/.test(limpio)) {
++        const cuerpo = limpio.slice(0, -1);
++        return `El dígito verificador no corresponde: con ese número el RUT correcto sería ${formatearRut(`${cuerpo}-${dvRut(cuerpo)}`)}.`;
++    }
++    return "El RUT tiene un formato inválido. Use 7 u 8 dígitos y el verificador, por ejemplo 33.100.001-9.";
+ }
+ 
+ export function formatearRut(rut) {
+-    const normal = normalizarRut(rut);
++    const normal = rutCanonico(rut) || normalizarRut(rut);
+     if (!validarRut(normal) && !/^\d{7,8}-[\dkK]$/.test(normal)) {
+         return (rut || "").trim();
+     }
+@@ -64,7 +83,7 @@
+             input.setCustomValidity("");
+         } else {
+             input.classList.add("is-invalid");
+-            input.setCustomValidity(input.dataset.mensaje || "Ingrese un RUT válido, por ejemplo 33.100.001-9.");
++            input.setCustomValidity(motivoRut(valor));
+         }
+     });
+ }
+@@ -77,13 +96,13 @@
+                 const valor = input.value.trim();
+                 const ok = valor && validarRut(valor);
+                 input.classList.toggle("is-invalid", !ok);
+-                input.setCustomValidity(ok ? "" : (input.dataset.mensaje || "RUT inválido"));
++                input.setCustomValidity(ok ? "" : motivoRut(valor));
+                 if (ok) input.value = formatearRut(valor);
+                 return !ok;
+             });
+             if (malos.length) {
+                 ev.preventDefault();
+-                avisar("Revise los datos ingresados", malos[0].dataset.mensaje || "El RUT no es válido.");
++                avisar("Revise los datos ingresados", motivoRut(malos[0].value) || "El RUT no es válido.");
+                 malos[0].focus();
+             }
+         });

@@ -10,11 +10,9 @@
             <li class="breadcrumb-item active">Administración</li>
         </ol>
     </nav>
-    {% include '_cu.html' with cu_id='CU-E11' cu_nombre='Administrar usuarios' %}
     <h2 class="fw-bold text-primary-custom mb-3">Administración de usuarios</h2>
     {% include 'cuentas/_admin_tabs.html' %}
 
-    {% include 'componentes/_paginador.html' %}
 
     <div class="row g-4">
         <div class="col-lg-5">
@@ -68,15 +66,18 @@
                                 <option value="{{ del }}" {% if valores.delegacion == del %}selected{% endif %}>{{ del }}</option>
                                 {% endfor %}
                             </select>
+                            <div class="invalid-feedback">{% if errores.delegacion %}{{ errores.delegacion }}{% else %}Seleccione la delegación.{% endif %}</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="id_funcionario">Ficha SGR (opcional)</label>
-                            <select class="form-select" id="id_funcionario" name="id_funcionario">
+                            <select class="form-select {% if errores.id_funcionario %}is-invalid{% endif %}" id="id_funcionario" name="id_funcionario">
                                 <option value="">Ninguna</option>
                                 {% for fun in funcionarios %}
                                 <option value="{{ fun.id_funcionario }}" {% if valores.id_funcionario == fun.id_funcionario %}selected{% endif %}>{{ fun.id_funcionario }} · {{ fun.nombre }}</option>
                                 {% endfor %}
                             </select>
+                            <div class="invalid-feedback">{{ errores.id_funcionario }}</div>
+                            <div class="form-text">Solo aparecen fichas que aún no tienen cuenta.</div>
                         </div>
                         <button class="btn btn-primary-custom w-100" type="submit">Guardar usuario</button>
                     </form>
@@ -88,7 +89,7 @@
                 <div class="card-body p-4">
                     <div class="d-flex gap-2 flex-wrap justify-content-between mb-3"><h5 class="fw-bold text-primary-custom">Usuarios actuales</h5><a download href="{% url 'exportar_usuarios_excel' %}" class="btn btn-success btn-sm">Exportar todos los usuarios a Excel</a></div>
                     <form method="get" class="d-flex gap-2 mb-3"><input name="q" value="{{ q }}" class="form-control" aria-label="Buscar usuarios" placeholder="RUT, nombre, correo, rol o delegación"><button class="btn btn-outline-primary">Buscar</button><a href="{% url 'admin_usuarios' %}" class="btn btn-outline-secondary">Limpiar</a></form>
-                    <div class="table-responsive">
+                    <div data-resultado="usuarios" class="table-responsive">
                         <table class="table align-middle">
                             <thead class="table-light">
                                 <tr>
@@ -104,19 +105,26 @@
                                 <tr>
                                     <td><strong>{{ user.codigo }}</strong><br><code>{{ user.username }}</code></td>
                                     <td>
-                                        <div class="fw-semibold">{{ user.nombre }}</div>
-                                        <small class="text-muted">{{ user.cargo }}</small>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if user.foto_url %}<img class="siged-avatar" src="{{ user.foto_url }}" alt="" loading="lazy">{% else %}<span class="siged-avatar siged-avatar-iniciales small" aria-hidden="true">{{ user.iniciales }}</span>{% endif %}
+                                            <div><div class="fw-semibold">{{ user.nombre }}</div>
+                                            <small class="text-muted">{{ user.cargo }}</small></div>
+                                        </div>
                                     </td>
                                     <td><span class="badge text-bg-light border">{{ user.rol }}</span></td>
                                     <td>
                                         {% if user.activo %}<span class="badge text-bg-success">Activo</span>{% else %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}
                                     </td>
                                     <td>
-                                        <form method="post">
+                                        <form method="post" data-confirmar="{% if user.activo %}¿Desactivar la cuenta de {{ user.nombre }}? No podrá ingresar hasta que se reactive.{% else %}¿Reactivar la cuenta de {{ user.nombre }}?{% endif %}">
                                             {% csrf_token %}
                                             <input type="hidden" name="accion" value="toggle">
                                             <input type="hidden" name="id_usuario" value="{{ user.id_usuario }}">
-                                            <button class="btn btn-outline-secondary btn-sm" type="submit">Activar/desactivar</button>
+                                            {% if user.activo %}
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Desactivar</button>
+                                            {% else %}
+                                            <button class="btn btn-outline-success btn-sm" type="submit">Activar</button>
+                                            {% endif %}
                                         </form>
                                     </td>
                                 </tr>
@@ -128,5 +136,6 @@
             </div>
         </div>
     </div>
+    {% include 'componentes/_paginador.html' %}
 </div>
 {% endblock %}

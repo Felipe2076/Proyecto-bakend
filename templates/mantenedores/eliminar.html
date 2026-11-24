@@ -17,13 +17,20 @@
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
+                    {% if baja_logica %}
+                    <h2 class="fw-bold text-primary-custom h4">Dar de baja</h2>
+                    <p>¿Confirma dar de baja {{ articulo }} <strong>{{ objeto }}</strong>?</p>
+                    <p class="small text-muted mb-4">No se borra: queda como «De baja», deja de aparecer en la agenda y en las listas de activas, y puede reactivarse desde Modificar.{% if vinculados %} Tiene {{ vinculados }} actividad{{ vinculados|pluralize:"es" }} de agenda asociada{{ vinculados|pluralize }}, que se conservan.{% endif %}</p>
+                    {% else %}
                     <h2 class="fw-bold text-primary-custom h4">Confirmar eliminación</h2>
                     <p>¿Confirma eliminar {{ articulo }} <strong>{{ objeto }}</strong>?</p>
-                    <p class="small text-muted mb-4">Esta acción no se puede deshacer. Si hay registros que dependen de él, el sistema no lo eliminará.</p>
+                    <p class="small text-muted mb-4">Esta acción no se puede deshacer. Si otros registros lo utilizan, el sistema no lo eliminará y se lo avisará.</p>
+                    {% endif %}
                     <form method="post" class="d-flex justify-content-between">
                         {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ volver }}">
                         <a class="btn btn-outline-secondary" href="{{ url_lista }}">Cancelar</a>
-                        <button class="btn btn-danger" type="submit">Eliminar</button>
+                        <button class="btn btn-danger" type="submit">{% if baja_logica %}Dar de baja{% else %}Eliminar{% endif %}</button>
                     </form>
                 </div>
             </div>

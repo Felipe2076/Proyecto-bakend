@@ -48,12 +48,16 @@ class Command(BaseCommand):
     help = "Siembra tickets y metas de demostración para el panel personal (idempotente)."
 
     def add_arguments(self, parser):
+        from core.seguridad import agregar_bandera_demo
+        agregar_bandera_demo(parser)
         parser.add_argument(
             "--usuarios", nargs="+", default=USUARIOS_DEMO, metavar="USERNAME",
             help="Usuarios a sembrar (por defecto: %s)." % " ".join(USUARIOS_DEMO),
         )
 
     def handle(self, *args, **opts):
+        from core.seguridad import exigir_modo_demo
+        exigir_modo_demo(opts, "sembrar_demo")
         hoy = timezone.localdate()
         catalogo = self._catalogo()
         resumen = []

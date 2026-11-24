@@ -5,7 +5,7 @@
 {% block topbar_sub %}Mantenedor · búsqueda y acciones sobre la base de datos{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container{% if es_organizaciones %}-fluid px-lg-4{% endif %}">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-1 small">
             <li class="breadcrumb-item"><a href="{% url 'inicio' %}" class="text-decoration-none">Inicio</a></li>
@@ -17,12 +17,14 @@
     <div class="row align-items-center g-3 mb-4">
         <div class="col-lg-3">
             <h2 class="fw-bold text-primary-custom mb-0">{{ titulo }}</h2>
-            <p class="text-muted small mb-0">{{ total }} registro(s)</p>
+            <p data-resultado="total" class="text-muted small mb-0">{{ total }} registro(s)</p>
         </div>
         <div class="col-lg-6">
             <form method="get" action="{{ url_lista }}" class="input-group" role="search">
                 <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                 <input type="search" class="form-control" name="q" value="{{ q }}" placeholder="{{ placeholder }}" aria-label="Buscar">
+                {% if pestana_actual %}<input type="hidden" name="ver" value="{{ pestana_actual }}">{% endif %}
+                {% if es_organizaciones %}{% for clave, valor in filtros.items %}{% if valor %}<input type="hidden" name="{{ clave }}" value="{{ valor }}">{% endif %}{% endfor %}{% endif %}
                 <button class="btn btn-primary-custom" type="submit">Buscar</button>
             </form>
         </div>
@@ -31,11 +33,75 @@
         </div>
     </div>
 
-    {% include 'componentes/_paginador.html' %}
+
+    {% if pestanas %}
+    <ul class="nav nav-pills mb-3 gap-2" aria-label="Tipo de actividad">
+        {% for p in pestanas %}<li class="nav-item"><a class="nav-link {% if p.activa %}active{% endif %}" {% if p.activa %}aria-current="page"{% endif %} href="{{ p.url }}">{{ p.etiqueta }} <span class="badge rounded-pill {% if p.activa %}text-bg-light{% else %}text-bg-secondary{% endif %}">{{ p.cantidad }}</span></a></li>{% endfor %}
+        <li class="nav-item ms-auto small text-muted align-self-center"><i class="bi bi-sort-down" aria-hidden="true"></i> Lo último creado aparece primero</li>
+    </ul>
+    {% endif %}
+    {% if es_organizaciones %}
+    {% if sin_delegacion %}
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+        {{ sin_delegacion }} organización{{ sin_delegacion|pluralize:"es" }} no tiene{{ sin_delegacion|pluralize:"n" }} delegación asignada, por eso los administradores de delegación no la{{ sin_delegacion|pluralize }} ven.</span>
+        <a class="btn btn-sm btn-warning" href="{{ url_lista }}?delegacion=sin">Revisar y asignar</a>
+    </div>
+    {% endif %}
+    <form method="get" action="{{ url_lista }}" class="card border-0 shadow-sm rounded-4 mb-3" aria-label="Filtros de organizaciones">
+        <div class="card-body py-3 row g-2 align-items-end">
+            <input type="hidden" name="q" value="{{ q }}">
+            <div class="col-sm-6 col-lg-3">
+                <label class="form-label small mb-1" for="f-delegacion">Delegación</label>
+                <select class="form-select form-select-sm" id="f-delegacion" name="delegacion" data-auto-enviar>
+                    <option value="">Todas</option>
+                    {% for d in opciones_delegacion %}<option value="{{ d.pk }}" {% if filtros.delegacion == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.nombre }}</option>{% endfor %}
+                    {% if es_superusuario %}<option value="sin" {% if filtros.delegacion == 'sin' %}selected{% endif %}>Sin delegación</option>{% endif %}
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <label class="form-label small mb-1" for="f-territorio">Territorio</label>
+                <select class="form-select form-select-sm" id="f-territorio" name="territorio" data-auto-enviar>
+                    <option value="">Todos</option>
+                    {% for t in opciones_territorio %}<option value="{{ t }}" {% if filtros.territorio == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-4 col-lg-2">
+                <label class="form-label small mb-1" for="f-tipo">Tipo</label>
+                <select class="form-select form-select-sm" id="f-tipo" name="tipo" data-auto-enviar>
+                    <option value="">Todos</option>
+                    {% for valor, texto in opciones_tipo %}<option value="{{ valor }}" {% if filtros.tipo == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+                    <option value="sin" {% if filtros.tipo == 'sin' %}selected{% endif %}>Sin tipo</option>
+                </select>
+            </div>
+            <div class="col-sm-4 col-lg-2">
+                <label class="form-label small mb-1" for="f-verificada">Verificación</label>
+                <select class="form-select form-select-sm" id="f-verificada" name="verificada" data-auto-enviar>
+                    <option value="">Todas</option>
+                    <option value="si" {% if filtros.verificada == 'si' %}selected{% endif %}>Verificadas</option>
+                    <option value="no" {% if filtros.verificada == 'no' %}selected{% endif %}>Pendientes</option>
+                </select>
+            </div>
+            <div class="col-sm-4 col-lg-2">
+                <label class="form-label small mb-1" for="f-estado">Estado</label>
+                <select class="form-select form-select-sm" id="f-estado" name="estado" data-auto-enviar>
+                    <option value="activas" {% if filtros.estado == 'activas' %}selected{% endif %}>Activas</option>
+                    <option value="inactivas" {% if filtros.estado == 'inactivas' %}selected{% endif %}>De baja</option>
+                    <option value="todas" {% if filtros.estado == 'todas' %}selected{% endif %}>Todas</option>
+                </select>
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+                <noscript><button class="btn btn-sm btn-primary-custom" type="submit">Filtrar</button></noscript>
+                {% if filtros_activos or q %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_lista }}">Limpiar filtros</a>{% endif %}
+                <a class="btn btn-sm btn-success" data-sin-loader href="?{{ request.GET.urlencode }}{% if request.GET %}&amp;{% endif %}exportar=excel"><i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Exportar esta lista a Excel</a>
+            </div>
+        </div>
+    </form>
+    {% endif %}
 
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+        <div data-resultado="mantenedor" class="table-responsive">
+            <table class="table table-hover align-middle mb-0{% if es_organizaciones %} siged-organizaciones{% endif %}">
                 <thead class="table-light">
                     <tr>
                         <th class="py-3 px-3">#</th>
@@ -48,20 +114,21 @@
                 <tbody>
                     {% for fila in filas %}
                     <tr>
-                        <td class="px-3 text-muted">{{ forloop.counter }}</td>
+                        <td class="px-3 text-muted">{{ page_obj.start_index|add:forloop.counter0 }}</td>
                         {% for celda in fila.celdas %}
-                        <td>{{ celda|default:"—" }}</td>
+                        <td>{% if celda.year and celda.month %}{{ celda|fecha_breve }}{% else %}{{ celda|default:"—" }}{% endif %}</td>
                         {% endfor %}
-                        <td class="text-end px-3 text-nowrap">
+                        <td class="text-end px-3"><div class="d-flex flex-wrap justify-content-end gap-2">
+                            {% if fila.organizacion %}<button type="button" class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#organizacion-{{ fila.organizacion.pk }}">Ver ficha</button>{% endif %}
                             {% if fila.editar %}<a class="btn btn-sm btn-outline-primary" href="{{ fila.editar }}">Modificar</a>{% endif %}
-                            {% if fila.eliminar %}<a class="btn btn-sm btn-outline-danger" href="{{ fila.eliminar }}">Eliminar</a>{% endif %}
-                            {% if not fila.editar and not fila.eliminar %}<span class="text-muted small">Solo consulta</span>{% endif %}
-                        </td>
+                            {% if fila.eliminar %}<a class="btn btn-sm btn-outline-danger" href="{{ fila.eliminar }}">{{ texto_eliminar }}</a>{% endif %}
+                            {% if not fila.organizacion and not fila.editar and not fila.eliminar %}<span class="text-muted small">Solo consulta</span>{% endif %}
+                        </div></td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="{{ encabezados|length|add:2 }}" class="text-center text-muted py-5">
-                            No hay registros{% if q %} para «{{ q }}»{% endif %}.
+                            No hay registros{% if q %} para «{{ q }}»{% endif %}{% if filtros_activos %} con estos filtros{% endif %}.
                         </td>
                     </tr>
                     {% endfor %}
@@ -69,5 +136,9 @@
             </table>
         </div>
     </div>
+    {% include 'componentes/_paginador.html' %}
 </div>
+{% if es_organizaciones %}<div data-resultado="fichas">{% for fila in filas %}
+    {% include 'mantenedores/_ficha_organizacion.html' with org=fila.organizacion %}
+{% endfor %}</div>{% endif %}
 {% endblock %}

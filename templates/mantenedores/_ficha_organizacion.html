@@ -1,0 +1,26 @@
+<div class="modal fade" id="organizacion-{{ org.pk }}" tabindex="-1" aria-labelledby="titulo-organizacion-{{ org.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><h2 class="modal-title fs-5" id="titulo-organizacion-{{ org.pk }}">{{ org.nombre }}</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+        <div class="modal-body">
+            <div class="text-muted mb-3">{{ org.codigo }} · {% if org.verificada %}Verificada{% else %}Pendiente de verificar{% endif %}</div>
+            <h3 class="h6">Actividades y descripción</h3><div class="siged-descripcion mb-4">{{ org.descripcion|default:'Aún no se ha registrado una descripción.' }}</div>
+            <h3 class="h6">Directiva</h3>
+            <dl class="row mb-3">
+                {% for cargo, nombre, rut in org.directiva %}
+                <dt class="col-sm-4">{{ cargo }}</dt><dd class="col-sm-8">{{ nombre }}{% if rut %} · {{ rut }}{% endif %}</dd>
+                {% empty %}<dd class="text-muted">Sin directiva registrada.</dd>{% endfor %}
+            </dl>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Territorio</dt><dd class="col-sm-8">{{ org.territorio|default:'—' }}</dd>
+                <dt class="col-sm-4">Delegación</dt><dd class="col-sm-8">{{ org.delegacion|default:'—' }}</dd>
+                <dt class="col-sm-4">Domicilio legal</dt><dd class="col-sm-8">{{ org.domicilio_legal|default:'—' }}</dd>
+                <dt class="col-sm-4">Socios activos</dt><dd class="col-sm-8">{{ org.socios_activos|default_if_none:'—' }}</dd>
+                <dt class="col-sm-4">Constitución</dt><dd class="col-sm-8">{{ org.fecha_constitucion|fecha_breve|default:'—' }}</dd>
+                <dt class="col-sm-4">Inscripción</dt><dd class="col-sm-8">{{ org.fecha_inscripcion|fecha_breve|default:'—' }}</dd>
+                <dt class="col-sm-4">Registro jurídico</dt><dd class="col-sm-8">{{ org.registro_personalidad_juridica|default:'—' }}</dd>
+                <dt class="col-sm-4">Registro directiva</dt><dd class="col-sm-8">{{ org.registro_directiva|default:'—' }}</dd>
+            </dl>
+        </div>
+        {% if fila.editar %}<div class="modal-footer"><a href="{{ fila.editar }}" class="btn btn-outline-primary">Editar ficha</a></div>{% endif %}
+    </div></div>
+</div>

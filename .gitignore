@@ -30,3 +30,14 @@ backups/
 
 # Claves de simulación generadas por importar_json. Una por cuenta.
 .demo_credentials.local
+
+# Proyecto final (24-11-2026)
+media/
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+*.apk
+pruebas_locales/*.sqlite3
+# Scripts con claves reales de producción: nunca al repositorio.
+despliegue/clave_prueba_*.py

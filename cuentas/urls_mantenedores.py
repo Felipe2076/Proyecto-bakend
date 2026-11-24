@@ -2,7 +2,12 @@ from django.urls import path
 
 from cuentas.mantenedores import MANTENEDORES
 
-urlpatterns = []
+from control_gestion.territorios import buscar_organizaciones, opciones_territorios
+
+urlpatterns = [
+    path('organizaciones/territorios/', opciones_territorios, name='territorios_delegacion'),
+    path('organizaciones/buscar/', buscar_organizaciones, name='buscar_organizaciones'),
+]
 for mantenedor in MANTENEDORES:
     urlpatterns += [
         path(f"{mantenedor.ruta}/", mantenedor.vista_lista, name=mantenedor.nombre),

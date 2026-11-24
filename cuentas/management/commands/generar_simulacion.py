@@ -55,7 +55,13 @@ def _guardar(ruta, datos):
 class Command(BaseCommand):
     help = "Regenera datos de simulación (fixtures, data/*.json y D003) sin claves en claro."
 
+    def add_arguments(self, parser):
+        from core.seguridad import agregar_bandera_demo
+        agregar_bandera_demo(parser)
+
     def handle(self, *args, **options):
+        from core.seguridad import exigir_modo_demo
+        exigir_modo_demo(options, "generar_simulacion")
         base = Path(settings.BASE_DIR)
         fixture_ruta = base / "fixtures" / "02_datos_sistema.json"
         data_dir = base / "data"

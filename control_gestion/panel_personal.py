@@ -82,6 +82,7 @@ def _sla():
 def _tickets_de(funcionario):
     if funcionario is None:
         return Requerimiento.objects.none()
+    # «Mis tickets» muestra lo que está abierto: un ticket resuelto ya no está «crítico».
     return Requerimiento.objects.select_related(
         "vecino", "delegacion", "tipo_gestion", "funcionario"
     ).filter(funcionario=funcionario)
@@ -153,7 +154,10 @@ def _asistencia(funcionario, hoy):
 
 
 def _semaforo_persona(funcionario, items, periodo, hoy):
-    logrado = _logrado(items)
+    from control_gestion.ausencias import ajustar_periodo
+    periodo = ajustar_periodo(funcionario, periodo)
+    from control_gestion.evidencias import bonificacion
+    logrado = min(150, _logrado(items) + (bonificacion(funcionario,periodo) if funcionario else 0))
     color = color_avance_diario(logrado, periodo["pct_esperado"])
     asistencia = _asistencia(funcionario, hoy)
     return {
@@ -182,16 +186,15 @@ def construir_panel_personal(perfil, hoy=None):
         nombre = funcionario.nombre_mostrado if funcionario is not None else perfil.nombre_mostrado
 
     propios = _tickets_de(funcionario)
-    filas_tickets = [_fila_ticket(req, sla_verde, sla_amarillo) for req in propios]
+    abiertos = propios.exclude(estado=Requerimiento.Estado.RESUELTO).order_by("fecha_ingreso")
+    filas_tickets = [_fila_ticket(req, sla_verde, sla_amarillo) for req in abiertos[:50]]
     ids = [funcionario.pk] if funcionario is not None else []
     items = _items_por_funcionario(ids).get(funcionario.pk, []) if funcionario is not None else []
 
-    ver_delegacion = rol == "jefatura" and delegacion is not None
-    ver_global = rol == "administrador"
-    if rol == "funcionario" or rol == "ventanilla":
+    ver_delegacion = rol in ("jefatura", "administrador") and delegacion is not None
+    ver_global = rol == "superusuario"
+    if rol in ("funcionario", "ventanilla", "jefatura", "administrador"):
         delegaciones = [delegacion.nombre] if delegacion is not None else []
-    elif ver_delegacion:
-        delegaciones = [delegacion.nombre]
     else:
         delegaciones = nombres_delegaciones()
 

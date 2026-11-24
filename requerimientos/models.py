@@ -39,6 +39,10 @@ class Vecino(models.Model):
                                      related_name="vecinos", verbose_name="tipo de gestión")
     es_simulacion = models.BooleanField("dato de simulación", default=False)
     estado = models.CharField(max_length=10, choices=EstadoRegistro.choices, default=EstadoRegistro.ACTIVO)
+    # Nacionalidad: se pregunta al registrar. Vacío = no se preguntó (fichas antiguas).
+    es_extranjero = models.BooleanField("¿es extranjero/a?", null=True, blank=True)
+    nacionalidad = models.CharField("país de origen", max_length=60, null=True, blank=True,
+                                    help_text="Solo si es extranjero/a. Ej.: Venezuela, Perú, Haití.")
 
     class Meta:
         verbose_name = "vecino"
@@ -183,6 +187,8 @@ class Requerimiento(models.Model):
     evaluacion_satisfaccion = models.PositiveSmallIntegerField(
         "evaluación (1-5)", null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)])
     comentario_satisfaccion = models.TextField("comentario satisfacción", blank=True)
+    fecha_resolucion = models.DateField("fecha de resolución", null=True, blank=True,
+                                        help_text="Se completa sola al pasar a Resuelto.")
 
     class Meta:
         verbose_name = "requerimiento"
@@ -194,7 +200,25 @@ class Requerimiento(models.Model):
 
     @property
     def dias_transcurridos(self):
-        return (timezone.localdate() - self.fecha_ingreso).days
+        """Días de gestión: hasta hoy si sigue abierto; hasta la resolución si se cerró."""
+        fin = self.fecha_resolucion if self.estado == self.Estado.RESUELTO and self.fecha_resolucion else timezone.localdate()
+        return max(0, (fin - self.fecha_ingreso).days)
+
+    @property
+    def resuelto(self):
+        return self.estado == self.Estado.RESUELTO
+
+    def save(self, *args, **kwargs):
+        # La fecha de resolución acompaña siempre al estado, venga del detalle,
+        # del Kanban o de la API, para que un ticket cerrado deje de envejecer.
+        if self.estado == self.Estado.RESUELTO and not self.fecha_resolucion:
+            self.fecha_resolucion = timezone.localdate()
+        elif self.estado != self.Estado.RESUELTO and self.fecha_resolucion:
+            self.fecha_resolucion = None
+        campos = kwargs.get("update_fields")
+        if campos is not None and "estado" in campos and "fecha_resolucion" not in campos:
+            kwargs["update_fields"] = list(campos) + ["fecha_resolucion"]
+        super().save(*args, **kwargs)
 
 
 class Atencion(models.Model):
@@ -230,3 +254,27 @@ class Atencion(models.Model):
         if self.sub_atencion_id and self.tipo_atencion_id and \
                 self.sub_atencion.tipo_atencion_id != self.tipo_atencion_id:
             raise ValidationError({"sub_atencion": "La sub atención no pertenece al tipo de atención elegido."})
+
+
+def ruta_evidencia_ticket(instancia, nombre):
+    import uuid
+    from pathlib import PurePosixPath
+
+    ext = PurePosixPath(nombre).suffix.lower()[:6]
+    return f"evidencias/tickets/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{ext}"
+
+
+class EvidenciaRequerimiento(models.Model):
+    """Foto o documento que respalda la gestión de un ticket (se sube desde el tablero o la ficha)."""
+
+    requerimiento = models.ForeignKey(Requerimiento, on_delete=models.CASCADE, related_name="evidencias")
+    archivo = models.FileField(upload_to=ruta_evidencia_ticket, max_length=150)
+    tipo = models.CharField(max_length=10)  # FOTO o DOCUMENTO
+    descripcion = models.CharField(max_length=200, blank=True)
+    subido_por = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True, blank=True)
+    fecha = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-fecha"]
+        verbose_name = "evidencia de ticket"
+        verbose_name_plural = "evidencias de tickets"

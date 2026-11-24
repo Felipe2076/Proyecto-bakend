@@ -1,0 +1,38 @@
+# Ejemplo para el VirtualHost 443 del host (Apache 2.4 + mod_proxy, mod_headers, mod_reqtimeout).
+# Comparar con la configuración vigente en EC2 antes de aplicar; no reemplaza el certificado actual.
+<VirtualHost *:443>
+    # ... SSLEngine, SSLCertificateFile y SSLCertificateKeyFile vigentes ...
+
+    # Mismo tope que SIGED_MAX_PETICION (12 MB) y tiempos de lectura acotados (Slowloris).
+    LimitRequestBody 12582912
+    LimitRequestFields 60
+    RequestReadTimeout header=10-20,MinRate=500 body=20,MinRate=500
+    Timeout 60
+
+    ProxyPreserveHost On
+    ProxyRequests Off
+    RequestHeader set X-Forwarded-Proto "https"
+    # Se reemplaza (no se concatena) el X-Forwarded-For que mande el cliente.
+    RequestHeader unset X-Forwarded-For early
+    ProxyAddHeaders On
+
+    # Estáticos públicos desde el volumen "estaticos"; las evidencias NO se publican nunca.
+    Alias /static/ /var/lib/docker/volumes/siged_estaticos/_data/
+    <Directory /var/lib/docker/volumes/siged_estaticos/_data/>
+        Require all granted
+        Options -Indexes
+    </Directory>
+    ProxyPass /static/ !
+    <LocationMatch "^/(media|archivos-privados)/">
+        Require all denied
+    </LocationMatch>
+
+    ProxyPass        / http://127.0.0.1:8000/ timeout=35 retry=0
+    ProxyPassReverse / http://127.0.0.1:8000/
+
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "same-origin"
+    Header always unset X-Powered-By
+    ServerSignature Off
+</VirtualHost>
+# En el servidor (fuera del VirtualHost): ServerTokens Prod y TraceEnable Off.

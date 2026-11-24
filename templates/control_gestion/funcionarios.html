@@ -80,7 +80,7 @@
                         </table>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Último ingreso: {{ fun.fecha_ultimo_ingreso }}</small>
+                        <small class="text-muted">Último ingreso: {{ fun.fecha_ultimo_ingreso|fecha_breve }}</small>
                         <a href="{% url 'detalle_funcionario' fun.id_funcionario %}" class="btn btn-sm btn-outline-primary">Ver ficha y verificadores</a>
                     </div>
                 </div>

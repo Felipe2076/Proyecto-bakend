@@ -16,13 +16,13 @@
                 <div class="col-6 col-lg-3">
                     <div class="card card-calculo e3d-tilt border-0 bg-body-tertiary h-100 p-3">
                         <small class="text-muted">Fecha de hoy</small>
-                        <strong>{{ panel.periodo.fecha_hoy|date:"d-m-Y" }}</strong>
+                        <strong>{{ panel.periodo.fecha_hoy|date:"d/m/y" }}</strong>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card card-calculo e3d-tilt border-0 bg-body-tertiary h-100 p-3">
                         <small class="text-muted">Inicio / término</small>
-                        <strong>{{ panel.periodo.fecha_inicio|date:"d-m-Y" }} → {{ panel.periodo.fecha_termino|date:"d-m-Y" }}</strong>
+                        <strong>{{ panel.periodo.fecha_inicio|date:"d/m/y" }} → {{ panel.periodo.fecha_termino|date:"d/m/y" }}</strong>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
@@ -58,7 +58,7 @@
                             </td>
                             <td>{{ fila.delegacion }}</td>
                             <td class="text-end">{{ fila.pct_logrado }}%</td>
-                            <td class="text-end">{{ panel.periodo.pct_esperado }}%</td>
+                            <td class="text-end">{{ fila.pct_esperado }}%{% if fila.dias_ausencia %}<small class="d-block text-muted">ajustado por {{ fila.dias_ausencia }} día{{ fila.dias_ausencia|pluralize }} de ausencia</small>{% endif %}</td>
                             <td><span class="badge {{ fila.clase }}">{{ fila.nivel }}</span></td>
                         </tr>
                         {% empty %}
@@ -199,7 +199,7 @@
                             <h5 class="h6 fw-bold mb-3">{{ fila.nombre }}</h5>
                             <dl class="row small mb-0">
                                 <dt class="col-7 text-muted">Último ingreso</dt>
-                                <dd class="col-5 text-end mb-1">{% if fila.ultimo_ingreso %}{{ fila.ultimo_ingreso|date:"d-m-Y" }}{% else %}Sin registros{% endif %}</dd>
+                                <dd class="col-5 text-end mb-1">{% if fila.ultimo_ingreso %}{{ fila.ultimo_ingreso|date:"d/m/y" }}{% else %}Sin registros{% endif %}</dd>
                                 <dt class="col-7 text-muted">Días desde el último</dt>
                                 <dd class="col-5 text-end mb-1">{% if fila.dias_desde_ultimo != None %}{{ fila.dias_desde_ultimo }}{% else %}—{% endif %}</dd>
                                 <dt class="col-7 text-muted">Cantidad de ingresos</dt>

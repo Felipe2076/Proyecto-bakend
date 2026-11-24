@@ -48,8 +48,8 @@ def grupos_view(request,rol_id=None):
     bloqueo=requerir_modulo(request,'administracion')
     if bloqueo:
         return bloqueo
-    # La administración de grupos sigue reservada al perfil administrador.
-    if request._perfil_siged.rol.codigo!='administrador':
+    # Los grupos y permisos afectan a todas las delegaciones: solo el superusuario.
+    if request._perfil_siged.rol.codigo!='superusuario':
         messages.error(request,'Su perfil no puede administrar los grupos.')
         return redirect('inicio')
     rol=get_object_or_404(Rol.objects.select_related('grupo'),pk=rol_id) if rol_id else None
@@ -60,14 +60,14 @@ def grupos_view(request,rol_id=None):
         if request.POST.get('accion')=='asignar' and asignacion.is_valid():
             perfil=asignacion.cleaned_data['usuario']
             if perfil.pk==request._perfil_siged.pk:
-                asignacion.add_error('usuario','Asigne los grupos a otra cuenta para conservar su acceso de administrador.')
+                asignacion.add_error('usuario','Asigne los grupos a otra cuenta para conservar su acceso de superusuario.')
             else:
                 with transaction.atomic():
                     perfil.rol=asignacion.cleaned_data['rol']
                     perfil.save(update_fields=['rol'])
                 messages.success(request,'Grupo asignado. Los permisos se aplican en la siguiente petición del usuario.')
                 return redirect('admin_grupos')
-        elif request.POST.get('accion')=='permisos' and rol and rol.codigo!='administrador' and form.is_valid():
+        elif request.POST.get('accion')=='permisos' and rol and rol.codigo!='superusuario' and form.is_valid():
             with transaction.atomic():
                 rol.grupo.permissions.set(form.cleaned_data['permisos'])
             messages.success(request,'Permisos del grupo actualizados.')

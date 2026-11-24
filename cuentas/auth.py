@@ -4,13 +4,25 @@ from django.contrib import messages
 from django.shortcuts import redirect
 
 ROLES_ETIQUETA = {
-    "administrador": "Administrador",
+    "superusuario": "Superusuario",
+    "administrador": "Administrador de delegación",
     "jefatura": "Jefatura / Control de gestión",
     "funcionario": "Funcionario territorial",
     "ventanilla": "Ventanilla ciudadana",
 }
 
 MODULOS_POR_ROL = {
+    "superusuario": {
+        "requerimientos",
+        "matriz_sgr",
+        "control_gestion",
+        "actividades",
+        "agenda",
+        "compromisos",
+        "notificaciones",
+        "encuestas",
+        "administracion",
+    },
     "administrador": {
         "requerimientos",
         "matriz_sgr",
@@ -77,7 +89,7 @@ def requerir_modulo(request, modulo):
         return None
     messages.error(
         request,
-        "Su perfil no tiene acceso a este módulo. Inicie sesión con otro usuario de demostración.",
+        "Su perfil no tiene acceso a este módulo.",
     )
     return redirect("inicio")
 

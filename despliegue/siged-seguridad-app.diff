@@ -1,0 +1,950 @@
+diff -ruN app_a/config/middleware.py app_b/config/middleware.py
+--- a/config/middleware.py	2026-11-12 21:53:23.000000000 -0300
++++ b/config/middleware.py	2026-11-12 21:53:23.000000000 -0300
+@@ -1,7 +1,7 @@
+ from django.shortcuts import redirect
+ 
+ 
+-RUTAS_PREFIJO_LIBRES = ("/static/", "/admin/", "/recuperar", "/encuestas/responder/")
++RUTAS_PREFIJO_LIBRES = ("/static/", "/admin/", "/recuperar", "/encuestas/responder/", "/salud/")
+ # Sitio público (app publico). /recuperar cubre /recuperar/, /recuperar/codigo/ y /recuperar/nueva/.
+ RUTAS_PUBLICAS = {
+     "/",
+diff -ruN app_a/config/settings.py app_b/config/settings.py
+--- a/config/settings.py	2026-11-12 21:53:23.000000000 -0300
++++ b/config/settings.py	2026-11-12 21:53:23.000000000 -0300
+@@ -51,6 +51,7 @@
+ ]
+ 
+ MIDDLEWARE = [
++    "core.seguridad.PeticionAcotadaMiddleware",
+     "django.middleware.security.SecurityMiddleware",
+     "django.contrib.sessions.middleware.SessionMiddleware",
+     "django.contrib.auth.middleware.AuthenticationMiddleware",
+@@ -118,8 +119,59 @@
+ 
+ LOGIN_URL = "/login/"
+ PASSWORD_RESET_TIMEOUT = 600
+-SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
++
++
++def env_bool(nombre, por_defecto):
++    valor = os.getenv(nombre)
++    if valor is None or not valor.strip():
++        return por_defecto
++    return valor.strip().lower() in ("1", "true", "yes", "si", "sí")
++
++
++# Sesión en la base: la cookie solo lleva un identificador aleatorio (antes viajaban nombre,
++# rol y delegación firmados pero legibles) y el cierre de sesión la invalida en el servidor.
++SESSION_ENGINE = "django.contrib.sessions.backends.db"
++SESSION_COOKIE_AGE = int(os.getenv("SIGED_SESION_SEGUNDOS", str(8 * 3600)))
+ SESSION_COOKIE_HTTPONLY = True
++SESSION_COOKIE_SAMESITE = "Lax"
++CSRF_COOKIE_HTTPONLY = True  # kanban.js toma el token del formulario, no de la cookie.
++CSRF_COOKIE_SAMESITE = "Lax"
++CSRF_FAILURE_VIEW = "django.views.csrf.csrf_failure"
++# Cookies solo por HTTPS fuera de desarrollo. SIGED_COOKIES_SEGURAS=False solo para un HTTP local.
++SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = env_bool("SIGED_COOKIES_SEGURAS", not DEBUG)
++
++# Cabeceras. HSTS y redirección quedan a cargo del entorno: con certificado autofirmado o
++# acceso por IP no conviene fijar HSTS. Ver docs/SEGURIDAD.md.
++SECURE_CONTENT_TYPE_NOSNIFF = True
++SECURE_REFERRER_POLICY = "same-origin"
++SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
++X_FRAME_OPTIONS = "DENY"
++SECURE_HSTS_SECONDS = int(os.getenv("SIGED_HSTS_SEGUNDOS", "0"))
++SECURE_HSTS_INCLUDE_SUBDOMAINS = False
++SECURE_SSL_REDIRECT = env_bool("SIGED_REDIRIGIR_HTTPS", False)
++SECURE_REDIRECT_EXEMPT = [r"^salud/$"]
++
++# Proxy inverso (Apache) de confianza: solo entonces se aceptan X-Forwarded-Proto/For.
++import ipaddress as _ip  # noqa: E402
++
++SIGED_PROXIES_CONFIABLES = [_ip.ip_network(red, strict=False) for red in env_list("SIGED_PROXY_CONFIABLE")]
++if SIGED_PROXIES_CONFIABLES:
++    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
++
++# Límites de carga: la evidencia admite 10 MB; el resto del formulario es pequeño.
++SIGED_MAX_PETICION = int(os.getenv("SIGED_MAX_PETICION", str(12 * 1024 * 1024)))
++DATA_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
++FILE_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
++DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
++DATA_UPLOAD_MAX_NUMBER_FILES = 5
++FILE_UPLOAD_PERMISSIONS = 0o640
++FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
++
++# Cuotas de intentos por 15 minutos (IP y cuenta). La cuenta se libera al ingresar.
++SIGED_LIMITE_LOGIN_IP = int(os.getenv("SIGED_LIMITE_LOGIN_IP", "60"))
++SIGED_LIMITE_LOGIN_CUENTA = int(os.getenv("SIGED_LIMITE_LOGIN_CUENTA", "8"))
++SIGED_LIMITE_RECUPERAR_IP = int(os.getenv("SIGED_LIMITE_RECUPERAR_IP", "10"))
++SIGED_LIMITE_RECUPERAR_CORREO = int(os.getenv("SIGED_LIMITE_RECUPERAR_CORREO", "3"))
+ 
+ LANGUAGE_CODE = "es-cl"
+ TIME_ZONE = "America/Santiago"
+@@ -153,6 +205,28 @@
+ 
+ EMAIL_TIMEOUT = 10
+ 
+-# Los archivos se entregan por una vista autenticada con control de alcance.
+-MEDIA_ROOT = BASE_DIR / "media"
++# Los archivos se entregan por una vista autenticada con control de alcance. En Docker
++# SIGED_MEDIA_ROOT apunta a un volumen que el proxy no publica (evidencias privadas).
++MEDIA_ROOT = Path(os.getenv("SIGED_MEDIA_ROOT", str(BASE_DIR / "media")))
+ MEDIA_URL = "/archivos-privados/"
++
++# Registros a stdout (Docker los rota); el filtro quita RUT, correos, tokens y consultas.
++LOGGING = {
++    "version": 1,
++    "disable_existing_loggers": False,
++    "filters": {"datos_personales": {"()": "core.seguridad.FiltroDatosPersonales"}},
++    "formatters": {"simple": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"}},
++    "handlers": {
++        "consola": {
++            "class": "logging.StreamHandler",
++            "filters": ["datos_personales"],
++            "formatter": "simple",
++        },
++    },
++    "root": {"handlers": ["consola"], "level": os.getenv("SIGED_LOG_NIVEL", "WARNING")},
++    "loggers": {
++        "django": {"handlers": ["consola"], "level": "WARNING", "propagate": False},
++        "django.security": {"handlers": ["consola"], "level": "WARNING", "propagate": False},
++        "siged.seguridad": {"handlers": ["consola"], "level": "INFO", "propagate": False},
++    },
++}
+diff -ruN app_a/config/urls.py app_b/config/urls.py
+--- a/config/urls.py	2026-11-12 21:53:23.000000000 -0300
++++ b/config/urls.py	2026-11-12 21:53:23.000000000 -0300
+@@ -2,8 +2,10 @@
+ from django.urls import include, path
+ 
+ from control_gestion.evidencias import ver_evidencia
++from core.seguridad import salud
+ 
+ urlpatterns = [
++    path("salud/", salud, name="salud"),
+     path("api/v1/", include("control_gestion.urls_movil")),
+     path("admin/actividad-evidencia/<str:codigo>/", ver_evidencia, name="admin_actividad_evidencia"),
+     path("admin/", admin.site.urls),
+diff -ruN app_a/control_gestion/api_movil.py app_b/control_gestion/api_movil.py
+--- a/control_gestion/api_movil.py	2026-11-12 21:53:23.000000000 -0300
++++ b/control_gestion/api_movil.py	2026-11-12 21:53:23.000000000 -0300
+@@ -19,6 +19,7 @@
+ from control_gestion.evidencias import puede_validar
+ from control_gestion.revision import alcance,revisar,corregir,ErrorRevision
+ from core.busqueda import buscar
++from core.seguridad import ip_cliente
+ 
+ def respuesta(data,status=200):
+     r=JsonResponse(data,safe=not isinstance(data,list),status=status)
+@@ -64,8 +65,8 @@
+ @api(['POST'],publica=True)
+ def login(request):
+     d=datos(request);rut=str(d.get('rut',''))[:32];password=str(d.get('password',''))[:256]
+-    # No confiar en X-Forwarded-For proporcionado por el cliente. Cuota por IP y cuenta normalizada.
+-    ip_key=salted_hmac('login-movil-ip',request.META.get('REMOTE_ADDR','')).hexdigest()
++    # X-Forwarded-For solo cuenta si llega desde el proxy declarado (SIGED_PROXY_CONFIABLE). Cuota por IP y cuenta normalizada.
++    ip_key=salted_hmac('login-movil-ip',ip_cliente(request)).hexdigest()
+     account_key=salted_hmac('login-movil-cuenta',''.join(c for c in rut.upper() if c.isalnum())).hexdigest()
+     quotas={ip_key:120,account_key:8}
+     ahora=timezone.now()
+diff -ruN app_a/control_gestion/evidencias.py app_b/control_gestion/evidencias.py
+--- a/control_gestion/evidencias.py	2026-11-12 21:53:23.000000000 -0300
++++ b/control_gestion/evidencias.py	2026-11-12 21:53:23.000000000 -0300
+@@ -7,6 +7,8 @@
+ from django.views.decorators.http import require_safe
+ from control_gestion.models import Actividad
+ 
++MAX_PIXELES = 40_000_000  # ~ 8000 x 5000; mayor que eso no aporta como evidencia.
++
+ def validar_archivo(archivo):
+     if archivo.size > 10 * 1024 * 1024:
+         raise ValueError("La evidencia supera el máximo de 10 MB.")
+@@ -20,6 +22,9 @@
+             expected = 'PNG' if extension == '.png' else 'JPEG'
+             if image.format != expected:
+                 raise ValueError("El contenido de la imagen no coincide con su extensión.")
++            ancho, alto = image.size
++            if ancho * alto > MAX_PIXELES:
++                raise ValueError("La imagen supera la resolución máxima permitida.")
+             image.verify()
+         else:
+             raise ValueError("Adjunte una imagen JPG, PNG o un PDF.")
+diff -ruN app_a/control_gestion/migrations/0013_evidencia_nombre_aleatorio.py app_b/control_gestion/migrations/0013_evidencia_nombre_aleatorio.py
+--- a/control_gestion/migrations/0013_evidencia_nombre_aleatorio.py	1969-12-31 21:00:00.000000000 -0300
++++ b/control_gestion/migrations/0013_evidencia_nombre_aleatorio.py	2026-11-12 21:53:23.000000000 -0300
+@@ -0,0 +1,19 @@
++# Generated by Django 6.1 on 2026-11-13 00:44
++
++import control_gestion.models
++from django.db import migrations, models
++
++
++class Migration(migrations.Migration):
++
++    dependencies = [
++        ('control_gestion', '0012_catalogo_territorios'),
++    ]
++
++    operations = [
++        migrations.AlterField(
++            model_name='actividad',
++            name='evidencia_archivo',
++            field=models.FileField(blank=True, upload_to=control_gestion.models.ruta_evidencia, validators=[control_gestion.models.validar_evidencia_modelo]),
++        ),
++    ]
+diff -ruN app_a/control_gestion/models.py app_b/control_gestion/models.py
+--- a/control_gestion/models.py	2026-11-12 21:53:23.000000000 -0300
++++ b/control_gestion/models.py	2026-11-12 21:53:23.000000000 -0300
+@@ -18,6 +18,13 @@
+         raise ValidationError(str(error))
+ 
+ 
++def ruta_evidencia(instance, filename):
++    """Nombre aleatorio: el nombre original del archivo puede contener RUT o nombres."""
++    import uuid
++    from pathlib import Path
++    return f"evidencias/{timezone.localdate():%Y/%m}/{uuid.uuid4().hex}{Path(filename).suffix.lower()[:5]}"
++
++
+ class Meta(CodigoAutomaticoMixin, models.Model):
+     """Meta o ítem de gestión (mantenedor Metas del mockup; también ítems de la Matriz SGR)."""
+ 
+@@ -89,7 +96,7 @@
+     tipo_registro = models.CharField(max_length=16, choices=[("RESULTADO","Resultado realizado"),("COORDINACION","Coordinación / seguimiento"),("DELEGADO","Gestión del delegado"),("FELICITACION","Felicitación pendiente de validar")], default="RESULTADO")
+     validado_por = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='evidencias_validadas', editable=False)
+     fecha_validacion = models.DateTimeField(null=True, blank=True, editable=False)
+-    evidencia_archivo = models.FileField(upload_to="evidencias/%Y/%m/", blank=True, validators=[validar_evidencia_modelo])
++    evidencia_archivo = models.FileField(upload_to=ruta_evidencia, blank=True, validators=[validar_evidencia_modelo])
+     punto_validado = models.BooleanField(default=False)
+ 
+     class Meta:
+diff -ruN app_a/control_gestion/views.py app_b/control_gestion/views.py
+--- a/control_gestion/views.py	2026-11-12 21:53:23.000000000 -0300
++++ b/control_gestion/views.py	2026-11-12 21:53:24.000000000 -0300
+@@ -15,7 +15,8 @@
+     registrar_actividad_desde_formulario,
+ )
+ from control_gestion.indicadores import color_semaforo_diario, cumplimiento_item, construir_panel
+-from cuentas.ambito import denegar_otra_delegacion
++from cuentas.ambito import delegacion_por_defecto, denegar_otra_delegacion, limitar_a_delegacion
++from cuentas.auth import puede_ver, requerir_modulo, usuario_sesion
+ from cuentas.servicios import nombres_delegaciones, obtener_parametros
+ from requerimientos.consultas import queryset_requerimientos, ticket_a_dict
+ from requerimientos.models import AreaSoporte
+@@ -161,6 +162,9 @@
+ 
+ 
+ def dashboard_cuellos_botella_view(request):
++    bloqueo = requerir_modulo(request, "control_gestion")
++    if bloqueo:
++        return bloqueo
+     requerimientos = _tickets()
+     total_requerimientos = len(requerimientos)
+     cuellos_botella = [item for item in requerimientos if item["dias_transcurridos"] >= 6]
+@@ -219,6 +223,9 @@
+ 
+ 
+ def areas_soporte_view(request):
++    bloqueo = requerir_modulo(request, "control_gestion")
++    if bloqueo:
++        return bloqueo
+     criterio_orden = request.GET.get("orden", "").strip().lower()
+     areas_procesadas = []
+     for area in AreaSoporte.objects.select_related("encargado").order_by("codigo"):
+@@ -278,9 +285,15 @@
+ 
+ 
+ def semaforo_sgr_view(request):
++    bloqueo = requerir_modulo(request, "matriz_sgr")
++    if bloqueo:
++        return bloqueo
+     periodo = cargar_periodo_medicion()
+     filtro_delegacion = request.GET.get("delegacion", "").strip()
+-    funcionarios = _funcionarios_enriquecidos(periodo)
++    bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
++    if bloqueo_ambito:
++        return bloqueo_ambito
++    funcionarios = limitar_a_delegacion(request, _funcionarios_enriquecidos(periodo))
+     if filtro_delegacion:
+         funcionarios = [item for item in funcionarios if (item.get("delegacion") or "") == filtro_delegacion]
+     contexto = {
+@@ -393,12 +406,15 @@
+ 
+ 
+ def funcionarios_view(request):
++    bloqueo = requerir_modulo(request, "matriz_sgr")
++    if bloqueo:
++        return bloqueo
+     periodo = cargar_periodo_medicion()
+     filtro_delegacion = request.GET.get("delegacion", "").strip()
+     bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
+     if bloqueo_ambito:
+         return bloqueo_ambito
+-    funcionarios = _funcionarios_enriquecidos(periodo)
++    funcionarios = limitar_a_delegacion(request, _funcionarios_enriquecidos(periodo))
+     if filtro_delegacion:
+         funcionarios = [item for item in funcionarios if (item.get("delegacion") or "") == filtro_delegacion]
+     contexto = {
+@@ -430,12 +446,16 @@
+             )
+         return redirect("detalle_funcionario", id_funcionario=id_funcionario)
+ 
++    sesion = usuario_sesion(request)
++    if not (puede_ver(sesion, "matriz_sgr") or puede_ver(sesion, "actividades")):
++        return requerir_modulo(request, "matriz_sgr")
+     funcionario_obj = queryset_funcionarios().filter(codigo=id_funcionario).first()
+     if funcionario_obj is None:
+         messages.error(request, f"No se encontró el funcionario {id_funcionario}.")
+         return redirect("funcionarios")
++    # Un funcionario sin delegación solo lo consulta el administrador.
+     bloqueo_ambito = denegar_otra_delegacion(
+-        request, funcionario_obj.delegacion.nombre if funcionario_obj.delegacion_id else ""
++        request, funcionario_obj.delegacion.nombre if funcionario_obj.delegacion_id else "(sin delegación)"
+     )
+     if bloqueo_ambito:
+         return bloqueo_ambito
+@@ -465,8 +485,12 @@
+ 
+ 
+ def resumen_delegacion_view(request):
++    bloqueo = requerir_modulo(request, "matriz_sgr")
++    if bloqueo:
++        return bloqueo
+     periodo = cargar_periodo_medicion()
+-    filtro_delegacion = request.GET.get("delegacion", "").strip() or periodo["delegacion_piloto"]
++    filtro_delegacion = delegacion_por_defecto(
++        request, request.GET.get("delegacion", "").strip(), periodo["delegacion_piloto"])
+     bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
+     if bloqueo_ambito:
+         return bloqueo_ambito
+diff -ruN app_a/core/seguridad.py app_b/core/seguridad.py
+--- a/core/seguridad.py	1969-12-31 21:00:00.000000000 -0300
++++ b/core/seguridad.py	2026-11-12 21:53:24.000000000 -0300
+@@ -0,0 +1,132 @@
++"""Controles defensivos transversales: IP de cliente, cuotas de intentos, tamaño de petición,
++cabeceras y filtro de datos personales en los logs (ISO 27002 8.15/8.16, Ley 19.628/21.719)."""
++import ipaddress
++import logging
++import re
++from datetime import timedelta
++
++from django.conf import settings
++from django.db import transaction
++from django.http import HttpResponse
++from django.utils import timezone
++from django.utils.crypto import salted_hmac
++
++
++def ip_cliente(request):
++    """IP del cliente. X-Forwarded-For solo se usa si el despliegue declara un proxy de confianza
++    (SIGED_PROXY_CONFIABLE) y la petición llega desde él; se toma la entrada que agregó ese proxy."""
++    remota = request.META.get('REMOTE_ADDR', '')
++    redes = getattr(settings, 'SIGED_PROXIES_CONFIABLES', [])
++    if redes and remota:
++        try:
++            origen = ipaddress.ip_address(remota)
++            confiable = any(origen in red for red in redes)
++        except ValueError:
++            confiable = False
++        if confiable:
++            ultima = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[-1].strip()
++            try:
++                return str(ipaddress.ip_address(ultima))
++            except ValueError:
++                pass
++    return remota
++
++
++class LimiteExcedido(Exception):
++    pass
++
++
++def _modelo():
++    from control_gestion.models import IntentosMovil
++    return IntentosMovil
++
++
++def clave_limite(ambito, valor):
++    # Solo se guarda un HMAC: la tabla de cuotas no contiene IP, RUT ni correo en claro.
++    return salted_hmac('siged-limite-' + ambito, str(valor)).hexdigest()
++
++
++def consumir(cuotas, ventana=timedelta(minutes=15)):
++    """Suma un intento a cada clave {clave: máximo}. Lanza LimiteExcedido si alguna ya llegó al tope."""
++    Intentos = _modelo()
++    ahora = timezone.now()
++    with transaction.atomic():
++        for clave in sorted(cuotas):
++            Intentos.objects.get_or_create(clave=clave, defaults={'inicio': ahora})
++            fila = Intentos.objects.select_for_update().get(clave=clave)
++            if ahora - fila.inicio > ventana:
++                fila.inicio, fila.intentos = ahora, 0
++            if fila.intentos >= cuotas[clave]:
++                raise LimiteExcedido()
++            fila.intentos += 1
++            fila.save(update_fields=['inicio', 'intentos'])
++
++
++def liberar(*claves):
++    _modelo().objects.filter(clave__in=claves).delete()
++
++
++class PeticionAcotadaMiddleware:
++    """Rechaza cuerpos más grandes que SIGED_MAX_PETICION antes de leerlos y agrega cabeceras
++    que Django no pone por defecto. El proxy (Apache) debe aplicar el mismo límite."""
++
++    def __init__(self, get_response):
++        self.get_response = get_response
++
++    def __call__(self, request):
++        try:
++            largo = int(request.META.get('CONTENT_LENGTH') or 0)
++        except ValueError:
++            largo = 0
++        if largo > settings.SIGED_MAX_PETICION:
++            return HttpResponse('La solicitud supera el tamaño permitido.', status=413,
++                                content_type='text/plain; charset=utf-8')
++        response = self.get_response(request)
++        response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
++        if request.path.startswith(('/login', '/recuperar', '/activar', '/archivos-privados', '/api/')):
++            response.headers.setdefault('Cache-Control', 'no-store')
++        return response
++
++
++_RUT = re.compile(r'\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b')
++_CORREO = re.compile(r'[\w.+-]+@[\w-]+(\.[\w-]+)+')
++_TOKEN = re.compile(r'(?i)(token|password|clave|codigo|bearer)([=:\s/]+)[^\s&/]+')
++_QUERY = re.compile(r'\?[^\s"\']*')
++
++
++def enmascarar(texto):
++    texto = _TOKEN.sub(r'\1\2[oculto]', texto)
++    texto = _QUERY.sub('?[consulta oculta]', texto)
++    texto = _CORREO.sub('[correo oculto]', texto)
++    return _RUT.sub('[rut oculto]', texto)
++
++
++class FiltroDatosPersonales(logging.Filter):
++    """Quita RUT, correos, tokens y parámetros de consulta antes de escribir un registro."""
++
++    def filter(self, record):
++        try:
++            mensaje = record.getMessage()
++        except Exception:  # Un registro mal formado no debe detener la aplicación.
++            mensaje = str(record.msg)
++        record.msg, record.args = enmascarar(mensaje), ()
++        if record.exc_info and not settings.DEBUG:
++            # El traceback puede incluir valores de formulario; se conserva solo el tipo de error.
++            record.msg += f' [{record.exc_info[0].__name__}]'
++            record.exc_info = record.exc_text = None
++        if hasattr(record, 'request'):
++            record.request = None
++        return True
++
++
++def salud(request):
++    """Healthcheck de Docker: confirma que Django responde y que la base acepta una consulta."""
++    from django.db import connection
++    from django.http import JsonResponse
++    try:
++        with connection.cursor() as cursor:
++            cursor.execute('SELECT 1')
++    except Exception:  # El detalle del error queda fuera de la respuesta pública.
++        logging.getLogger('siged.seguridad').error('salud_bd_no_disponible')
++        return JsonResponse({'estado': 'error'}, status=503)
++    return JsonResponse({'estado': 'ok'})
+diff -ruN app_a/core/tests_seguridad.py app_b/core/tests_seguridad.py
+--- a/core/tests_seguridad.py	1969-12-31 21:00:00.000000000 -0300
++++ b/core/tests_seguridad.py	2026-11-12 21:53:24.000000000 -0300
+@@ -0,0 +1,198 @@
++"""Refuerzo defensivo con datos ficticios: sesión, cookies, cuotas, cargas, ámbito, evidencias y logs."""
++import logging
++from io import BytesIO
++from tempfile import TemporaryDirectory
++
++from django.conf import settings
++from django.core import mail
++from django.core.files.uploadedfile import SimpleUploadedFile
++from django.test import Client, RequestFactory, TestCase, override_settings
++from PIL import Image
++
++from control_gestion import tests_kanban
++from control_gestion.models import Actividad, IntentosMovil, Meta
++from core.seguridad import FiltroDatosPersonales, enmascarar, ip_cliente
++from cuentas.fabrica_pruebas import crear_cuenta
++from cuentas.perfiles import sincronizar_usuario
++
++CLAVE = 'Prueba123!'
++
++
++@override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],
++                   EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
++class SeguridadTests(TestCase):
++    autenticar = tests_kanban.KanbanTests.autenticar
++
++    @classmethod
++    def setUpTestData(cls):
++        tests_kanban.KanbanTests.setUpTestData.__func__(cls)
++        cls.ventanilla = crear_cuenta(codigo='USR-V', rut='33100043-4', password=CLAVE, rol_codigo='ventanilla',
++                                      correo='ventanilla@siged.test', nombre='Vera Prueba', delegacion=cls.centro)
++        cls.rural_fun = crear_cuenta(codigo='USR-R', rut='33100065-5', password=CLAVE, rol_codigo='funcionario',
++                                     correo='rural@siged.test', nombre='Rita Prueba', delegacion=cls.rural)
++        for perfil in (cls.admin, cls.funcionario, cls.ventanilla, cls.rural_fun):
++            sincronizar_usuario(perfil)
++
++    # --- Sesión y cookies -------------------------------------------------------------------
++    def test_sesion_en_base_y_cookies_endurecidas(self):
++        self.assertEqual(settings.SESSION_ENGINE, 'django.contrib.sessions.backends.db')
++        self.assertTrue(settings.SESSION_COOKIE_SECURE and settings.CSRF_COOKIE_SECURE)
++        respuesta = self.client.post('/login/', {'rut': self.admin.user.username, 'password': CLAVE})
++        self.assertEqual(respuesta.status_code, 302)
++        cookie = respuesta.cookies[settings.SESSION_COOKIE_NAME]
++        self.assertTrue(cookie['httponly'] and cookie['secure'])
++        self.assertEqual(cookie['samesite'], 'Lax')
++        # La cookie es un identificador opaco: no contiene nombre, rol ni delegación.
++        self.assertNotIn('.', cookie.value)
++        self.assertLessEqual(len(cookie.value), 40)
++        self.client.get('/logout/')
++        self.assertEqual(self.client.get('/control/tubo-trabajo/').status_code, 302)
++
++    def test_csrf_obligatorio_en_formularios(self):
++        cliente = Client(enforce_csrf_checks=True)
++        self.assertEqual(cliente.post('/login/', {'rut': 'x', 'password': 'y'}).status_code, 403)
++
++    def test_cabeceras_defensivas(self):
++        respuesta = self.client.get('/login/')
++        self.assertEqual(respuesta['X-Frame-Options'], 'DENY')
++        self.assertEqual(respuesta['X-Content-Type-Options'], 'nosniff')
++        self.assertEqual(respuesta['Referrer-Policy'], 'same-origin')
++        self.assertIn('camera=()', respuesta['Permissions-Policy'])
++        self.assertIn('no-store', respuesta['Cache-Control'])
++
++    # --- Cuotas -----------------------------------------------------------------------------
++    @override_settings(SIGED_LIMITE_LOGIN_CUENTA=3)
++    def test_login_limita_por_cuenta_y_libera_al_ingresar(self):
++        rut = self.funcionario.user.username
++        for _ in range(2):
++            self.assertEqual(self.client.post('/login/', {'rut': rut, 'password': 'incorrecta'}).status_code, 200)
++        self.assertEqual(self.client.post('/login/', {'rut': rut, 'password': CLAVE}).status_code, 302)
++        self.client.get('/logout/')
++        for _ in range(3):
++            self.client.post('/login/', {'rut': rut, 'password': 'incorrecta'})
++        bloqueado = self.client.post('/login/', {'rut': rut, 'password': CLAVE})
++        self.assertEqual(bloqueado.status_code, 429)
++        self.assertContains(bloqueado, 'Demasiados intentos', status_code=429)
++        # La tabla de cuotas guarda HMAC, no RUT ni IP.
++        self.assertFalse(IntentosMovil.objects.filter(clave__contains=rut).exists())
++
++    @override_settings(SIGED_LIMITE_LOGIN_IP=2, SIGED_PROXY_CONFIABLE=[])
++    def test_login_limita_por_ip(self):
++        for rut in ('11111111-1', '22222222-2'):
++            self.client.post('/login/', {'rut': rut, 'password': 'x'})
++        self.assertEqual(self.client.post('/login/', {'rut': '33333333-3', 'password': 'x'}).status_code, 429)
++
++    def test_ip_del_proxy_solo_si_es_confiable(self):
++        import ipaddress
++        factory = RequestFactory()
++        pedido = factory.get('/', REMOTE_ADDR='172.18.0.1', HTTP_X_FORWARDED_FOR='1.2.3.4, 203.0.113.9')
++        self.assertEqual(ip_cliente(pedido), '172.18.0.1')
++        with override_settings(SIGED_PROXIES_CONFIABLES=[ipaddress.ip_network('172.18.0.1/32')]):
++            self.assertEqual(ip_cliente(pedido), '203.0.113.9')
++            directo = factory.get('/', REMOTE_ADDR='198.51.100.7', HTTP_X_FORWARDED_FOR='9.9.9.9')
++            self.assertEqual(ip_cliente(directo), '198.51.100.7')
++
++    def test_recuperacion_no_revela_si_el_correo_existe(self):
++        real = self.client.post('/recuperar/', {'correo': self.admin.correo}, follow=True)
++        otro = Client().post('/recuperar/', {'correo': 'nadie@ejemplo.test'}, follow=True)
++        self.assertEqual(real.redirect_chain[-1][0], otro.redirect_chain[-1][0])
++        for respuesta in (real, otro):
++            self.assertContains(respuesta, 'Si el correo corresponde a una cuenta activa')
++        self.assertEqual(len(mail.outbox), 1)
++        falso = Client()
++        falso.post('/recuperar/', {'correo': 'nadie@ejemplo.test'})
++        intento = falso.post('/recuperar/codigo/', {f'd{i}': '1' for i in range(1, 7)})
++        self.assertContains(intento, 'no coincide')
++        self.assertEqual(falso.get('/recuperar/nueva/').status_code, 302)
++
++    @override_settings(SIGED_LIMITE_RECUPERAR_CORREO=2)
++    def test_recuperacion_limita_envios_por_correo(self):
++        for _ in range(2):
++            Client().post('/recuperar/', {'correo': self.admin.correo})
++        self.assertEqual(Client().post('/recuperar/', {'correo': self.admin.correo}).status_code, 429)
++        self.assertEqual(len(mail.outbox), 2)
++
++    # --- Cargas -----------------------------------------------------------------------------
++    @override_settings(SIGED_MAX_PETICION=1024)
++    def test_peticion_grande_se_rechaza_antes_de_leerla(self):
++        respuesta = self.client.post('/login/', {'rut': 'x' * 2048, 'password': 'y'})
++        self.assertEqual(respuesta.status_code, 413)
++
++    def test_imagen_gigante_y_nombre_aleatorio(self):
++        from control_gestion.evidencias import validar_archivo
++        from unittest import mock
++        out = BytesIO(); Image.new('RGB', (4, 4)).save(out, format='PNG')
++        with mock.patch('control_gestion.evidencias.MAX_PIXELES', 10):
++            with self.assertRaisesMessage(ValueError, 'resolución máxima'):
++                validar_archivo(SimpleUploadedFile('a.png', out.getvalue()))
++        with TemporaryDirectory() as tmp, override_settings(MEDIA_ROOT=tmp):
++            actividad = Actividad.objects.create(
++                funcionario=self.funcionario.funcionario, delegacion=self.centro,
++                meta=Meta.objects.create(nombre='Meta ficticia'), servicio='Visita ficticia',
++                evidencia_archivo=SimpleUploadedFile('rut-12345678-5 Juan Perez.png', out.getvalue()))
++            nombre = actividad.evidencia_archivo.name
++            self.assertNotIn('Juan', nombre)
++            self.assertNotIn('12345678', nombre)
++            self.assertRegex(nombre, r'^evidencias/\d{4}/\d{2}/[0-9a-f]{32}\.png$')
++            self.autenticar(self.rural_fun)
++            self.assertEqual(self.client.get(f'/control/actividades/{actividad.codigo}/evidencia/').status_code, 404)
++            actividad.evidencia_archivo.delete(save=False)
++
++    # --- Permisos por módulo, delegación y objeto -------------------------------------------
++    def test_paneles_exigen_modulo(self):
++        self.autenticar(self.ventanilla)
++        for url in ('/control/', '/control/areas/', '/control/semaforo-sgr/', '/control/funcionarios/',
++                    '/control/resumen/', f'/control/funcionarios/{self.funcionario.funcionario.codigo}/'):
++            self.assertRedirects(self.client.get(url), '/', fetch_redirect_response=False, msg_prefix=url)
++        self.autenticar(self.funcionario)
++        self.assertRedirects(self.client.get('/control/'), '/', fetch_redirect_response=False)
++
++    def test_listados_limitados_a_la_delegacion_propia(self):
++        self.autenticar(self.funcionario)
++        for url in ('/control/funcionarios/', '/control/semaforo-sgr/'):
++            delegaciones = {f.get('delegacion') for f in self.client.get(url).context['funcionarios']}
++            self.assertEqual(delegaciones, {self.centro.nombre}, url)
++        self.assertRedirects(self.client.get('/control/funcionarios/?delegacion=Delegación Rural'), '/',
++                             fetch_redirect_response=False)
++        self.assertEqual(self.client.get('/control/resumen/').context['filtro_delegacion'], self.centro.nombre)
++        self.autenticar()
++        delegaciones = {f.get('delegacion') for f in self.client.get('/control/funcionarios/').context['funcionarios']}
++        self.assertIn(self.rural.nombre, delegaciones)
++
++    def test_detalle_de_otra_delegacion_o_sin_delegacion(self):
++        self.autenticar(self.funcionario)
++        ajeno = f'/control/funcionarios/{self.rural_fun.funcionario.codigo}/'
++        self.assertRedirects(self.client.get(ajeno), '/', fetch_redirect_response=False)
++        self.assertEqual(self.client.get(f'/control/funcionarios/{self.funcionario.funcionario.codigo}/').status_code, 200)
++
++    def test_sesion_no_administradora_sin_delegacion_no_ve_ninguna(self):
++        from django.contrib.messages.storage.fallback import FallbackStorage
++        from cuentas.ambito import denegar_otra_delegacion, limitar_a_delegacion
++        pedido = RequestFactory().get('/')
++        pedido.session = {'usuario': {'rol': 'funcionario', 'delegacion': ''}}
++        pedido._messages = FallbackStorage(pedido)
++        self.assertEqual(limitar_a_delegacion(pedido, [{'delegacion': 'Delegación Centro'}]), [])
++        self.assertEqual(denegar_otra_delegacion(pedido, 'Delegación Centro').status_code, 302)
++        self.assertIsNone(denegar_otra_delegacion(pedido, ''))
++
++    def test_salud_sin_sesion_y_sin_detalles(self):
++        respuesta = Client().get('/salud/')
++        self.assertEqual(respuesta.status_code, 200)
++        self.assertEqual(respuesta.json(), {'estado': 'ok'})
++
++    # --- Logs -------------------------------------------------------------------------------
++    def test_logs_sin_datos_personales(self):
++        texto = enmascarar('GET /lista/?q=12.345.678-5 de ana.perez@ejemplo.test token=abc123 RUT 9876543-3')
++        for dato in ('12.345.678', 'ana.perez', 'abc123', '9876543-3'):
++            self.assertNotIn(dato, texto)
++        registro = logging.LogRecord('django.request', logging.ERROR, __file__, 1,
++                                     'Error en %s para %s', ('/x/?rut=11111111-1', 'b@c.cl'), None)
++        registro.request = object()
++        FiltroDatosPersonales().filter(registro)
++        self.assertNotIn('11111111', registro.getMessage())
++        self.assertNotIn('b@c.cl', registro.getMessage())
++        self.assertIsNone(registro.request)
++        with self.assertLogs('siged.seguridad', level='WARNING') as capturado, \
++                override_settings(SIGED_LIMITE_LOGIN_CUENTA=0):
++            self.client.post('/login/', {'rut': self.funcionario.user.username, 'password': 'x'})
++        self.assertEqual(capturado.output, ['WARNING:siged.seguridad:login_web_limitado'])
+diff -ruN app_a/cuentas/ambito.py app_b/cuentas/ambito.py
+--- a/cuentas/ambito.py	2026-11-12 21:53:23.000000000 -0300
++++ b/cuentas/ambito.py	2026-11-12 21:53:24.000000000 -0300
+@@ -22,7 +22,22 @@
+         return None
+     pedida = (nombre or "").strip()
+     propia = delegacion_sesion(request)
+-    if pedida and propia and pedida != propia:
++    # Sin delegación propia, un perfil no administrador no consulta ninguna delegación.
++    if pedida and pedida != propia:
+         messages.error(request, "No puede consultar otra delegación.")
+         return redirect("inicio")
+     return None
++
++
++def limitar_a_delegacion(request, filas, clave="delegacion"):
++    """Filas de la delegación propia; el administrador ve todas (ISO 27002 8.3)."""
++    if es_administrador(request):
++        return filas
++    propia = delegacion_sesion(request)
++    return [fila for fila in filas if propia and (fila.get(clave) or "") == propia]
++
++
++def delegacion_por_defecto(request, pedida, por_defecto=""):
++    if pedida or es_administrador(request):
++        return pedida or por_defecto
++    return delegacion_sesion(request) or por_defecto
+diff -ruN app_a/cuentas/views.py app_b/cuentas/views.py
+--- a/cuentas/views.py	2026-11-12 21:53:23.000000000 -0300
++++ b/cuentas/views.py	2026-11-12 21:53:24.000000000 -0300
+@@ -15,6 +15,9 @@
+ from django.db import transaction
+ from smtplib import SMTPException
+ 
++import logging
++
++from core.seguridad import LimiteExcedido, clave_limite, consumir, ip_cliente, liberar
+ from core.validaciones import MENSAJE_NOMBRE, MENSAJE_RUT, formatear_rut, rut_normalizado_valido, validar_nombre
+ from cuentas.auth import requerir_modulo, usuario_sesion
+ from cuentas.forms import NuevaContrasenaForm, RestablecerEnlaceForm
+@@ -31,6 +34,18 @@
+ from cuentas.simulacion import CODIGO_ADMIN_GLOBAL, identidad, nombre_almacenado
+ from control_gestion.models import Medicion
+ 
++log_seguridad = logging.getLogger("siged.seguridad")
++MENSAJE_LIMITE = "Demasiados intentos. Espere 15 minutos antes de volver a intentar."
++
++
++def _claves_login(request, rut):
++    cuenta = rut_normalizado_valido(rut) or "".join(c for c in rut.upper() if c.isalnum())
++    return {
++        clave_limite("login-ip", ip_cliente(request)): settings.SIGED_LIMITE_LOGIN_IP,
++        clave_limite("login-cuenta", cuenta): settings.SIGED_LIMITE_LOGIN_CUENTA,
++    }
++
++
+ ROLES_DISPONIBLES = [
+     ("administrador", "Administrador"),
+     ("jefatura", "Jefatura / Control de gestión"),
+@@ -72,14 +87,24 @@
+         return redirect("inicio")
+     errores = {}
+     valores = {"rut": ""}
++    estado = 200
+     if request.method == "POST":
+-        rut = (request.POST.get("rut") or "").strip()
+-        password = request.POST.get("password") or ""
++        rut = (request.POST.get("rut") or "").strip()[:32]
++        password = (request.POST.get("password") or "")[:256]
+         valores["rut"] = rut
+         if not rut:
+             errores["rut"] = "Ingrese el RUT."
+         if not password:
+             errores["password"] = "Ingrese la contraseña."
++        claves = _claves_login(request, rut) if not errores else {}
++        if claves:
++            try:
++                consumir(claves)
++            except LimiteExcedido:
++                log_seguridad.warning("login_web_limitado")
++                errores["password"] = MENSAJE_LIMITE
++                messages.error(request, MENSAJE_LIMITE)
++                estado = 429
+         if not errores:
+             encontrado = autenticar(rut, password)
+             if encontrado is None:
+@@ -87,12 +112,14 @@
+                 pendiente = Usuario.objects.select_related('user').filter(username=normal, estado=EstadoRegistro.ACTIVO, user__is_active=True).first() if normal else None
+                 if pendiente and pendiente.user_id and not pendiente.user.has_usable_password() and re.fullmatch(r'\d{6}',password):
+                     if verificar_codigo(pendiente,password) == 'ok':
++                        liberar(*claves)
+                         _sesion_recuperacion(request,pendiente,verificado=True)
+                         messages.info(request,'Primer ingreso: debe definir su contraseña personal para activar el acceso.')
+                         return redirect('nueva_contrasena')
+                 errores["password"] = "RUT o clave incorrectos."
+                 messages.error(request, "RUT o clave incorrectos.")
+             else:
++                liberar(*claves)
+                 auth_login(request, encontrado.user)
+                 request.session["usuario"] = sesion_desde_usuario(encontrado)
+                 request.session["notificaciones_leidas"] = []
+@@ -111,7 +138,7 @@
+         "valores": valores,
+         "next_url": _next_seguro(request.GET.get("next") or request.POST.get("next")),
+     }
+-    return render(request, "cuentas/login.html", contexto)
++    return render(request, "cuentas/login.html", contexto, status=estado)
+ 
+ 
+ def logout_view(request):
+@@ -166,9 +193,12 @@
+     errores = {}
+     correo = ""
+     if request.method == "POST":
+-        correo = (request.POST.get("correo") or "").strip()
++        correo = (request.POST.get("correo") or "").strip()[:254]
+         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", correo):
+             errores["correo"] = "Ingrese un correo electrónico válido."
++        elif not _cuota_recuperacion(request, correo):
++            errores["correo"] = MENSAJE_LIMITE
++            return render(request, "cuentas/recuperar.html", {"errores": errores, "correo": correo}, status=429)
+         else:
+             usuario = (
+                 Usuario.objects.select_related("user")
+@@ -176,28 +206,64 @@
+                 .first()
+             )
+             if usuario is None or usuario.user_id is None:
+-                errores["correo"] = "No encontramos un usuario activo con ese correo."
++                # Misma respuesta que una cuenta real (Ley 19.628: no confirmar titulares).
++                request.session["recuperacion"] = {"usuario_id": None, "correo": correo}
+             else:
+                 if not _emitir_y_enviar(request, usuario):
+                     return redirect("recuperar_contrasena")
+                 _sesion_recuperacion(request, usuario, verificado=False)
+-                messages.success(
+-                    request,
+-                    "Enviamos un enlace seguro y un código de respaldo a su correo. "
+-                    "Vencen en 10 minutos. Puede abrir el enlace para crear su nueva contraseña.",
+-                )
+-                return redirect("validar_codigo")
++            messages.success(
++                request,
++                "Si el correo corresponde a una cuenta activa, enviamos un enlace seguro y un código "
++                "de respaldo. Vencen en 10 minutos. Puede abrir el enlace para crear su nueva contraseña.",
++            )
++            return redirect("validar_codigo")
+     return render(request, "cuentas/recuperar.html", {"errores": errores, "correo": correo})
+ 
+ 
++def _cuota_recuperacion(request, correo):
++    try:
++        consumir({
++            clave_limite("recuperar-ip", ip_cliente(request)): settings.SIGED_LIMITE_RECUPERAR_IP,
++            clave_limite("recuperar-correo", correo.lower()): settings.SIGED_LIMITE_RECUPERAR_CORREO,
++        })
++    except LimiteExcedido:
++        log_seguridad.warning("recuperacion_limitada")
++        return False
++    return True
++
++
++def _validacion_sin_cuenta(request, datos):
++    """Recuperación pedida para un correo sin cuenta: se comporta igual y nunca valida."""
++    errores = {}
++    if request.method == "POST":
++        if (request.POST.get("accion") or "") == "reenviar":
++            if not _cuota_recuperacion(request, datos["correo"]):
++                messages.error(request, MENSAJE_LIMITE)
++            else:
++                messages.success(request, "Enviamos un código nuevo a su correo. El anterior ya no sirve.")
++            return redirect("validar_codigo")
++        intentos = datos.get("intentos", 0) + 1
++        request.session["recuperacion"] = {**datos, "intentos": intentos}
++        errores["codigo"] = ("Demasiados intentos. Solicite un código nuevo." if intentos >= 5
++                             else "El código no coincide. Revíselo e intente de nuevo.")
++        messages.error(request, "No pudimos validar el código.")
++    return render(request, "cuentas/validar_codigo.html", {"errores": errores, "correo": datos["correo"]})
++
++
+ def validar_codigo_view(request):
+     usuario, datos = _usuario_en_recuperacion(request)
++    if usuario is None and datos.get("correo"):
++        return _validacion_sin_cuenta(request, datos)
+     if usuario is None:
+         messages.error(request, "No hay una recuperación en curso. Solicite un código nuevo.")
+         return redirect("recuperar_contrasena")
+     errores = {}
+     if request.method == "POST":
+         if (request.POST.get("accion") or "") == "reenviar":
++            if not _cuota_recuperacion(request, usuario.correo):
++                messages.error(request, MENSAJE_LIMITE)
++                return redirect("validar_codigo")
+             if not _correo_habilitado() or not _emitir_y_enviar(request, usuario):
+                 return redirect("recuperar_contrasena")
+             _sesion_recuperacion(request, usuario, verificado=False)
+diff -ruN app_a/docs/SEGURIDAD.md app_b/docs/SEGURIDAD.md
+--- a/docs/SEGURIDAD.md	1969-12-31 21:00:00.000000000 -0300
++++ b/docs/SEGURIDAD.md	2026-11-12 21:53:24.000000000 -0300
+@@ -0,0 +1,91 @@
++# Refuerzo defensivo de SIGED
++
++Propuesta para revisión de Codex antes de publicar. Probada en local con SQLite y datos ficticios.
++No se ejecutaron pruebas ofensivas ni cambios en AWS.
++
++## 1. Cambios en la aplicación
++
++| Control | Implementación | Archivo |
++|---|---|---|
++| Sesión en servidor | `SESSION_ENGINE=db`. La cookie solo lleva un identificador aleatorio. Antes viajaban nombre, rol y delegación firmados pero legibles. El cierre de sesión la invalida en el servidor. Duración de 8 h. | `config/settings.py` |
++| Cookies | `Secure` (por defecto fuera de DEBUG), `HttpOnly` y `SameSite=Lax` en sesión y CSRF | `config/settings.py` |
++| CSRF | Se mantiene `CsrfViewMiddleware` en todo formulario. La API usa solo Bearer (sin cookies) y sigue exenta. | sin cambio + prueba |
++| Cabeceras | `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: same-origin`, COOP, `Permissions-Policy`, `no-store` en login, recuperación y API. HSTS y redirección se activan por variable. | `config/settings.py`, `core/seguridad.py` |
++| ORM parametrizado | Revisado: la aplicación no ejecuta SQL crudo con datos del usuario. `generar_simulacion` solo escribe un script offline con valores escapados. `/salud/` ejecuta un `SELECT 1` constante. | revisión |
++| Permisos por módulo | Dashboard y Áreas exigen `acceso_control_gestion`. Semáforo, Metas por funcionario, Resumen y detalle de funcionario exigen `acceso_matriz_sgr` (el detalle acepta también `acceso_actividades`). Antes bastaba con iniciar sesión. | `control_gestion/views.py` |
++| Permisos por delegación y objeto | Los listados de un perfil no administrador se limitan a su delegación. Una sesión no administradora sin delegación no ve ninguna. El detalle de un funcionario de otra delegación se niega. Resumen toma por defecto la delegación propia. | `cuentas/ambito.py`, `control_gestion/views.py` |
++| Límite de login web | 60 intentos por IP y 8 por cuenta cada 15 min. La cuota de la cuenta se libera al ingresar. Al exceder: HTTP 429. | `cuentas/views.py`, `core/seguridad.py` |
++| Recuperación | 10 solicitudes por IP y 3 por correo cada 15 min, incluido "reenviar". La respuesta es la misma exista o no el correo (no confirma titulares). | `cuentas/views.py` |
++| Límite de API | Se mantiene la cuota de la API móvil (120 por IP y 8 por cuenta). La IP sale de `ip_cliente`: X-Forwarded-For solo cuenta si viene del proxy declarado. | `control_gestion/api_movil.py` |
++| Cuotas sin datos personales | La tabla `IntentosMovil` guarda HMAC de IP, RUT y correo, nunca valores en claro. | `core/seguridad.py` |
++| Cargas | Petición máxima de 12 MB (413 antes de leer el cuerpo), 5 archivos, 500 campos y 2,5 MB en memoria. Imagen de 40 MP como máximo. Permisos 0640/0750. | `config/settings.py`, `control_gestion/evidencias.py` |
++| Evidencias privadas | Nombre aleatorio (`uuid4`), porque el original puede traer RUT o nombres. Directorio fuera del código (`SIGED_MEDIA_ROOT`) en un volumen que Apache nunca publica. La entrega sigue por una vista con control de ámbito. | `control_gestion/models.py`, migración `0013` |
++| Logs | Salida a stdout con un filtro que oculta RUT, correos, tokens y parámetros de consulta. Fuera de DEBUG, los tracebacks se reducen al tipo de error. Gunicorn no registra IP ni consulta. Los eventos `login_web_limitado`, `recuperacion_limitada` y `salud_bd_no_disponible` no llevan datos personales. | `config/settings.py`, `core/seguridad.py`, `docker/gunicorn.conf.py` |
++| Healthcheck | `/salud/` responde `{"estado":"ok"}` o 503, sin detalles. | `core/seguridad.py`, `config/urls.py` |
++
++## 2. Docker (propuesta; comparar con los archivos vigentes en EC2)
++
++- `Dockerfile`: imagen slim, usuario `siged` (UID 10001) sin shell, código propiedad de root, `HEALTHCHECK` contra `/salud/`. Gunicorn queda fijado en `docker/requirements-docker.txt`.
++- `docker-compose.yml`:
++  - **web**: `read_only` con `tmpfs` en `/tmp`, `cap_drop: ALL`, `no-new-privileges`, `pids_limit` y `mem_limit`. Se publica solo en `127.0.0.1:8000`, detrás de Apache.
++  - **db**: MySQL 8.4 en una red `internal` y sin puertos publicados. No recibe el `.env` de Django. La clave root se entrega como secret de Docker. `local-infile=0` y `max-connections=60`.
++  - Healthcheck de MySQL sin la clave en la línea de comandos.
++  - Rotación de logs con `json-file` (10 MB × 5).
++- `docker/entrypoint.sh`: no migra solo. Las migraciones se aplican a mano, después de respaldar.
++- `docker/apache-siged.conf.example`: `LimitRequestBody`, `RequestReadTimeout` contra Slowloris, reemplazo de X-Forwarded-For y bloqueo de `/media/` y `/archivos-privados/`.
++- `.env.example` y `.dockerignore`: ningún secreto, dato, evidencia ni base entra a la imagen.
++
++**No verificado:** Docker no está instalado en el equipo de prueba. El Compose se validó estructuralmente y el entrypoint con `sh -n`. Hay que confirmar en staging que MySQL arranca con las capacidades listadas y que los volúmenes con nombre heredan el propietario 10001.
++
++## 3. Mitigación DDoS (evaluación, sin contratar recursos)
++
++- **AWS Shield Standard** viene activado sin costo en todas las cuentas. Cubre ataques comunes de red y transporte (L3/L4: inundaciones SYN/UDP y reflexión). No hay que contratar ni configurar nada. Rinde más con CloudFront o Route 53 delante. Sobre una EC2 con IP pública directa, la protección es la de la red de AWS y no filtra L7.
++- **Fuera de alcance** porque implican contratar: Shield Advanced (cuota mensual alta), AWS WAF y rate-based rules (cobro por regla y por petición), CloudFront y ALB. AWS Academy además puede restringirlos. Se dejan como recomendación para un entorno productivo municipal.
++- **Límites defensivos sin costo, ya incluidos:**
++  - cuotas de login, recuperación y API;
++  - 413 por tamaño;
++  - Gunicorn con `timeout` de 30 s, `limit_request_*` y reciclado de workers;
++  - `mem_limit` y `pids_limit` por contenedor;
++  - `max-connections` en MySQL;
++  - Apache con `RequestReadTimeout`, `LimitRequestBody` y `LimitRequestFields`.
++- **Recomendado para el security group** (lo aplica Codex; aquí no se modificó AWS):
++  - abrir solo 443, y 80 si redirige;
++  - 22 solo desde el rango de EC2 Instance Connect de us-east-1, o cerrado cuando no se usa;
++  - 3306 nunca abierto.
++- **Opcional sin contratar:** las métricas básicas de CloudWatch ya existen. Una alarma de CPU o red cabe en la capa gratuita, pero crear la alarma es un cambio en AWS que queda a decisión de Codex.
++
++## 4. Correspondencia normativa (orientativa, no es una certificación)
++
++| Referencia | Cobertura |
++|---|---|
++| ISO/IEC 27001:2022 A.5.15 / 27002 5.15, 8.3 (control de acceso, restricción de acceso a la información) | módulo + delegación + objeto |
++| 27002 8.5 (autenticación segura) | cuotas de intentos, sesión en servidor, cookies seguras |
++| 27002 8.9 / 8.20 / 8.22 (configuración, seguridad de redes, segregación) | Compose de mínimo privilegio, MySQL en red interna |
++| 27002 8.12 / 8.11 (prevención de fuga, enmascaramiento) | logs filtrados, nombres de evidencia aleatorios, cuotas con HMAC |
++| 27002 8.15 / 8.16 (registro y monitoreo) | eventos de seguridad sin datos personales, rotación |
++| 27002 8.26 / 8.28 (requisitos de seguridad de aplicaciones, codificación segura) | CSRF, ORM parametrizado, validación de cargas |
++| ISO/IEC 27701 (PII) y Ley 19.628 (art. 7 deber de secreto, art. 11 cuidado de los datos) | minimización en cookies y logs, recuperación sin enumeración |
++| Ley 21.719 (principios de minimización y seguridad, deber de adoptar medidas técnicas; vigencia diferida) | mismas medidas; la retención de logs e IP queda como pendiente organizacional |
++
++## 5. Despliegue sugerido (Codex)
++
++1. Respaldar MySQL (`mysqldump --single-transaction`), el volumen o carpeta de evidencias y la imagen vigente (`docker tag siged-web:actual siged-web:respaldo-AAAAMMDD`).
++2. Aplicar el parche y ejecutar `python manage.py migrate`. Las migraciones son `django_session` (ya existe porque `contrib.sessions` está instalado) y `0013`, un `AlterField` sin cambio de esquema.
++3. Definir en `.env`: `SIGED_COOKIES_SEGURAS=True`, `SIGED_PROXY_CONFIABLE` (puerta de enlace de Docker), `GUNICORN_FORWARDED_ALLOW_IPS` y `SIGED_MEDIA_ROOT`.
++4. Al cambiar el motor de sesión, todos los usuarios deben volver a iniciar sesión una vez.
++5. Verificar: `/salud/`, login y logout, una evidencia propia y una ajena (404) y la cuota con la cuenta de prueba.
++
++## 6. Reversión
++
++- **Código:** `patch -R -p1 < siged-seguridad.diff`, o volver a la imagen `siged-web:respaldo-AAAAMMDD`.
++- **Migración `0013`:** `python manage.py migrate control_gestion 0012`. Solo cambia el `upload_to`; los archivos ya guardados no cambian de nombre.
++- **Sesiones:** al revertir vuelven las cookies firmadas. Se puede ejecutar `python manage.py clearsessions`.
++- **Docker:** restaurar los archivos de Compose anteriores. Los volúmenes `mysql-datos` y `evidencias` no se borran con `docker compose down` (no usar `-v`).
++
++## 7. Pendiente
++
++- Política de retención de logs de Apache con IP y de `CodigoUnUso.ip_origen` (Ley 21.719): hay que definir plazo y responsable.
++- CSP con nonce: las plantillas usan scripts y estilos en línea, así que requiere su propio trabajo.
++- Los permisos iniciales de grupos nuevos no incluyen la consulta de organizaciones para jefatura y funcionario (difieren de la migración 0008).
++- Otros mantenedores con delegación (vecinos, atenciones, ausencias) aún permiten guardar sin delegación a perfiles no administradores.
++- 2FA para administradores y rotación de `SECRET_KEY` con `SECRET_KEY_FALLBACKS`.

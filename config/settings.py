@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "core.seguridad.PeticionAcotadaMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -69,6 +70,7 @@ TEMPLATES = [
         "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
+            "builtins": ["core.fechas"],
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
@@ -117,8 +119,73 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LOGIN_URL = "/login/"
 PASSWORD_RESET_TIMEOUT = 600
-SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+
+
+def env_bool(nombre, por_defecto):
+    valor = os.getenv(nombre)
+    if valor is None or not valor.strip():
+        return por_defecto
+    return valor.strip().lower() in ("1", "true", "yes", "si", "sí")
+
+
+# Sesión en la base: la cookie solo lleva un identificador aleatorio (antes viajaban nombre,
+# rol y delegación firmados pero legibles) y el cierre de sesión la invalida en el servidor.
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = int(os.getenv("SIGED_SESION_SEGUNDOS", str(8 * 3600)))
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = True  # kanban.js toma el token del formulario, no de la cookie.
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_FAILURE_VIEW = "django.views.csrf.csrf_failure"
+# Cookies solo por HTTPS fuera de desarrollo. SIGED_COOKIES_SEGURAS=False solo para un HTTP local.
+SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = env_bool("SIGED_COOKIES_SEGURAS", not DEBUG)
+
+# Cabeceras. HSTS y redirección quedan a cargo del entorno: con certificado autofirmado o
+# acceso por IP no conviene fijar HSTS. Ver docs/SEGURIDAD.md.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+SECURE_HSTS_SECONDS = int(os.getenv("SIGED_HSTS_SEGUNDOS", "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_SSL_REDIRECT = env_bool("SIGED_REDIRIGIR_HTTPS", False)
+SECURE_REDIRECT_EXEMPT = [r"^salud/$"]
+
+# Proxy inverso (Apache) de confianza: solo entonces se aceptan X-Forwarded-Proto/For.
+import ipaddress as _ip  # noqa: E402
+
+SIGED_PROXIES_CONFIABLES = [_ip.ip_network(red, strict=False) for red in env_list("SIGED_PROXY_CONFIABLE")]
+if SIGED_PROXIES_CONFIABLES:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Límites de carga: la evidencia admite 10 MB; el resto del formulario es pequeño.
+SIGED_MAX_PETICION = int(os.getenv("SIGED_MAX_PETICION", str(12 * 1024 * 1024)))
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
+DATA_UPLOAD_MAX_NUMBER_FILES = 5
+FILE_UPLOAD_PERMISSIONS = 0o640
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
+# Los estáticos son públicos y los sirve Apache (otro usuario): sin modos propios, collectstatic
+# heredaba 0640/0750 de arriba y Apache respondía 403. Las evidencias conservan 0640/0750.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "OPTIONS": {"file_permissions_mode": 0o644, "directory_permissions_mode": 0o755},
+    },
+}
+
+# Cuotas de intentos por 15 minutos (IP y cuenta). La cuenta se libera al ingresar.
+SIGED_LIMITE_LOGIN_IP = int(os.getenv("SIGED_LIMITE_LOGIN_IP", "60"))
+# Con 1, los indicadores (dashboard, áreas, panel SGR) excluyen vecinos y funcionarios
+# marcados como datos de simulación. Por defecto 0 para no vaciar bases de demostración.
+SIGED_OCULTAR_SIMULACION = os.getenv("SIGED_OCULTAR_SIMULACION", "0") == "1"
+# Duración del token de la app móvil (se renueva con /api/v1/sesion/renovar/).
+SIGED_TOKEN_MOVIL_DIAS = int(os.getenv("SIGED_TOKEN_MOVIL_DIAS", "30"))
+SIGED_LIMITE_LOGIN_CUENTA = int(os.getenv("SIGED_LIMITE_LOGIN_CUENTA", "8"))
+SIGED_LIMITE_RECUPERAR_IP = int(os.getenv("SIGED_LIMITE_RECUPERAR_IP", "10"))
+SIGED_LIMITE_RECUPERAR_CORREO = int(os.getenv("SIGED_LIMITE_RECUPERAR_CORREO", "3"))
 
 LANGUAGE_CODE = "es-cl"
 TIME_ZONE = "America/Santiago"
@@ -151,3 +218,29 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False").strip().lower() in ("1", "tr
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "siged@localhost")
 
 EMAIL_TIMEOUT = 10
+
+# Los archivos se entregan por una vista autenticada con control de alcance. En Docker
+# SIGED_MEDIA_ROOT apunta a un volumen que el proxy no publica (evidencias privadas).
+MEDIA_ROOT = Path(os.getenv("SIGED_MEDIA_ROOT", str(BASE_DIR / "media")))
+MEDIA_URL = "/archivos-privados/"
+
+# Registros a stdout (Docker los rota); el filtro quita RUT, correos, tokens y consultas.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"datos_personales": {"()": "core.seguridad.FiltroDatosPersonales"}},
+    "formatters": {"simple": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"}},
+    "handlers": {
+        "consola": {
+            "class": "logging.StreamHandler",
+            "filters": ["datos_personales"],
+            "formatter": "simple",
+        },
+    },
+    "root": {"handlers": ["consola"], "level": os.getenv("SIGED_LOG_NIVEL", "WARNING")},
+    "loggers": {
+        "django": {"handlers": ["consola"], "level": "WARNING", "propagate": False},
+        "django.security": {"handlers": ["consola"], "level": "WARNING", "propagate": False},
+        "siged.seguridad": {"handlers": ["consola"], "level": "INFO", "propagate": False},
+    },
+}

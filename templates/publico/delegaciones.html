@@ -7,7 +7,7 @@
         {% include 'componentes/_seccion_cabecera.html' with eyebrow="Atención territorial" titulo="Encuentra tu delegación" bajada="Direcciones, horarios y equipos de cada delegación en el sitio oficial." enlace_url=url_delegaciones enlace_texto="Ver en laserena.cl" externo=True id_titulo="deleg-titulo" %}
         <div class="row g-4">
             {% for d in delegaciones %}
-            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono="bi-geo-alt" titulo=d texto="Atención de requerimientos vecinales del sector." url=url_delegaciones externo=True accion="Dirección y horario" revelar_d=forloop.counter0 %}</div>
+            <div class="col-sm-6 col-lg-4">{% include 'componentes/_tarjeta.html' with icono="bi-geo-alt" titulo=d.nombre texto=d.direccion|default:"Atención de requerimientos vecinales del sector." url=url_delegaciones externo=True accion="Dirección y horario" revelar_d=forloop.counter0 %}</div>
             {% endfor %}
         </div>
     </div>

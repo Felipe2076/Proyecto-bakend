@@ -5,7 +5,7 @@
 {% block topbar_sub %}registro diario del funcionario{% endblock %}
 
 {% block content %}
-<form method="get" class="d-flex gap-2 mb-3"><input type="hidden" name="delegacion" value="{{ filtro_delegacion }}"><input type="hidden" name="funcionario" value="{{ filtro_funcionario }}"><input class="form-control" name="q" value="{{ q }}" aria-label="Buscar actividades" placeholder="Código, RUT, funcionario, actividad o evidencia"><button class="btn btn-outline-primary">Buscar</button><a href="{% url 'actividades_diarias' %}" class="btn btn-outline-secondary">Limpiar</a></form>
+<form method="get" class="d-flex gap-2 mb-3"><input type="hidden" name="trimestre" value="{{ trimestre_seleccionado }}"><input type="hidden" name="delegacion" value="{{ filtro_delegacion }}"><input type="hidden" name="funcionario" value="{{ filtro_funcionario }}"><input class="form-control" name="q" value="{{ q }}" aria-label="Buscar actividades" placeholder="Código, RUT, funcionario, actividad o evidencia"><button class="btn btn-outline-primary">Buscar</button><a href="{% url 'actividades_diarias' %}" class="btn btn-outline-secondary">Limpiar</a></form>
 <div class="container">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
@@ -15,14 +15,12 @@
                     <li class="breadcrumb-item active">Actividades</li>
                 </ol>
             </nav>
-            {% include '_cu.html' with cu_id='CU-E06 / E07' cu_nombre='Actividad y evidencia' %}
             <h2 class="fw-bold mb-1 text-primary-custom">Actividad del día y evidencia</h2>
-            <p class="text-muted small mb-0">Se genera un código verificador. El archivo no se guarda: solo queda el nombre de la evidencia.</p>
+            <p class="text-muted small mb-0">Se genera un código verificador. La evidencia adjunta queda guardada y disponible para consulta autorizada.</p>
         </div>
         <span class="badge bg-primary-custom fs-6 py-2 px-3">{{ total }} registro(s)</span>
     </div>
 
-    {% include 'componentes/_paginador.html' %}
 
     <div class="row g-4">
         <div class="col-lg-4">
@@ -43,8 +41,8 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="fecha_actividad">Fecha <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control {% if errores.fecha_actividad %}is-invalid{% endif %}" id="fecha_actividad" name="fecha_actividad" required value="{{ valores.fecha_actividad|default:fecha_hoy }}">
-                            <div class="invalid-feedback">{% if errores.fecha_actividad %}{{ errores.fecha_actividad }}{% else %}Fecha obligatoria.{% endif %}</div>
+                            <input type="text" placeholder="DD/MM/AA" maxlength="10" class="form-control {% if errores.fecha_actividad %}is-invalid{% endif %}" id="fecha_actividad" name="fecha_actividad" required value="{{ valores.fecha_actividad|default:fecha_hoy|fecha_breve }}">
+                            <div class="invalid-feedback">{% if errores.fecha_actividad %}{{ errores.fecha_actividad|fecha_breve }}{% else %}Fecha obligatoria.{% endif %}</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="contacto">Contacto / vecino <span class="text-danger">*</span></label>
@@ -69,9 +67,10 @@
                             <div class="invalid-feedback">{% if errores.servicio %}{{ errores.servicio }}{% else %}Mínimo 5 caracteres.{% endif %}</div>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label" for="tipo_registro">Tipo de registro</label><select name="tipo_registro" id="tipo_registro" class="form-select mb-2"><option value="RESULTADO">Resultado realizado</option><option value="COORDINACION">Coordinación / seguimiento (sin puntaje)</option><option value="DELEGADO">Gestión del delegado (sin puntaje)</option><option value="FELICITACION">Felicitación (pendiente de validación)</option></select><div class="form-text mb-2">Máximo siete actividades al día. Cada semana cierra el martes siguiente. Los resultados suman al aprobar su evidencia.</div>
                             <label class="form-label" for="evidencia">Evidencia (foto o documento)</label>
-                            <input type="file" class="form-control" id="evidencia" name="evidencia" accept="image/*,.pdf">
-                            <div class="form-text">Simulado: no se almacena el archivo, solo el nombre para el verificador.</div>
+                            <input type="file" class="form-control" id="evidencia" name="evidencia" accept="image/jpeg,image/png,application/pdf">
+                            <div class="form-text">JPG, PNG o PDF. Máximo 10 MB.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="imagen_verificadora">O describa la evidencia</label>
@@ -86,6 +85,16 @@
             <div class="card border-0 shadow-sm rounded-4 mb-3">
                 <div class="card-body">
                     <form method="get" class="row g-2 align-items-end">
+                    <input type="hidden" name="q" value="{{ q }}">
+                    <div class="col-12">
+                        <label for="trimestre" class="form-label small fw-semibold">Trimestre de las actividades</label>
+                        <select class="form-select" name="trimestre" id="trimestre">
+                            {% for periodo in trimestres %}
+                            <option value="{{ periodo.clave }}" {% if trimestre_seleccionado == periodo.clave %}selected{% endif %}>{{ periodo.periodo }}{% if periodo.clave == trimestre_actual.clave %} (vigente){% endif %}</option>
+                            {% endfor %}
+                            <option value="todos" {% if trimestre_seleccionado == 'todos' %}selected{% endif %}>Todos los trimestres</option>
+                        </select>
+                    </div>
                         <div class="col-md-5">
                             <label class="form-label small" for="delegacion">Delegación</label>
                             <select class="form-select" id="delegacion" name="delegacion">
@@ -111,7 +120,7 @@
                 </div>
             </div>
             <div class="card border-0 shadow-sm rounded-4">
-                <div class="table-responsive">
+                <div data-resultado="actividades" class="table-responsive">
                     <table class="table align-middle mb-0">
                         <thead class="table-light">
                             <tr>
@@ -126,7 +135,7 @@
                         <tbody>
                             {% for act in actividades %}
                             <tr>
-                                <td class="font-monospace small">{{ act.fecha_actividad }}<br><code>{{ act.id_actividad }}</code></td>
+                                <td class="font-monospace small text-nowrap">{{ act.fecha_actividad|fecha_breve }}<br><code>{{ act.id_actividad }}</code></td>
                                 <td>
                                     <a href="{% url 'detalle_funcionario' act.id_funcionario %}">{{ act.funcionario_nombre }}</a>
                                     <div class="small text-muted">{{ act.delegacion }}</div>
@@ -134,7 +143,7 @@
                                 <td>{{ act.contacto }}</td>
                                 <td class="small">{{ act.servicio }}</td>
                                 <td><code>{{ act.codigo_verificador }}</code></td>
-                                <td class="small">{{ act.imagen_verificadora }}</td>
+                                <td class="small">{% if act.estado_revision != "HISTORICA" %}<div class="mb-1"><span class="badge text-bg-light">{{ act.revision_etiqueta }}</span>{% if puede_validar_evidencia or act.id_funcionario == funcionario_actual_codigo %} <a href="{% url 'actividad_revision' act.id_actividad %}">Revisión e historial</a>{% endif %}</div>{% elif act.tipo_registro == "FELICITACION" %}{% if act.fecha_validacion %}<span class="badge text-bg-success">Felicitación validada</span>{% else %}<span class="badge text-bg-warning">Pendiente de validación</span>{% if puede_validar_evidencia %}<form method="post" action="{% url 'validar_felicitacion' act.id_actividad %}" class="my-1">{% csrf_token %}<button class="btn btn-sm btn-outline-success">Validar respaldo</button></form>{% endif %}{% endif %}<br>{% endif %}{% if act.evidencia_url %}{% include 'control_gestion/_vista_evidencia.html' with url=act.evidencia_url nombre=act.evidencia_nombre %}{% else %}<span class="text-muted">{{ act.imagen_verificadora }}</span><div class="small">Sin archivo adjunto</div>{% endif %}</td>
                             </tr>
                             {% empty %}
                             <tr><td colspan="6" class="text-center text-muted py-4">Sin actividades para los filtros.</td></tr>
@@ -145,5 +154,6 @@
             </div>
         </div>
     </div>
+    {% include 'componentes/_paginador.html' %}
 </div>
 {% endblock %}

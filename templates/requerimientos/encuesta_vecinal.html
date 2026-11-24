@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Encuesta vecinal | Municipalidad de La Serena</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+</head>
+<body class="bg-light">
+<main class="container py-5" style="max-width: 640px">
+    <article class="card shadow-sm border-0 rounded-4 p-4 p-md-5">
+        <p class="text-danger fw-semibold mb-2">Municipalidad de La Serena</p>
+        <h1 class="h3">Encuesta vecinal</h1>
+        {% if aviso %}<p class="mb-0">{{ aviso }}</p>{% else %}
+        <p class="text-secondary">Su respuesta nos ayuda a mejorar la atención municipal.</p>
+        <form method="post">
+            {% csrf_token %}
+            <fieldset class="mb-3"><legend class="fs-6 fw-semibold">{{ form.nota.label }}</legend>{{ form.nota.errors }}{{ form.nota }}</fieldset>
+            <div class="mb-3"><label class="form-label" for="{{ form.comentario.id_for_label }}">{{ form.comentario.label }} (opcional)</label>{{ form.comentario.errors }}{{ form.comentario }}</div>
+            <button class="btn btn-danger rounded-pill px-4">Enviar respuesta</button>
+        </form>
+        {% endif %}
+    </article>
+</main>
+</body>
+</html>

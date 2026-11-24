@@ -4,16 +4,15 @@ from datetime import timedelta
 
 import requests
 from django.contrib import messages
-from django.db.models import Q
+from django.core.cache import cache
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from cuentas.auth import requerir_modulo
-from cuentas.ambito import denegar_otra_delegacion
 from cuentas.servicios import nombres_delegaciones, obtener_parametros
 from cuentas.vocabulario import normalizar_canal, normalizar_delegacion, normalizar_tipo
+from core.validaciones import MENSAJE_NOMBRE, motivo_rut_invalido, rut_canonico, validar_nombre
 from requerimientos.consultas import (
-    FUNCIONARIOS_REFERENCIA,
     crear_requerimiento,
     opciones_areas,
     opciones_canales,
@@ -26,7 +25,11 @@ from requerimientos.models import Requerimiento
 
 logger = logging.getLogger(__name__)
 
-TIPOS_ENTRADA = opciones_tipos()
+ESTADOS_TICKET = list(Requerimiento.Estado.values)
+
+
+def tipos_entrada():
+    return opciones_tipos()
 
 
 def _sla_limites():
@@ -45,9 +48,14 @@ def validar_email(email):
     return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email or ""))
 
 
+PAISES = ["Venezuela", "Perú", "Colombia", "Bolivia", "Haití", "Argentina", "Ecuador", "República Dominicana", "Cuba",
+          "Paraguay", "Brasil", "Uruguay", "México", "España", "China", "Estados Unidos"]
+
+
 def validar_formulario_requerimiento(post):
     valores = {
-        "vecino_nombre": (post.get("vecino_nombre") or "").strip(),
+        "vecino_nombre": " ".join((post.get("vecino_nombre") or "").split()),
+        "vecino_rut": (post.get("vecino_rut") or "").strip(),
         "telefono_whatsapp": (post.get("telefono_whatsapp") or "").strip(),
         "email": (post.get("email") or "").strip(),
         "delegacion": (post.get("delegacion") or "").strip(),
@@ -56,13 +64,31 @@ def validar_formulario_requerimiento(post):
         "area_tematica": (post.get("area_tematica") or "").strip(),
         "descripcion": (post.get("descripcion") or "").strip(),
         "funcionario_asignado": (post.get("funcionario_asignado") or "").strip(),
+        "es_extranjero": (post.get("es_extranjero") or "").strip().lower(),
+        "nacionalidad": " ".join((post.get("nacionalidad") or "").split())[:60],
     }
     errores = {}
+    if valores["es_extranjero"] not in ("si", "no"):
+        errores["es_extranjero"] = "Indique si la persona es extranjera."
+    elif valores["es_extranjero"] == "si" and len(valores["nacionalidad"]) < 3:
+        errores["nacionalidad"] = "Indique el país de origen."
+    if valores["es_extranjero"] != "si":
+        valores["nacionalidad"] = ""
     if len(valores["vecino_nombre"]) < 5:
         errores["vecino_nombre"] = "Indique el nombre del ciudadano (mínimo 5 caracteres)."
-    if not validar_telefono_chileno(valores["telefono_whatsapp"]):
-        errores["telefono_whatsapp"] = "Ingrese un celular chileno válido, por ejemplo +56 9 1234 5678."
+    elif not validar_nombre(valores["vecino_nombre"]):
+        errores["vecino_nombre"] = MENSAJE_NOMBRE
+    if valores["vecino_rut"]:
+        canonico = rut_canonico(valores["vecino_rut"])
+        if canonico:
+            valores["vecino_rut"] = canonico
+        else:
+            errores["vecino_rut"] = motivo_rut_invalido(valores["vecino_rut"])
     valores["canal_ingreso"] = normalizar_canal(valores["canal_ingreso"])
+    telefono_obligatorio = valores["canal_ingreso"] != "correo"
+    if valores["telefono_whatsapp"] or telefono_obligatorio:
+        if not validar_telefono_chileno(valores["telefono_whatsapp"]):
+            errores["telefono_whatsapp"] = "Ingrese un celular chileno válido, por ejemplo +56 9 1234 5678."
     valores["delegacion"] = normalizar_delegacion(valores["delegacion"])
     valores["tipo_entrada"] = normalizar_tipo(valores["tipo_entrada"])
     canal = valores["canal_ingreso"]
@@ -71,13 +97,11 @@ def validar_formulario_requerimiento(post):
     elif valores["email"] and not validar_email(valores["email"]):
         errores["email"] = "Revise el formato del correo (ejemplo: vecino@correo.cl)."
     if valores["delegacion"] not in nombres_delegaciones():
-        errores["delegacion"] = (
-            "Seleccione la delegación (Centro, Rural, La Antena, La Pampa, Av. del Mar o Las Compañías)."
-        )
+        errores["delegacion"] = "Seleccione una de las delegaciones de la lista."
     if canal not in opciones_canales():
-        errores["canal_ingreso"] = "El canal debe ser ventanilla, WhatsApp o correo."
-    if valores["tipo_entrada"] not in TIPOS_ENTRADA:
-        errores["tipo_entrada"] = "Tipifique el ticket: RECLAMO, SOLICITUD, CONSULTA, SUGERENCIA o FELICITACIÓN."
+        errores["canal_ingreso"] = "Seleccione un canal de ingreso de la lista."
+    if valores["tipo_entrada"] not in tipos_entrada():
+        errores["tipo_entrada"] = "Tipifique el ticket con una opción de la lista."
     if valores["area_tematica"] not in opciones_areas():
         errores["area_tematica"] = "Seleccione el área temática."
     if len(valores["descripcion"]) < 15:
@@ -124,51 +148,60 @@ def _tickets_con_semaforo(qs=None):
     return [asignar_semaforo(ticket_a_dict(req), sla_verde, sla_amarillo) for req in qs]
 
 
+CLAVE_CLIMA = "siged:clima-la-serena"
+
+
 def obtener_clima_la_serena():
+    """Clima real de Open-Meteo, guardado 15 minutos en caché.
+
+    Si el servicio no responde no se inventa un dato: se informa "no disponible"
+    y se reintenta a los 5 minutos.
+    """
+    datos = cache.get(CLAVE_CLIMA)
+    if datos is not None:
+        return datos
     url_api = (
         "https://api.open-meteo.com/v1/forecast"
         "?latitude=-29.90453&longitude=-71.24894&current_weather=true"
     )
-    datos_clima = {
-        "temperatura": 18.5,
-        "velocidad_viento": 14.2,
-        "codigo_clima": 1,
-        "condicion": "Despejado / Brisa Costera Serenense",
+    datos = {
+        "temperatura": None,
+        "velocidad_viento": None,
+        "codigo_clima": None,
+        "condicion": "Clima no disponible",
         "ciudad": "La Serena, Región de Coquimbo",
-        "estado_conexion": "Estimación Local (Fallback)",
+        "estado_conexion": "Sin conexión con el servicio de clima",
         "conectado": False,
     }
     try:
-        respuesta = requests.get(url_api, timeout=3.5)
+        respuesta = requests.get(url_api, timeout=2)
         if respuesta.status_code == 200:
-            payload = respuesta.json()
-            current = payload.get("current_weather", {})
-            temp = current.get("temperature", 18.5)
-            viento = current.get("windspeed", 14.2)
+            current = respuesta.json().get("current_weather") or {}
             codigo = current.get("weathercode", 0)
             if codigo == 0:
-                condicion_str = "Cielo Despejado y Soleado"
+                condicion_str = "Cielo despejado"
             elif codigo in [1, 2, 3]:
-                condicion_str = "Parcialmente Nublado / Camanchaca"
+                condicion_str = "Parcialmente nublado"
             elif codigo in [45, 48]:
-                condicion_str = "Neblina Matinal Costera"
+                condicion_str = "Neblina costera"
             elif codigo in [51, 53, 55, 61, 63, 65]:
-                condicion_str = "Llovizna / Precipitación Ligera"
+                condicion_str = "Llovizna o lluvia ligera"
             else:
-                condicion_str = "Nublado con Viento Costero"
-            datos_clima.update(
+                condicion_str = "Nublado"
+            datos.update(
                 {
-                    "temperatura": round(float(temp), 1),
-                    "velocidad_viento": round(float(viento), 1),
+                    "temperatura": round(float(current["temperature"]), 1),
+                    "velocidad_viento": round(float(current["windspeed"]), 1),
                     "codigo_clima": codigo,
                     "condicion": condicion_str,
-                    "estado_conexion": "API en Vivo (Open-Meteo)",
+                    "estado_conexion": "Open-Meteo, actualizado cada 15 minutos",
                     "conectado": True,
                 }
             )
-    except (requests.RequestException, ValueError, KeyError) as err:
+    except (requests.RequestException, ValueError, KeyError, TypeError) as err:
         logger.warning("Fallo al conectar con la API de clima de La Serena: %s", err)
-    return datos_clima
+    cache.set(CLAVE_CLIMA, datos, 900 if datos["conectado"] else 300)
+    return datos
 
 
 def inicio_view(request):
@@ -183,50 +216,6 @@ def inicio_view(request):
     return render(request, "requerimientos/inicio.html", contexto)
 
 
-def lista_requerimientos_view(request):
-    qs = queryset_requerimientos()
-    filtro_delegacion = request.GET.get("delegacion", "").strip()
-    bloqueo_ambito = denegar_otra_delegacion(request, filtro_delegacion)
-    if bloqueo_ambito:
-        return bloqueo_ambito
-    filtro_semaforo = request.GET.get("semaforo", "").strip()
-    filtro_estado = request.GET.get("estado", "").strip()
-    filtro_busqueda = request.GET.get("busqueda", "").strip()
-    if filtro_delegacion:
-        qs = qs.filter(delegacion__nombre__iexact=filtro_delegacion)
-    if filtro_estado:
-        qs = qs.filter(estado__iexact=filtro_estado)
-    if filtro_busqueda:
-        qs = qs.filter(
-            Q(codigo__icontains=filtro_busqueda)
-            | Q(vecino__nombre__icontains=filtro_busqueda)
-            | Q(descripcion__icontains=filtro_busqueda)
-            | Q(tipo_gestion__nombre__icontains=filtro_busqueda)
-            | Q(area__nombre__icontains=filtro_busqueda)
-            | Q(asignado_a__icontains=filtro_busqueda)
-            | Q(funcionario__nombre__icontains=filtro_busqueda)
-        ).distinct()
-    requerimientos = _tickets_con_semaforo(qs)
-    if filtro_semaforo:
-        requerimientos = [
-            item for item in requerimientos if (item.get("semaforo_nivel") or "").lower() == filtro_semaforo.lower()
-        ]
-    filtros_activos = any([filtro_delegacion, filtro_semaforo, filtro_estado, filtro_busqueda])
-    contexto = {
-        "requerimientos": requerimientos,
-        "total_resultados": len(requerimientos),
-        "delegaciones": nombres_delegaciones(),
-        "niveles_semaforo": ["Verde", "Amarillo", "Rojo"],
-        "estados_proceso": ["Pendiente", "En Proceso", "Cuello Botella Central", "Resuelto"],
-        "filtro_delegacion": filtro_delegacion,
-        "filtro_semaforo": filtro_semaforo,
-        "filtro_estado": filtro_estado,
-        "filtro_busqueda": filtro_busqueda,
-        "filtros_activos": filtros_activos,
-    }
-    return render(request, "requerimientos/lista.html", contexto)
-
-
 def nuevo_requerimiento_view(request):
     bloqueo = requerir_modulo(request, "requerimientos")
     if bloqueo:
@@ -237,8 +226,9 @@ def nuevo_requerimiento_view(request):
             "delegaciones": nombres_delegaciones(),
             "areas": opciones_areas(),
             "canales": opciones_canales(),
-            "tipos": TIPOS_ENTRADA,
+            "tipos": tipos_entrada(),
             "funcionarios": opciones_funcionarios(),
+            "paises": PAISES,
             "valores": valores,
             "errores": errores,
         }
@@ -254,15 +244,27 @@ def nuevo_requerimiento_view(request):
         nuevo = crear_requerimiento(valores)
         messages.success(
             request,
-            f"Requerimiento {nuevo.codigo} ingresado exitosamente para {valores['delegacion']}. "
-            f"Semáforo asignado: DÍA {nuevo.dias_transcurridos} (NORMAL).",
+            f"Requerimiento {nuevo.codigo} ingresado para {valores['delegacion']}. "
+            "Su plazo de gestión comienza hoy.",
         )
         return redirect("lista_requerimientos")
-    return render(request, "requerimientos/registro.html", contexto_formulario({}, {}))
+    # Valores automáticos: RUT desde el buscador y la delegación del propio funcionario.
+    from control_gestion.kanban import perfil_actual
+    perfil = perfil_actual(request)
+    inicial = {"vecino_rut": (request.GET.get("vecino_rut") or "")[:12]}
+    if perfil is not None and perfil.delegacion_id and perfil.rol.codigo != "superusuario":
+        inicial["delegacion"] = perfil.delegacion.nombre
+    return render(request, "requerimientos/registro.html", contexto_formulario(inicial, {}))
 
 
 def detalle_requerimiento_view(request, ticket_id):
-    requerimiento = get_object_or_404(queryset_requerimientos(), codigo__iexact=ticket_id)
+    from control_gestion.kanban import tickets_visibles
+    from control_gestion.reportes import perfil_acceso
+    from requerimientos.encuesta_vecinal import enlace_encuesta, guardar_respuesta
+    perfil, error = perfil_acceso(request, 'requerimientos')
+    if error is not None:
+        return error
+    requerimiento = get_object_or_404(tickets_visibles(perfil), codigo__iexact=ticket_id)
     if request.method == "POST":
         accion = (request.POST.get("accion") or "actualizar").strip()
         if accion == "encuesta":
@@ -282,55 +284,49 @@ def detalle_requerimiento_view(request, ticket_id):
             except (TypeError, ValueError):
                 messages.error(request, "Seleccione una nota de satisfacción entre 1 y 5.")
                 return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
-            requerimiento.evaluacion_satisfaccion = nota
-            requerimiento.comentario_satisfaccion = comentario
-            requerimiento.save(update_fields=["evaluacion_satisfaccion", "comentario_satisfaccion"])
-            messages.success(request, f"Encuesta registrada: {nota} de 5 para el ticket {requerimiento.codigo}.")
+            if len(comentario) > 500:
+                messages.error(request, 'El comentario puede tener hasta 500 caracteres.')
+            elif guardar_respuesta(requerimiento.pk, nota, comentario):
+                messages.success(request, f'Encuesta registrada: {nota} de 5 para el ticket {requerimiento.codigo}.')
+            else:
+                messages.error(request, 'La encuesta ya fue respondida o el ticket dejó de estar resuelto.')
             return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
 
         nuevo_estado = request.POST.get("estado_proceso", "").strip()
         nuevo_funcionario = request.POST.get("funcionario_asignado", "").strip()
-        nuevos_dias_raw = request.POST.get("dias_transcurridos", "").strip()
-        try:
-            nuevos_dias = max(0, int(nuevos_dias_raw))
-        except (ValueError, TypeError):
-            nuevos_dias = requerimiento.dias_transcurridos
-        estados_validos = [
-            "Pendiente",
-            "En Proceso",
-            "Cuello Botella Central",
-            "Resuelto",
-        ]
-        if nuevo_estado not in estados_validos:
+        if nuevo_estado not in ESTADOS_TICKET:
             messages.error(request, "Estado de proceso no válido.")
-        else:
-            requerimiento.estado = nuevo_estado
-            if nuevo_funcionario:
-                requerimiento.asignado_a = nuevo_funcionario
-                requerimiento.funcionario = None
-                from cuentas.servicios import funcionario_por_texto
+            return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
+        from cuentas.servicios import funcionario_por_texto
 
-                requerimiento.funcionario = funcionario_por_texto(nuevo_funcionario)
-            requerimiento.fecha_ingreso = timezone.localdate() - timedelta(days=nuevos_dias)
-            requerimiento.save()
-            messages.success(
-                request,
-                f"Ticket {requerimiento.codigo} actualizado: Estado → {nuevo_estado}, Días → {nuevos_dias}.",
-            )
+        validos = opciones_funcionarios(delegacion=requerimiento.delegacion)
+        actual = requerimiento.funcionario.nombre if requerimiento.funcionario_id else ""
+        if nuevo_funcionario and nuevo_funcionario not in validos and nuevo_funcionario != actual:
+            messages.error(request, "Elija un funcionario activo de la delegación del ticket.")
+            return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
+        requerimiento.estado = nuevo_estado
+        requerimiento.funcionario = funcionario_por_texto(nuevo_funcionario) if nuevo_funcionario else None
+        requerimiento.asignado_a = requerimiento.funcionario.nombre if requerimiento.funcionario else ""
+        # La fecha de ingreso no se edita: el plazo del SLA se mide desde el ingreso real.
+        requerimiento.save(update_fields=['estado', 'asignado_a', 'funcionario'])
+        asignado = requerimiento.asignado_a or "sin asignar"
+        messages.success(request, f"Ticket {requerimiento.codigo} actualizado: {nuevo_estado}, {asignado}.")
         return redirect("detalle_requerimiento", ticket_id=requerimiento.codigo)
 
     ticket = asignar_semaforo(ticket_a_dict(requerimiento))
     contexto = {
         "ticket": ticket,
-        "estados_validos": [
-            "Pendiente",
-            "En Proceso",
-            "Cuello Botella Central",
-            "Resuelto",
-        ],
-        "funcionarios": opciones_funcionarios(ticket.get("funcionario_asignado")),
+        "ficha_tecnica": requerimiento,
+        "estados_validos": ESTADOS_TICKET,
+        "funcionarios": opciones_funcionarios(ticket.get("funcionario_asignado"), requerimiento.delegacion),
+        "enlace_vecinal": enlace_encuesta(request, requerimiento) if (
+            requerimiento.estado == Requerimiento.Estado.RESUELTO
+            and requerimiento.evaluacion_satisfaccion is None
+            and obtener_parametros().get('encuesta_habilitada', True)
+        ) else '',
         "notas_encuesta": [1, 2, 3, 4, 5],
         "encuesta_habilitada": obtener_parametros().get("encuesta_habilitada", True),
+        "evidencias": requerimiento.evidencias.select_related("subido_por"),
     }
     return render(request, "requerimientos/detalle.html", contexto)
 
@@ -339,7 +335,12 @@ def encuestas_view(request):
     bloqueo = requerir_modulo(request, "encuestas")
     if bloqueo:
         return bloqueo
-    requerimientos = _tickets_con_semaforo()
+    from control_gestion.kanban import tickets_visibles
+    from control_gestion.reportes import perfil_acceso
+    perfil, error = perfil_acceso(request, 'encuestas')
+    if error is not None:
+        return error
+    requerimientos = _tickets_con_semaforo(tickets_visibles(perfil).filter(estado=Requerimiento.Estado.RESUELTO))
     resueltos = [item for item in requerimientos if item.get("estado_proceso") == "Resuelto"]
     con_nota = [item for item in resueltos if item.get("evaluacion_satisfaccion")]
     pendientes = [item for item in resueltos if not item.get("evaluacion_satisfaccion")]
