@@ -5,9 +5,12 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from api_rest.autenticacion import ObtenerToken
 from api_rest.views import Yo
+from api_rest.views_mantenedores import OrganizacionViewSet, VecinoViewSet
 
 router = DefaultRouter()
 # Mantenedores y transacción se registran aquí: router.register("ruta", ViewSet, basename="...")
+router.register("organizaciones", OrganizacionViewSet, basename="organizaciones")
+router.register("vecinos", VecinoViewSet, basename="vecinos")
 
 urlpatterns = [
     path("token/", ObtenerToken.as_view(), name="api_token"),
