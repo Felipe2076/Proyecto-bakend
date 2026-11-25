@@ -1,7 +1,7 @@
 """Igual que servidor.py pero con DEBUG apagado (como AWS), puerto 8766. Solo para capturas y pruebas de seguridad locales."""
 import os, pathlib, sys
 AQUI = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str((AQUI.parent / 'web' if (AQUI.parent / 'web').is_dir() else AQUI.parent)))
+sys.path.insert(0, str(AQUI.parent / 'web'))
 os.environ['SIGED_DB'] = 'sqlite'
 os.environ['SIGED_SQLITE_PATH'] = str(AQUI / 'demo.sqlite3')
 os.environ['DEBUG'] = '0'

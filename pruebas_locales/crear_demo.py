@@ -10,7 +10,7 @@ import sys
 from datetime import timedelta
 
 AQUI = pathlib.Path(__file__).resolve().parent
-WEB = (AQUI.parent / 'web' if (AQUI.parent / 'web').is_dir() else AQUI.parent)
+WEB = AQUI.parent / 'web'
 BD = AQUI / 'demo.sqlite3'
 sys.path.insert(0, str(WEB))
 os.environ['SIGED_DB'] = 'sqlite'
