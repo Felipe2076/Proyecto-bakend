@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     "requerimientos",
     "control_gestion",
     "publico",
+    "rest_framework",
+    "drf_spectacular",
+    "api_rest",
 ]
 
 MIDDLEWARE = [
@@ -243,4 +246,36 @@ LOGGING = {
         "django.security": {"handlers": ["consola"], "level": "WARNING", "propagate": False},
         "siged.seguridad": {"handlers": ["consola"], "level": "INFO", "propagate": False},
     },
+}
+
+# --- API REST v2 (Sumativa 4): DRF + JWT + Swagger. Solo afecta a /api/v2/; la web sigue con sesión.
+from datetime import timedelta  # noqa: E402
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.AnonRateThrottle", "rest_framework.throttling.UserRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {"anon": "30/min", "user": "120/min", "login": "5/min"},
+    "EXCEPTION_HANDLER": "api_rest.errores.manejar_error",
+}
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "UPDATE_LAST_LOGIN": False,
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "SIGED API v2",
+    "DESCRIPTION": "API RESTful de SIGED (Municipalidad de La Serena). Autenticación JWT: obtenga el token en "
+                   "/api/v2/token/ y péguelo en Authorize.",
+    "VERSION": "2.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SWAGGER_UI_SETTINGS": {"persistAuthorization": False},
 }

@@ -39,7 +39,7 @@ class AutenticacionMockMiddleware:
             CACHE_PETICION.reset(token)
 
     def _atender(self, request):
-        if request.path.startswith(('/admin/', '/api/v1/')):
+        if request.path.startswith(('/admin/', '/api/v1/', '/api/v2/')):
             return self.get_response(request)
         from django.contrib.auth import logout
         from cuentas.models import Usuario, EstadoRegistro
