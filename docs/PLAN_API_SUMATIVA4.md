@@ -1,5 +1,7 @@
 # Sumativa 4 — API RESTful SIGED: reparto Felipe · Aixa · Sakty
 
+> **Actualización:** la Parte 1 ya está hecha y subida a `codigos-backend` (commit 0935089). Aixa y Sakty crean su rama desde `codigos-backend` (no existe `api-base`). El formato de errores (`api_rest/errores.py`) también está listo. Instrucciones detalladas para Sakty: `docs/INSTRUCCIONES_SAKTY.md`.
+
 ## Regla de oro (para no romper la página)
 
 La API nueva vive **aparte**, en una app nueva `api_rest/` y bajo la ruta `/api/v2/`.
